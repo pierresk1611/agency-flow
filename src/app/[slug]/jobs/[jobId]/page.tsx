@@ -11,8 +11,6 @@ import { CommentsSection } from '@/components/comments-section'
 import { AssignUserDialog } from '@/components/assign-user-dialog'
 import { AddFileDialog } from '@/components/add-file-dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { cookies } from 'next/headers'
-import * as jwt from 'jsonwebtoken'
 import { getSession } from '@/lib/session'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret'
@@ -27,15 +25,10 @@ export default async function JobDetailPage({ params }: { params: { slug: string
   const session = getSession()
   if (!session) redirect('/login')
 
-  // 1. NAČÍTANIE JOBU S KONTROLOU AGENTÚRY (Zabezpečenie cez SLUG)
   const job = await prisma.job.findFirst({
     where: { 
         id: params.jobId,
-        campaign: {
-            client: {
-                agency: { slug: params.slug } // <--- KRITICKÉ: Overíme, že job patrí do slugu v URL
-            }
-        }
+        campaign: { client: { agency: { slug: params.slug } } }
     },
     include: {
       campaign: { include: { client: true } },
@@ -50,10 +43,18 @@ export default async function JobDetailPage({ params }: { params: { slug: string
     },
   })
 
-  // Ak sa Job ID nezhoduje so slugom agentúry (niekto skúša hackovať URL), vrátime 404
   if (!job) return notFound()
 
-  // 2. Kontrola, či užívateľ patrí do tejto agentúry (ochrana pred medzi-agentúrnym prístupom)
+  const isCreative = session.role === 'CREATIVE'
+
+  // --- OCHRANA: Ak je Creative, musí byť v tíme, inak nemá prístup ---
+  const isAssigned = job.assignments.some(a => a.userId === session.userId)
+  
+  if (isCreative && !isAssigned) {
+      return notFound() // Alebo redirect na zoznam jeho jobov
+  }
+
+  // Ak nie je Creative, overíme, či patrí do tejto agentúry
   if (session.role !== 'SUPERADMIN' && session.agencyId !== job.campaign.client.agencyId) {
       redirect('/login')
   }
@@ -88,7 +89,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
             <div>
                 <div className="flex items-center gap-3">
                     <h2 className="text-2xl font-bold text-slate-900">{job.title}</h2>
-                    <Badge variant="outline">{job.status}</Badge>
+                    <Badge variant="outline" className="font-bold">{job.status}</Badge>
                 </div>
                 <p className="text-muted-foreground text-[10px] font-black uppercase mt-1 tracking-widest">
                     {job.campaign.client.name} / {job.campaign.name}
@@ -124,13 +125,18 @@ export default async function JobDetailPage({ params }: { params: { slug: string
         <div className="space-y-6">
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Tím na projekte</CardTitle>
-                    <AssignUserDialog jobId={job.id} />
+                    <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tím na projekte</CardTitle>
+                    {/* IBA ADMIN/TRAFFIC MÔŽE PRIDÁVAŤ ĽUDÍ */}
+                    {!isCreative && <AssignUserDialog jobId={job.id} />}
                 </CardHeader>
                 <CardContent className="pt-4 space-y-3">
                     {job.assignments.map(a => (
                         <div key={a.id} className="flex items-center gap-3 text-sm">
-                            <Avatar className="h-8 w-8"><AvatarFallback className="bg-blue-100 text-blue-700 font-bold text-xs uppercase">{(a.user.name || a.user.email).charAt(0)}</AvatarFallback></Avatar>
+                            <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-blue-100 text-blue-700 font-bold text-xs uppercase">
+                                    {(a.user.name || a.user.email).charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
                             <div className="flex flex-col">
                                 <span className="font-semibold text-slate-700 truncate max-w-[150px]">{a.user.name || a.user.email.split('@')[0]}</span>
                                 <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{a.roleOnJob}</span>
