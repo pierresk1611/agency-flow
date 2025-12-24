@@ -1,0 +1,45 @@
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+import * as bcrypt from 'bcryptjs'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: Request, { params }: { params: { agencyId: string } }) {
+  const session = getSession()
+  if (session?.role !== 'SUPERADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    const users = await prisma.user.findMany({
+        where: { agencyId: params.agencyId },
+        orderBy: { email: 'asc' },
+        select: { id: true, email: true, role: true, active: true }
+    })
+    return NextResponse.json(users)
+  } catch (error) {
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request, { params }: { params: { agencyId: string } }) {
+  const session = getSession()
+  if (session?.role !== 'SUPERADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    const body = await request.json()
+    const { userId, role, newPassword } = body
+
+    const dataToUpdate: any = {}
+    if (role) dataToUpdate.role = role
+    if (newPassword) dataToUpdate.passwordHash = await bcrypt.hash(newPassword, 10)
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: dataToUpdate
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  }
+}
