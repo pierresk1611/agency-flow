@@ -14,13 +14,15 @@ export default async function DashboardPage() {
 
   const now = new Date()
 
-  // 1. NAČÍTANIE JOBOV (Iba pre tvoju agentúru)
+  // 1. NAČÍTANIE JOBOV (Opravená cesta k agencyId cez klienta)
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
       campaign: {
-        agencyId: session.agencyId,
-        client: { archivedAt: null }
+        client: {
+          agencyId: session.agencyId, // <--- OPRAVA: agencyId je na Klientovi
+          archivedAt: null
+        }
       }
     },
     include: {
@@ -29,12 +31,12 @@ export default async function DashboardPage() {
     }
   })
 
-  // 2. OVERDUE LOGIKA
+  // 2. LOGIKA: MEŠKAJÚCE ÚLOHY
   const overdueJobs = jobs.filter(j => 
     j.status !== 'DONE' && j.deadline < now
   ).sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
 
-  // 3. BUDGET ALERTS
+  // 3. LOGIKA: OHROZENÉ ROZPOČTY
   const budgetAlerts = jobs.map(job => {
     const spent = job.budgets.reduce((sum, item) => sum + item.amount, 0)
     const budget = job.budget || 0
@@ -43,13 +45,15 @@ export default async function DashboardPage() {
   }).filter(j => j.budget > 0 && j.percentage >= 80)
     .sort((a, b) => b.percentage - a.percentage)
 
-  // 4. NÁKLADY PODĽA KLIENTOV (Iba tvoja agentúra)
+  // 4. NÁKLADY PODĽA KLIENTOV
   const allApprovedCosts = await prisma.budgetItem.findMany({
     where: {
       job: {
         campaign: {
-          agencyId: session.agencyId,
-          client: { archivedAt: null }
+          client: { 
+            agencyId: session.agencyId, // <--- OPRAVA
+            archivedAt: null 
+          }
         }
       }
     },
@@ -71,7 +75,6 @@ export default async function DashboardPage() {
   const totalSpent = allApprovedCosts.reduce((sum, i) => sum + i.amount, 0)
   const activeCount = jobs.filter(j => j.status !== 'DONE').length
   
-  // TOTO OPRAVUJE TÚ CHYBU POČTU KOLEGOV:
   const teamCount = await prisma.user.count({ 
     where: { 
       active: true,
