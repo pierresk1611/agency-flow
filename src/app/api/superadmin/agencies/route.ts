@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import * as bcrypt from 'bcryptjs'
 
-// GET: Zoznam všetkých agentúr
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const session = getSession()
   if (!session || session.role !== 'SUPERADMIN') {
@@ -15,7 +16,6 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
-          // OPRAVA: Počítame len to, čo je priamo spojené s agentúrou
           select: { 
             users: true, 
             clients: true 
@@ -30,7 +30,6 @@ export async function GET() {
   }
 }
 
-// POST: Vytvorenie novej agentúry
 export async function POST(request: Request) {
   const session = getSession()
   if (!session || session.role !== 'SUPERADMIN') {
@@ -46,12 +45,10 @@ export async function POST(request: Request) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-        // 1. Agentúra
         const newAgency = await tx.agency.create({
             data: { name }
         })
 
-        // 2. Admin User
         const hash = await bcrypt.hash(adminPassword, 10)
         await tx.user.create({
             data: {
@@ -63,14 +60,12 @@ export async function POST(request: Request) {
             }
         })
 
-        // 3. Základné Scopes
-        const defaultScopes = ["Digital", "ATL", "BTL", "Social Media", "PR", "Branding"]
+        const defaultScopes = ["ATL", "BTL", "DIGITAL", "SOCIAL MEDIA", "PRODUCTION", "PR", "BRANDING", "EVENT"]
         for (const s of defaultScopes) {
             await tx.agencyScope.create({ data: { agencyId: newAgency.id, name: s } })
         }
         
-        // 4. Základné Pozície
-        const defaultPos = ["Account Manager", "Creative Director", "Copywriter", "Art Director"]
+        const defaultPos = ["Art Director", "Copywriter", "Account Manager", "Social Media Manager", "Developer", "Project Manager"]
         for (const p of defaultPos) {
             await tx.agencyPosition.create({ data: { agencyId: newAgency.id, name: p } })
         }
