@@ -1,19 +1,38 @@
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Calendar, ArrowRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import Link from 'next/link'
-import { JobActions } from '@/components/job-actions' // <--- IMPORT NAŠHO NOVÉHO TLAČIDLA
+import { JobActions } from '@/components/job-actions'
+import { notFound } from 'next/navigation'
 
-export default async function JobsPage() {
-  // 1. TRAFFIC LOGIKA:
-  // - Iba nearchivované (archivedAt: null)
-  // - Zoradené podľa priority klienta (5 -> 1)
-  // - Potom podľa deadline (najbližšie termíny)
+export default async function JobsPage({ params }: { params: { slug: string } }) {
+  // 1. Najprv musíme zistiť ID agentúry podľa slugu v URL
+  const agency = await prisma.agency.findUnique({
+    where: { slug: params.slug }
+  })
+
+  if (!agency) return notFound()
+
+  // 2. NAČÍTANIE JOBOV - TERAZ STRIKTNE FILTROVANÉ PODĽA AGENTÚRY
   const jobs = await prisma.job.findMany({
-    where: { archivedAt: null },
+    where: { 
+      archivedAt: null,
+      campaign: {
+        client: {
+          agencyId: agency.id // <--- TOTO JE TÁ KRITICKÁ OPRAVA
+        }
+      }
+    },
     include: {
       campaign: {
         include: { client: true }
@@ -34,7 +53,7 @@ export default async function JobsPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900">Aktívna výroba</h2>
           <p className="text-muted-foreground text-sm">
-            Zoradené podľa priority klientov a termínov odovzdania.
+            Prehľad otvorených úloh agentúry {agency.name}.
           </p>
         </div>
       </div>
@@ -43,24 +62,23 @@ export default async function JobsPage() {
         <Table>
           <TableHeader className="bg-slate-50">
             <TableRow>
-              <TableHead className="w-16 text-center">Prio</TableHead>
-              <TableHead>Názov Jobu / Kampaň</TableHead>
-              <TableHead>Klient</TableHead>
-              <TableHead>Termín</TableHead>
-              <TableHead>Rozpočet</TableHead>
-              <TableHead className="text-right">Akcia</TableHead>
+              <TableHead className="w-16 text-center text-[10px] font-bold uppercase tracking-wider">Prio</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Názov Jobu / Kampaň</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Klient</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Termín</TableHead>
+              <TableHead className="text-[10px] font-bold uppercase tracking-wider">Rozpočet</TableHead>
+              <TableHead className="text-right pr-6 text-[10px] font-bold uppercase tracking-wider">Akcia</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {jobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground italic">
-                  Momentálne nemáte žiadne aktívne úlohy.
+                <TableCell colSpan={6} className="text-center py-20 text-slate-400 italic">
+                  V tejto agentúre zatiaľ nie sú žiadne aktívne joby.
                 </TableCell>
               </TableRow>
             ) : (
               jobs.map((job) => {
-                // Kontrola prešvihnutého termínu
                 const isOverdue = new Date(job.deadline) < new Date() && job.status !== 'DONE'
 
                 return (
@@ -96,15 +114,13 @@ export default async function JobsPage() {
                     <TableCell className="font-mono text-xs text-slate-600">
                       {job.budget?.toFixed(0)} €
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right pr-6">
                       <div className="flex justify-end items-center gap-2">
-                          <Link href={`/dashboard/jobs/${job.id}`}>
-                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                          <Link href={`/${params.slug}/jobs/${job.id}`}>
+                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8">
                               Detail
                             </Button>
                           </Link>
-                          
-                          {/* TLAČIDLO ARCHIVOVAŤ */}
                           <JobActions jobId={job.id} />
                       </div>
                     </TableCell>
