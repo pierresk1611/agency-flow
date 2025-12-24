@@ -6,10 +6,10 @@ import * as jwt from 'jsonwebtoken'
 const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
 export async function POST(request: Request) {
-  // 1. Iba Superadmin môže použiť tento endpoint
+  // 1. Overenie Superadmina
   const session = getSession()
   if (!session || session.role !== 'SUPERADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Prístup zamietnutý' }, { status: 403 })
   }
 
   try {
@@ -18,24 +18,30 @@ export async function POST(request: Request) {
 
     if (!agencyId) return NextResponse.json({ error: 'Chýba ID agentúry' }, { status: 400 })
 
-    // 2. Overíme, či agentúra existuje
-    const targetAgency = await prisma.agency.findUnique({ where: { id: agencyId } })
+    // 2. Nájdeme agentúru, aby sme získali jej SLUG
+    const targetAgency = await prisma.agency.findUnique({ 
+        where: { id: agencyId } 
+    })
+    
     if (!targetAgency) return NextResponse.json({ error: 'Agentúra neexistuje' }, { status: 404 })
 
-    // 3. Vyrobíme "falošný" token
-    // Do tokenu dáme ID Superadmina, ale agencyId cieľovej agentúry.
-    // Tým pádom session.ts pustí usera dnu a prisma bude filtrovať dáta tej agentúry.
+    // 3. Vygenerujeme GOD MODE Token
+    // V tokene zmeníme agencyId na ID cieľovej agentúry
     const token = jwt.sign(
       {
         userId: session.userId,
-        role: 'SUPERADMIN', // Ponecháme rolu, aby sme vedeli, že je to on
-        agencyId: targetAgency.id
+        role: 'SUPERADMIN',
+        agencyId: targetAgency.id // Odteraz sa Prisma bude pýtať na túto agentúru
       },
       JWT_SECRET,
       { expiresIn: '2h' }
     )
 
-    return NextResponse.json({ token })
+    // 4. VRÁTIME TOKEN AJ SLUG
+    return NextResponse.json({ 
+        token, 
+        slug: targetAgency.slug // <--- TOTO JE KĽÚČOVÉ PRE REDIRECT
+    })
 
   } catch (error) {
     console.error(error)
