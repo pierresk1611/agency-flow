@@ -28,32 +28,53 @@ export default async function JobsPage({ params }: { params: { slug: string } })
 
   if (!agency) return notFound()
 
-  // 3. Kontrola práv a roly
+  // 3. Kontrola roly
   const isCreative = session.role === 'CREATIVE'
 
+  // Ochrana pred prístupom do cudzej agentúry
   if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
-      redirect('/login')
+    redirect('/login')
   }
 
-  // 4. NAČÍTANIE JOBOV S FILTROM PRE KREATÍVCA
+  // 4. Načítanie jobov s filtrom priradenia pre kreatívcov
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
-      campaign: { client: { agencyId: agency.id } },
-      // KRITICKÁ ZMENA: Ak si Creative, ukáž len tie, kde si priradený
+      campaign: { 
+        client: { 
+          agencyId: agency.id 
+        } 
+      },
+      // Ak je užívateľ CREATIVE, vidí len tie joby, kde je priradený v tíme
       assignments: isCreative ? {
-          some: {
-              userId: session.userId
-          }
+        some: {
+          userId: session.userId
+        }
       } : undefined
     },
     include: {
-      campaign: { include: { client: true } },
-      assignments: { include: { user: true } }
+      campaign: { 
+        include: { 
+          client: true 
+        } 
+      },
+      assignments: { 
+        include: { 
+          user: true 
+        } 
+      }
     },
     orderBy: [
-      { campaign: { client: { priority: 'desc' } } },
-      { deadline: 'asc' }
+      { 
+        campaign: { 
+          client: { 
+            priority: 'desc' 
+          } 
+        } 
+      },
+      { 
+        deadline: 'asc' 
+      }
     ]
   })
 
@@ -62,10 +83,12 @@ export default async function JobsPage({ params }: { params: { slug: string } })
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-              {isCreative ? 'Moje priradené joby' : 'Aktívna výroba'}
+            {isCreative ? 'Moje priradené joby' : 'Aktívna výroba'}
           </h2>
           <p className="text-muted-foreground text-xs md:text-sm">
-            {isCreative ? 'Zoznam úloh, na ktorých práve pracujete.' : `Prehľad všetkých otvorených úloh agentúry ${agency.name}.`}
+            {isCreative 
+              ? 'Zoznam úloh, na ktorých ste súčasťou tímu.' 
+              : `Prehľad všetkých otvorených úloh agentúry ${agency.name}.`}
           </p>
         </div>
       </div>
@@ -80,7 +103,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
                 <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Klient</TableHead>
                 <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Termín</TableHead>
                 {!isCreative && (
-                    <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rozpočet</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rozpočet</TableHead>
                 )}
                 <TableHead className="text-right pr-6 text-[10px] font-bold uppercase tracking-wider text-slate-500">Akcia</TableHead>
               </TableRow>
@@ -88,7 +111,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
             <TableBody>
               {jobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-20 text-slate-400 italic text-sm">
+                  <TableCell colSpan={isCreative ? 5 : 6} className="text-center py-20 text-slate-400 italic text-sm">
                     {isCreative ? 'Momentálne nemáte priradené žiadne joby.' : 'V tejto agentúre nie sú žiadne aktívne joby.'}
                   </TableCell>
                 </TableRow>
@@ -131,10 +154,22 @@ export default async function JobsPage({ params }: { params: { slug: string } })
                       )}
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end items-center gap-2">
-                            <Link href={`/${params.slug}/jobs/${job.id}`}>
-                              <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 h-8">
-                                Detail
-                              </Button>
-                            </Link>
-                            {!isCreative && <JobActions jobId={job.id} />}
-                        </div
+                          <Link href={`/${params.slug}/jobs/${job.id}`}>
+                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 h-8">
+                              Detail
+                            </Button>
+                          </Link>
+                          {!isCreative && <JobActions jobId={job.id} />}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  )
+}
