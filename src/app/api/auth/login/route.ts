@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import * as bcrypt from 'bcryptjs'
+import bcrypt from 'bcryptjs'
 import * as jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret'
@@ -14,37 +14,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email a heslo sú povinné' }, { status: 400 })
     }
 
-    // 1. Nájdi usera
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { agency: true }
     })
 
     if (!user || !user.active) {
-      return NextResponse.json({ error: 'Nesprávne údaje' }, { status: 401 })
+      return NextResponse.json({ error: 'Užívateľ neexistuje alebo je neaktívny' }, { status: 401 })
     }
 
-    // 2. Over heslo
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash)
-
     if (!isPasswordValid) {
       return NextResponse.json({ error: 'Nesprávne heslo' }, { status: 401 })
     }
 
-    // 3. Vygeneruj Token
+    // OCHRANA: Ak užívateľ nemá agentúru
+    if (!user.agencyId || !user.agency) {
+        return NextResponse.json({ error: 'Užívateľ nie je priradený k žiadnej agentúre. Kontaktujte podporu.' }, { status: 403 })
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role, agencyId: user.agencyId },
       JWT_SECRET,
       { expiresIn: '1d' }
     )
 
-    // 4. Vráť odpoveď
     return NextResponse.json({
       token,
-      user: { id: user.id, email: user.email, role: user.role }
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        agencySlug: user.agency.slug // Toto zaručene existuje vďaka include
+      },
     })
 
   } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+    console.error('LOGIN ERROR:', error)
+    return NextResponse.json({ error: 'Interná chyba servera' }, { status: 500 })
   }
 }
