@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- ENUMS ---
 enum Role {
   SUPERADMIN
   ADMIN
@@ -19,7 +20,7 @@ enum JobStatus {
   TODO
   IN_PROGRESS
   DONE
-  TENDER // NOVÝ STATUS
+  TENDER
 }
 
 enum TimesheetStatus {
@@ -28,6 +29,7 @@ enum TimesheetStatus {
   REJECTED
 }
 
+// --- MODELS ---
 model Agency {
   id         String   @id @default(uuid())
   name       String
@@ -41,6 +43,7 @@ model Agency {
   clients    Client[]
   scopes     AgencyScope[]
   positions  AgencyPosition[]
+  tenders    Tender[]
   createdAt  DateTime @default(now())
 }
 
@@ -74,6 +77,7 @@ model User {
   active       Boolean  @default(true)
   assignments  JobAssignment[]
   comments     Comment[]
+  tenderAssignments TenderAssignment[]
 }
 
 model Client {
@@ -135,6 +139,8 @@ model JobAssignment {
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
   timesheets  Timesheet[]
+  comments    Comment[] 
+  tenderAssignments TenderAssignment[]
 }
 
 model Timesheet {
@@ -168,8 +174,10 @@ model BudgetItem {
 
 model Comment {
   id        String   @id @default(uuid())
-  jobId     String
-  job       Job      @relation(fields: [jobId], references: [id])
+  jobId     String?
+  job       Job?     @relation(fields: [jobId], references: [id])
+  tenderId  String?
+  tender    Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   text      String
@@ -182,25 +190,36 @@ model File {
   job        Job?     @relation(fields: [jobId], references: [id])
   clientId   String?
   client     Client?  @relation(fields: [clientId], references: [id])
+  tenderId   String?
+  tender     Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
   uploadedBy String
   fileUrl    String
   fileType   String
   createdAt  DateTime @default(now())
 }
 
-// NOVÝ MODEL: TENDER
 model Tender {
   id          String    @id @default(uuid())
   agencyId    String
   agency      Agency    @relation(fields: [agencyId], references: [id])
   title       String
-  status      JobStatus @default(TODO) // Môže byť TODO, IN_PROGRESS, DONE (t.j. "LOST")
+  status      JobStatus @default(TODO) 
   deadline    DateTime
   budget      Float?    @default(0)
-  isConverted Boolean @default(false) // Je to už klient?
+  isConverted Boolean @default(false)
   
-  assignments JobAssignment[]
-  comments    Comment[]
-  files       File[]
+  // SPÄTNÉ VÄZBY
+  assignments TenderAssignment[] // OPRAVENÁ
+  comments    Comment[]         // SPÄTNÁ VÄZBA
+  files       File[]            // SPÄTNÁ VÄZBA
   createdAt   DateTime  @default(now())
+}
+
+model TenderAssignment {
+    id          String   @id @default(uuid())
+    tenderId    String
+    tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+    userId      String
+    user        User     @relation(fields: [userId], references: [id]) // SPÄTNÁ VÄZBA (OPRAVENÁ)
+    roleOnJob   String
 }
