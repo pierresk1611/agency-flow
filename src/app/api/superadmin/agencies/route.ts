@@ -5,6 +5,18 @@ import * as bcrypt from 'bcryptjs'
 
 export const dynamic = 'force-dynamic'
 
+// Pomocná funkcia na vytvorenie slugu (URL adresy) z názvu
+function generateSlug(name: string) {
+  return name
+    .toLowerCase()
+    .normalize('NFD') // Odstráni mäkčene a dĺžne
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w ]+/g, '') // Odstráni špeciálne znaky
+    .replace(/ +/g, '-') // Nahradí medzery pomlčkami
+    .trim()
+}
+
+// GET: Zoznam všetkých agentúr
 export async function GET() {
   const session = getSession()
   if (!session || session.role !== 'SUPERADMIN') {
@@ -30,6 +42,7 @@ export async function GET() {
   }
 }
 
+// POST: Vytvorenie novej agentúry + Admina + Slug
 export async function POST(request: Request) {
   const session = getSession()
   if (!session || session.role !== 'SUPERADMIN') {
@@ -44,11 +57,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
     }
 
+    // Vygenerujeme unikátny slug
+    const slug = generateSlug(name)
+
+    // Skontrolujeme, či slug už neexistuje
+    const existingAgency = await prisma.agency.findUnique({ where: { slug } })
+    if (existingAgency) {
+        return NextResponse.json({ error: 'Agentúra s podobným názvom už existuje. Zmeňte názov.' }, { status: 400 })
+    }
+
     const result = await prisma.$transaction(async (tx) => {
+        // 1. Vytvorenie Agentúry so SLUGOM
         const newAgency = await tx.agency.create({
-            data: { name }
+            data: { 
+                name,
+                slug: slug // <--- TOTO TU CHÝBALO
+            }
         })
 
+        // 2. Vytvorenie Admina
         const hash = await bcrypt.hash(adminPassword, 10)
         await tx.user.create({
             data: {
@@ -60,12 +87,13 @@ export async function POST(request: Request) {
             }
         })
 
-        const defaultScopes = ["ATL", "BTL", "DIGITAL", "SOCIAL MEDIA", "PRODUCTION", "PR", "BRANDING", "EVENT"]
+        // 3. Základné číselníky pre novú agentúru
+        const defaultScopes = ["ATL", "BTL", "DIGITAL", "PR", "SOCIAL MEDIA"]
         for (const s of defaultScopes) {
             await tx.agencyScope.create({ data: { agencyId: newAgency.id, name: s } })
         }
         
-        const defaultPos = ["Art Director", "Copywriter", "Account Manager", "Social Media Manager", "Developer", "Project Manager"]
+        const defaultPos = ["Account Manager", "Art Director", "Copywriter", "Creative Director"]
         for (const p of defaultPos) {
             await tx.agencyPosition.create({ data: { agencyId: newAgency.id, name: p } })
         }
@@ -75,8 +103,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Superadmin POST error:", error)
-    return NextResponse.json({ error: 'Chyba pri vytváraní agentúry' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Chyba pri vytváraní agentúry' }, { status: 500 })
   }
 }
