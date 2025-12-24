@@ -2,8 +2,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClientsList } from "@/components/clients-list"
 import { TeamList } from "@/components/team-list"
 import { AgencySettings } from "@/components/agency-settings"
+import { getSession } from "@/lib/session"
+import { redirect } from "next/navigation"
 
 export default function AgencyPage() {
+  const session = getSession()
+  
+  // OCHRANA: Ak je niekto Creative, nesmie sem vstúpiť
+  if (session?.role === 'CREATIVE') {
+    redirect('/') // Hodíme ho na dashboard
+  }
+
   return (
     <div className="space-y-6 pb-10">
       <div>
@@ -34,7 +43,6 @@ export default function AgencyPage() {
            <TeamList />
         </TabsContent>
 
-        {/* TÁTO ČASŤ ZOBRAZÍ TIE NASTAVENIA */}
         <TabsContent value="settings" className="space-y-4">
             <AgencySettings />
         </TabsContent>

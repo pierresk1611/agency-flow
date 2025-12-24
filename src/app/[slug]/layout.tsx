@@ -14,23 +14,28 @@ export default async function AgencyLayout({
   const session = getSession()
   if (!session) redirect('/login')
 
-  // Overenie existencie agentúry podľa slugu
   const agency = await prisma.agency.findUnique({
     where: { slug: params.slug }
   })
 
   if (!agency) return notFound()
 
-  // Izolácia: Prístup má Superadmin alebo člen danej agentúry
   if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
-    redirect('/login')
+    const myAgency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
+    if (myAgency) redirect(`/${myAgency.slug}`)
+    else redirect('/login')
   }
+
+  // Ak je creative a snaží sa vliezť na /agency manuálne cez URL, vyhodíme ho
+  // To ošetríme priamo v page.tsx v ďalšom kroku
 
   return (
     <div className="h-full relative">
-      <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] bg-slate-900">
-        <Sidebar slug={params.slug} />
+      <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] bg-gray-900">
+        {/* POSIELAME ROLU DO SIDEBARU */}
+        <Sidebar slug={params.slug} role={session.role} />
       </div>
+      
       <main className="md:pl-72 min-h-screen bg-slate-50/50">
         <MobileNav slug={params.slug} />
         <div className="p-4 md:p-8">
