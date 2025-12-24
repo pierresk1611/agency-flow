@@ -19,6 +19,7 @@ enum JobStatus {
   TODO
   IN_PROGRESS
   DONE
+  TENDER // NOVÝ STATUS
 }
 
 enum TimesheetStatus {
@@ -32,10 +33,10 @@ model Agency {
   name       String
   slug       String   @unique 
   logoUrl    String?
-  companyId  String?  
-  vatId      String?  
-  address    String?  
-  email      String?  
+  companyId  String?
+  vatId      String?
+  address    String?
+  email      String?
   users      User[]
   clients    Client[]
   scopes     AgencyScope[]
@@ -185,4 +186,21 @@ model File {
   fileUrl    String
   fileType   String
   createdAt  DateTime @default(now())
+}
+
+// NOVÝ MODEL: TENDER
+model Tender {
+  id          String    @id @default(uuid())
+  agencyId    String
+  agency      Agency    @relation(fields: [agencyId], references: [id])
+  title       String
+  status      JobStatus @default(TODO) // Môže byť TODO, IN_PROGRESS, DONE (t.j. "LOST")
+  deadline    DateTime
+  budget      Float?    @default(0)
+  isConverted Boolean @default(false) // Je to už klient?
+  
+  assignments JobAssignment[]
+  comments    Comment[]
+  files       File[]
+  createdAt   DateTime  @default(now())
 }
