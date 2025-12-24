@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+import { redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Activity, Users, Euro, AlertTriangle, Clock, TrendingUp, Download, PieChart } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
@@ -7,32 +9,32 @@ import { Button } from "@/components/ui/button"
 import { format } from 'date-fns'
 
 export default async function DashboardPage() {
+  const session = getSession()
+  if (!session) redirect('/login')
+
   const now = new Date()
 
-  // 1. NAČÍTANIE DÁT (Opravená logika dopytu)
+  // 1. NAČÍTANIE JOBOV (Iba pre tvoju agentúru)
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
       campaign: {
-        client: {
-          archivedAt: null // Filtrujeme joby, ktorých klienti nie sú archivovaní
-        }
+        agencyId: session.agencyId,
+        client: { archivedAt: null }
       }
     },
     include: {
       budgets: true,
-      campaign: {
-        include: { client: true }
-      }
+      campaign: { include: { client: true } }
     }
   })
 
-  // 2. LOGIKA: MEŠKAJÚCE ÚLOHY (Overdue)
+  // 2. OVERDUE LOGIKA
   const overdueJobs = jobs.filter(j => 
     j.status !== 'DONE' && j.deadline < now
   ).sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
 
-  // 3. LOGIKA: OHROZENÉ ROZPOČTY (> 80%)
+  // 3. BUDGET ALERTS
   const budgetAlerts = jobs.map(job => {
     const spent = job.budgets.reduce((sum, item) => sum + item.amount, 0)
     const budget = job.budget || 0
@@ -41,19 +43,18 @@ export default async function DashboardPage() {
   }).filter(j => j.budget > 0 && j.percentage >= 80)
     .sort((a, b) => b.percentage - a.percentage)
 
-  // 4. LOGIKA: NÁKLADY PODĽA KLIENTOV (Iba nearchivovaní)
+  // 4. NÁKLADY PODĽA KLIENTOV (Iba tvoja agentúra)
   const allApprovedCosts = await prisma.budgetItem.findMany({
     where: {
       job: {
         campaign: {
+          agencyId: session.agencyId,
           client: { archivedAt: null }
         }
       }
     },
     include: {
-      job: {
-        include: { campaign: { include: { client: true } } }
-      }
+      job: { include: { campaign: { include: { client: true } } } }
     }
   })
 
@@ -62,15 +63,21 @@ export default async function DashboardPage() {
     const name = item.job.campaign.client.name
     clientStats[name] = (clientStats[name] || 0) + item.amount
   })
-  
   const topClients = Object.entries(clientStats)
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => b.amount - a.amount)
 
-  // KPI METRIKY
+  // 5. KPI METRIKY
   const totalSpent = allApprovedCosts.reduce((sum, i) => sum + i.amount, 0)
   const activeCount = jobs.filter(j => j.status !== 'DONE').length
-  const teamCount = await prisma.user.count({ where: { active: true } })
+  
+  // TOTO OPRAVUJE TÚ CHYBU POČTU KOLEGOV:
+  const teamCount = await prisma.user.count({ 
+    where: { 
+      active: true,
+      agencyId: session.agencyId 
+    } 
+  })
 
   return (
     <div className="flex-1 space-y-4">
@@ -83,7 +90,6 @@ export default async function DashboardPage() {
         </a>
       </div>
 
-      {/* KPI KARTY */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-b-4 border-b-blue-500 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -92,7 +98,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black">{totalSpent.toFixed(2)} €</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold">SCHVÁLENÉ POLOŽKY</p>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold uppercase">Schválené položky</p>
           </CardContent>
         </Card>
         <Card className="border-b-4 border-b-violet-500 shadow-sm">
@@ -102,7 +108,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-black">{activeCount} Jobov</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold text-violet-600">PREBIEHAJÚCE</p>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold text-violet-600 uppercase">Prebiehajúce</p>
           </CardContent>
         </Card>
         <Card className="border-b-4 border-b-emerald-500 shadow-sm">
@@ -111,15 +117,15 @@ export default async function DashboardPage() {
             <Users className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-black">{teamCount} Kolegovia</div>
-            <p className="text-[10px] text-muted-foreground mt-1 font-bold text-emerald-600">AKTÍVNY PRÍSTUP</p>
+            <div className="text-2xl font-black">
+                {teamCount} {teamCount === 1 ? 'Kolega' : teamCount < 5 ? 'Kolegovia' : 'Kolegov'}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 font-bold text-emerald-600 uppercase">Aktívny prístup</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 pt-4">
-        
-        {/* 1. OVERDUE JOBS */}
         <Card className="col-span-4 shadow-md border-slate-200">
           <CardHeader className="bg-red-50/50 border-b">
             <div className="flex items-center gap-2">
@@ -131,7 +137,7 @@ export default async function DashboardPage() {
             <div className="space-y-4">
               {overdueJobs.length === 0 ? (
                 <div className="text-center py-10 border-2 border-dashed rounded-lg bg-emerald-50/30">
-                    <p className="text-sm text-emerald-600 font-bold italic">VŠETKO V TERMÍNE ✅</p>
+                    <p className="text-sm text-emerald-600 font-bold italic uppercase">Všetko v termíne ✅</p>
                 </div>
               ) : (
                 overdueJobs.map(job => (
@@ -150,7 +156,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 2. CLIENT STATS */}
         <Card className="col-span-3 shadow-md border-slate-200">
           <CardHeader className="border-b bg-slate-50/50">
             <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
@@ -173,7 +178,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 3. BUDGET ALERTS */}
         <Card className="col-span-7 shadow-md border-orange-200">
           <CardHeader className="bg-orange-50/50 border-b py-3">
             <div className="flex items-center gap-2">
@@ -199,12 +203,12 @@ export default async function DashboardPage() {
                     className={`h-3 rounded-full ${job.percentage > 100 ? '[&>div]:bg-red-600' : '[&>div]:bg-orange-500'}`} 
                   />
                   <div className="flex justify-between mt-4 text-[10px] font-black font-mono text-slate-500">
-                    <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-400 uppercase">Minuté</span>
+                    <div className="flex flex-col text-left">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Minuté</span>
                         <span>{job.spent.toFixed(2)}€</span>
                     </div>
                     <div className="flex flex-col text-right">
-                        <span className="text-[9px] text-slate-400 uppercase">Limit</span>
+                        <span className="text-[9px] text-slate-400 uppercase font-bold">Limit</span>
                         <span>{job.budget?.toFixed(2)}€</span>
                     </div>
                   </div>
