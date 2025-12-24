@@ -33,11 +33,16 @@ enum TimesheetStatus {
 model Agency {
   id         String   @id @default(uuid())
   name       String
+  
+  // NOVÉ: Unikátna adresa agentúry (napr. "super-creative")
+  slug       String   @unique 
+  
   logoUrl    String?
-  companyId  String?
-  vatId      String?
-  address    String?
-  email      String?
+  companyId  String?  
+  vatId      String?  
+  address    String?  
+  email      String?  
+  
   users      User[]
   clients    Client[]
   scopes     AgencyScope[]
@@ -150,8 +155,6 @@ model Timesheet {
   approvedBy      String?         
   approvedAt      DateTime?
   budgetItem      BudgetItem?
-
-  // --- NOVÉ POLIA PRE PAUZU ---
   isPaused           Boolean   @default(false)
   lastPauseStart     DateTime?
   totalPausedMinutes Int       @default(0)
