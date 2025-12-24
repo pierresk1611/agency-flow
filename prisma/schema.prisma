@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- ENUMS ---
 enum Role {
   SUPERADMIN
   ADMIN
@@ -28,6 +29,7 @@ enum TimesheetStatus {
   REJECTED
 }
 
+// --- MODELS ---
 model Agency {
   id         String   @id @default(uuid())
   name       String
@@ -75,7 +77,7 @@ model User {
   active       Boolean  @default(true)
   assignments  JobAssignment[]
   comments     Comment[]
-  tenderAssignments TenderAssignment[]
+  tenderAssignments TenderAssignment[] // SPÄTNÁ VÄZBA (User -> TenderAssignment)
 }
 
 model Client {
@@ -137,7 +139,7 @@ model JobAssignment {
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
   timesheets  Timesheet[]
-  comments    Comment[] // SPÄTNÁ VÄZBA OPRAVENÁ
+  comments    Comment[] 
   tenderAssignments TenderAssignment[]
 }
 
@@ -207,9 +209,9 @@ model Tender {
   isConverted Boolean @default(false)
   
   // SPÄTNÉ VÄZBY
-  assignments TenderAssignment[]
-  comments    Comment[]
-  files       File[]
+  assignments TenderAssignment[] // OPRAVENÁ: Toto už je správne
+  comments    Comment[]         
+  files       File[]            
   createdAt   DateTime  @default(now())
 }
 
@@ -220,7 +222,6 @@ model TenderAssignment {
     userId      String
     user        User     @relation(fields: [userId], references: [id])
     roleOnJob   String
-    // SPÄTNÁ VÄZBA (TenderAssignment -> JobAssignment)
     jobAssignmentId String? 
-    jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
+    jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id]) // SPÄTNÁ VÄZBA
 }
