@@ -3,243 +3,171 @@ import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { format, addDays } from 'date-fns'
-import { Download, AlertCircle, Clock, TrendingUp, Users, Euro, PieChart } from "lucide-react"
+import { AlertCircle, Clock, TrendingUp, Users, Euro, CheckCircle2, ListChecks, BarChart3 } from "lucide-react"
+
+// Importy našich nových grafov
 import { BudgetChart } from "@/components/charts/budget-chart"
 import { WorkloadChart } from "@/components/charts/workload-chart"
+import { TimesheetStatusChart } from "@/components/charts/timesheet-status-chart"
+import { JobStatusChart } from "@/components/charts/job-status-chart"
+import { PersonalTimeChart } from "@/components/charts/personal-time-chart"
 
-// Vynútime dynamické načítanie, aby Vercel nepadal pri builde
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({ params }: { params: { slug: string } }) {
   const session = getSession()
   if (!session) redirect('/login')
 
-  // 1. Overenie agentúry
-  const agency = await prisma.agency.findUnique({ 
-    where: { slug: params.slug } 
-  })
-  
+  const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
-
-  // Zabezpečenie izolácie - ak nie si Superadmin, musíš patriť do tejto agentúry
-  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
-    redirect('/login')
-  }
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) redirect('/login')
 
   const isCreative = session.role === 'CREATIVE'
   const now = new Date()
-  const criticalThreshold = addDays(now, 7) 
+  const criticalThreshold = addDays(now, 7)
 
-  // 2. NAČÍTANIE JOBOV (Filtrované cez klienta na agencyId)
+  // 1. DATA FETCH: JOBY
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
       campaign: { client: { agencyId: agency.id } },
-      // Ak je creative, vidí len svoje
       assignments: isCreative ? { some: { userId: session.userId } } : undefined
     },
-    include: { 
-      budgets: true, 
-      campaign: { include: { client: true } }, 
-      assignments: { include: { user: true } } 
-    }
+    include: { budgets: true, campaign: { include: { client: true } }, assignments: { include: { user: true } } }
   })
 
-  // 3. LOGIKA: TIMING (Overdue vs. Warning)
-  const overdueJobs = jobs.filter(j => j.status !== 'DONE' && j.deadline < now)
-  const warningJobs = jobs.filter(j => j.status !== 'DONE' && j.deadline >= now && j.deadline <= criticalThreshold)
+  // 2. TIMING ANALYTICS
+  const overdue = jobs.filter(j => j.status !== 'DONE' && j.deadline < now)
+  const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline >= now && j.deadline <= criticalThreshold)
 
-  // 4. LOGIKA: BUDGETY PRE GRAF (Plan vs Real)
-  // Konvertujeme na čisté čísla, aby Recharts nepadol
-  const budgetData = jobs
-    .filter(j => (j.budget || 0) > 0)
-    .slice(0, 6)
-    .map(j => ({
-        name: j.title.length > 12 ? j.title.substring(0, 10) + '...' : j.title,
-        plan: Number(j.budget || 0),
-        real: Number(j.budgets.reduce((sum, b) => sum + b.amount, 0))
-    }))
+  // 3. BUDGET ANALYTICS (Plan vs Real)
+  const budgetData = jobs.filter(j => (j.budget || 0) > 0).slice(0, 5).map(j => ({
+    name: j.title.substring(0, 10),
+    plan: Number(j.budget),
+    real: Number(j.budgets.reduce((sum, b) => sum + b.amount, 0))
+  }))
 
-  // 5. LOGIKA: VYŤAŽENOSŤ (Iba pre Admin/Traffic/Account)
+  // 4. WORKLOAD ANALYTICS (Admin only)
   let workloadData: any[] = []
   if (!isCreative) {
-      const allUsers = await prisma.user.findMany({ 
+    const users = await prisma.user.findMany({ 
         where: { agencyId: agency.id, active: true }, 
-        include: { 
-            _count: { 
-                select: { assignments: { where: { job: { status: { not: 'DONE' }, archivedAt: null } } } } 
-            } 
-        } 
-      })
-      workloadData = allUsers.map(u => ({
-          name: u.name || u.email.split('@')[0],
-          value: u._count.assignments
-      })).filter(v => v.value > 0)
+        include: { _count: { select: { assignments: { where: { job: { status: { not: 'DONE' } } } } } } } 
+    })
+    workloadData = users.map(u => ({ name: u.name || u.email.split('@')[0], value: u._count.assignments }))
   }
 
-  // 6. TIMESHEET STATUSY (Počítame samostatne pre stabilitu)
-  const pendingCount = await prisma.timesheet.count({
-      where: { 
-        status: 'PENDING',
-        endTime: { not: null },
-        jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } }
-      }
-  })
+  // 5. JOB STATUS ANALYTICS (Pie)
+  const statusCounts = {
+    TODO: jobs.filter(j => j.status === 'TODO').length,
+    IN_PROGRESS: jobs.filter(j => j.status === 'IN_PROGRESS').length,
+    DONE: jobs.filter(j => j.status === 'DONE').length,
+  }
+  const jobStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
 
-  const approvedCount = await prisma.timesheet.count({
-    where: { 
-      status: 'APPROVED',
-      jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } }
-    }
+  // 6. TIMESHEET ANALYTICS (Approved vs Pending)
+  const tsGrouped = await prisma.timesheet.groupBy({
+    by: ['status'],
+    where: { jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } } },
+    _count: true
   })
+  const tsData = [{
+    name: 'Timesheety',
+    approved: tsGrouped.find(g => g.status === 'APPROVED')?._count || 0,
+    pending: tsGrouped.find(g => g.status === 'PENDING')?._count || 0,
+  }]
 
-  // Celkové schválené náklady
-  const totalSpentAgg = await prisma.budgetItem.aggregate({
-      where: { job: { campaign: { client: { agencyId: agency.id } } } },
-      _sum: { amount: true }
-  })
-  const totalSpent = Number(totalSpentAgg._sum.amount || 0)
-
-  const teamCount = await prisma.user.count({ where: { active: true, agencyId: agency.id } })
+  // 7. KREATÍVCOVA ŠPECIÁLNA ANALYTIKA
+  let creativeTimeData: any[] = []
+  if (isCreative) {
+    const myTimesheets = await prisma.timesheet.findMany({
+        where: { jobAssignment: { userId: session.userId } },
+        orderBy: { startTime: 'asc' },
+        take: 10
+    })
+    creativeTimeData = myTimesheets.map(t => ({ name: format(new Date(t.startTime), 'dd.MM'), minutes: t.durationMinutes || 0 }))
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Manažérsky Panel</h2>
-          <p className="text-slate-500 text-sm">Agentúra: {agency.name}</p>
-        </div>
-        {!isCreative && (
-            <a href="/api/exports/budget" download>
-                <Button variant="outline" className="gap-2 shadow-sm font-bold border-slate-300">
-                    <Download className="h-4 w-4" /> Export CSV
-                </Button>
-            </a>
-        )}
+    <div className="space-y-6 pb-12">
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-black tracking-tighter uppercase italic">{isCreative ? 'Môj Výkon' : 'BI Dashboard'}</h2>
+        <Badge variant="outline" className="font-mono">{agency.name}</Badge>
       </div>
 
-      {/* KPI KARTY */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-blue-600 shadow-sm">
-            <CardContent className="pt-6">
-                <div className="flex justify-between items-center text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                    <span>{isCreative ? 'Moje úlohy' : 'Aktívne úlohy'}</span>
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="text-2xl font-black mt-1">{jobs.filter(j => j.status !== 'DONE').length}</div>
-            </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-600 shadow-sm">
-            <CardContent className="pt-6">
-                <div className="flex justify-between items-center text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                    <span>Mešká / Horí</span>
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                </div>
-                <div className="text-2xl font-black mt-1">{overdueJobs.length} / {warningJobs.length}</div>
-            </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-amber-500 shadow-sm">
-            <CardContent className="pt-6">
-                <div className="flex justify-between items-center text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                    <span>K schváleniu</span>
-                    <Clock className="h-4 w-4 text-amber-500" />
-                </div>
-                <div className="text-2xl font-black mt-1">{pendingCount}</div>
-            </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-emerald-600 shadow-sm">
-            <CardContent className="pt-6">
-                <div className="flex justify-between items-center text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                    <span>{isCreative ? 'Schválené' : 'Tím v akcii'}</span>
-                    <Users className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="text-2xl font-black mt-1">{isCreative ? approvedCount : teamCount}</div>
-            </CardContent>
-        </Card>
+      {/* KPI SEKICA */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-slate-900 text-white"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent></Card>
+        <Card className="bg-red-600 text-white"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80">Mešká</p><div className="text-2xl font-black">{overdue.length}</div></CardContent></Card>
+        <Card className="bg-amber-500 text-white"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80">Kritické (7 dní)</p><div className="text-2xl font-black">{warning.length}</div></CardContent></Card>
+        <Card className="bg-blue-600 text-white"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80">{isCreative ? 'Môj čas (min)' : 'Tím'}</p><div className="text-2xl font-black">{isCreative ? creativeTimeData.reduce((s,i) => s + i.minutes, 0) : teamCount}</div></CardContent></Card>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-        {/* GRAFY PRE MANAGMENT */}
-        {!isCreative && budgetData.length > 0 && (
-            <Card className="shadow-lg border-none ring-1 ring-slate-200">
-                <CardHeader className="border-b bg-slate-50/50 py-3">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Rozpočty: Plán vs. Realita</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                    <BudgetChart data={budgetData} />
-                </CardContent>
-            </Card>
-        )}
-
-        {!isCreative && workloadData.length > 0 && (
-            <Card className="shadow-lg border-none ring-1 ring-slate-200">
-                <CardHeader className="border-b bg-slate-50/50 py-3">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Vyťaženosť kolegov</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                    <WorkloadChart data={workloadData} />
-                </CardContent>
-            </Card>
-        )}
-
-        {/* KRITICKÉ TERMÍNY */}
-        <Card className={`shadow-lg border-none ring-1 ring-slate-200 ${isCreative || budgetData.length === 0 ? 'lg:col-span-2' : ''}`}>
-            <CardHeader className="border-b bg-red-50/50 py-3">
-                <CardTitle className="text-xs font-black uppercase tracking-widest text-red-900 flex items-center gap-2">
-                    <Clock className="h-4 w-4" /> Kritické termíny
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-3">
-                {overdueJobs.map(job => (
-                    <div key={job.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-red-900">{job.title}</span>
-                            <span className="text-[10px] text-red-700 font-bold uppercase">{job.campaign.client.name}</span>
-                        </div>
-                        <Badge variant="destructive" className="font-mono text-[10px]">PO TERMÍNE</Badge>
-                    </div>
-                ))}
-                {warningJobs.map(job => (
-                    <div key={job.id} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-amber-900">{job.title}</span>
-                            <span className="text-[10px] text-amber-700 font-bold uppercase">{job.campaign.client.name}</span>
-                        </div>
-                        <Badge variant="outline" className="border-amber-400 text-amber-700 font-mono text-[10px]">HORÍ (7 DNÍ)</Badge>
-                    </div>
-                ))}
-                {overdueJobs.length === 0 && warningJobs.length === 0 && (
-                    <div className="text-center py-10 text-slate-400 italic text-sm">Žiadne kritické termíny. ✅</div>
-                )}
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
+        
+        {/* --- PRVÝ RAD GRAFOV --- */}
+        <Card className="lg:col-span-8 shadow-xl">
+            <CardHeader className="border-b"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Euro className="h-4 w-4" /> Finančný stav projektov (Plán vs Real)</CardTitle></CardHeader>
+            <CardContent>
+                {isCreative ? <PersonalTimeChart data={creativeTimeData} /> : <BudgetChart data={budgetData} />}
             </CardContent>
         </Card>
 
-        {/* FINANČNÝ SUMÁR (Iba Admin) */}
+        <Card className="lg:col-span-4 shadow-xl">
+            <CardHeader className="border-b"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><ListChecks className="h-4 w-4" /> Stav úloh</CardTitle></CardHeader>
+            <CardContent className="flex flex-col items-center">
+                <JobStatusChart data={jobStatusData} />
+                <div className="grid grid-cols-3 gap-4 w-full text-center mt-4">
+                    <div><p className="text-[10px] font-bold text-red-500">TODO</p><p className="font-black">{statusCounts.TODO}</p></div>
+                    <div><p className="text-[10px] font-bold text-blue-500">WORK</p><p className="font-black">{statusCounts.IN_PROGRESS}</p></div>
+                    <div><p className="text-[10px] font-bold text-green-500">DONE</p><p className="font-black">{statusCounts.DONE}</p></div>
+                </div>
+            </CardContent>
+        </Card>
+
+        {/* --- DRUHÝ RAD GRAFOV (Iba Admin) --- */}
         {!isCreative && (
-            <Card className="shadow-lg border-none ring-1 ring-slate-200 lg:col-span-2">
-                <CardHeader className="border-b bg-slate-900 text-white py-3">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Finančný Sumár Agentúry</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-sm text-slate-500 font-medium">Celková hodnota schválenej práce</p>
-                            <p className="text-4xl font-black text-slate-900">{totalSpent.toFixed(2)} €</p>
-                        </div>
-                        <div className="text-right space-y-1">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Schválené výkazy</p>
-                            <p className="text-xl font-bold text-emerald-600">{approvedCount} ks</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <>
+                <Card className="lg:col-span-6 shadow-xl">
+                    <CardHeader className="border-b"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Users className="h-4 w-4" /> Vyťaženosť tímu (Počet jobov)</CardTitle></CardHeader>
+                    <CardContent><WorkloadChart data={workloadData} /></CardContent>
+                </Card>
+
+                <Card className="lg:col-span-6 shadow-xl">
+                    <CardHeader className="border-b"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Efektivita schvaľovania výkazov</CardTitle></CardHeader>
+                    <CardContent><TimesheetStatusChart data={tsData} /></CardContent>
+                </Card>
+            </>
         )}
+
+        {/* KRITICKÉ LISTY (Vždy na očiach) */}
+        <Card className="lg:col-span-12 border-2 border-red-100 shadow-2xl">
+            <CardHeader className="bg-red-50 border-b"><CardTitle className="text-red-600 font-black uppercase text-sm italic">Urgentné zadania (Overdue & Soon)</CardTitle></CardHeader>
+            <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {overdue.map(j => (
+                        <div key={j.id} className="p-4 bg-red-600 text-white rounded-xl shadow-lg animate-pulse">
+                            <p className="text-[10px] font-black uppercase opacity-70">{j.campaign.client.name}</p>
+                            <h4 className="font-bold truncate">{j.title}</h4>
+                            <p className="text-[10px] mt-2 font-mono">DEADLINE BOL: {format(new Date(j.deadline), 'dd.MM.yyyy')}</p>
+                        </div>
+                    ))}
+                    {warning.map(j => (
+                        <div key={j.id} className="p-4 bg-amber-100 border-2 border-amber-400 rounded-xl">
+                            <p className="text-[10px] font-black uppercase text-amber-700">{j.campaign.client.name}</p>
+                            <h4 className="font-bold text-slate-900 truncate">{j.title}</h4>
+                            <p className="text-[10px] mt-2 font-mono text-amber-700">KONČÍ O {Math.ceil((new Date(j.deadline).getTime() - now.getTime()) / (1000*60*60*24))} DNÍ</p>
+                        </div>
+                    ))}
+                    {overdue.length === 0 && warning.length === 0 && (
+                        <div className="col-span-full py-10 text-center text-emerald-600 font-bold italic">Žiadne horiace termíny. Skvelá práca! 🥂</div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+
       </div>
     </div>
   )
