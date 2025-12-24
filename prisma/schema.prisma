@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS ---
+enum Role {
+  SUPERADMIN
+  ADMIN
+  ACCOUNT
+  CREATIVE
+  TRAFFIC
+}
+
+enum JobStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TimesheetStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// --- MODELS ---
+
+model Agency {
+  id         String   @id @default(uuid())
+  name       String
+  logoUrl    String?
+  companyId  String?
+  vatId      String?
+  address    String?
+  email      String?
+  users      User[]
+  clients    Client[]
+  scopes     AgencyScope[]
+  positions  AgencyPosition[]
+  createdAt  DateTime @default(now())
+}
+
+model AgencyScope {
+  id        String   @id @default(uuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+  name      String   
+  @@unique([agencyId, name])
+}
+
+model AgencyPosition {
+  id        String   @id @default(uuid())
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id])
+  name      String   
+  @@unique([agencyId, name])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  agencyId     String?
+  agency       Agency?  @relation(fields: [agencyId], references: [id])
+  role         Role
+  name         String?
+  position     String?
+  email        String   @unique
+  passwordHash String
+  hourlyRate   Float?   @default(0) 
+  costRate     Float?   @default(0) 
+  active       Boolean  @default(true)
+  assignments  JobAssignment[]
+  comments     Comment[]
+}
+
+model Client {
+  id         String   @id @default(uuid())
+  agencyId   String
+  agency     Agency   @relation(fields: [agencyId], references: [id])
+  name       String
+  priority   Int 
+  scope      String?  
+  contacts   ContactPerson[]
+  files      File[]
+  campaigns  Campaign[]
+  archivedAt DateTime?
+  createdAt  DateTime @default(now())
+  @@unique([agencyId, name])
+}
+
+model ContactPerson {
+  id        String  @id @default(uuid())
+  clientId  String
+  client    Client  @relation(fields: [clientId], references: [id])
+  name      String
+  email     String?
+  phone     String?
+  position  String?
+}
+
+model Campaign {
+  id          String   @id @default(uuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  name        String
+  description String?
+  jobs        Job[]
+  archivedAt  DateTime?
+}
+
+model Job {
+  id          String   @id @default(uuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  title       String
+  status      JobStatus @default(TODO)
+  deadline    DateTime
+  budget      Float?   @default(0)
+  assignments JobAssignment[]
+  comments    Comment[]
+  files       File[]
+  budgets     BudgetItem[]
+  archivedAt  DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model JobAssignment {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  roleOnJob   String   
+  timesheets  Timesheet[]
+}
+
+model Timesheet {
+  id              String          @id @default(uuid())
+  jobAssignmentId String
+  jobAssignment   JobAssignment   @relation(fields: [jobAssignmentId], references: [id])
+  startTime       DateTime
+  endTime         DateTime?       
+  durationMinutes Int?
+  description     String?         
+  status          TimesheetStatus @default(PENDING)
+  approvedBy      String?         
+  approvedAt      DateTime?
+  budgetItem      BudgetItem?
+
+  // --- NOVÉ POLIA PRE PAUZU ---
+  isPaused           Boolean   @default(false)
+  lastPauseStart     DateTime?
+  totalPausedMinutes Int       @default(0)
+}
+
+model BudgetItem {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id])
+  timesheetId String   @unique 
+  timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
+  hours       Float
+  rate        Float
+  amount      Float    
+  createdAt   DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model File {
+  id         String   @id @default(uuid())
+  jobId      String?  
+  job        Job?     @relation(fields: [jobId], references: [id])
+  clientId   String?
+  client     Client?  @relation(fields: [clientId], references: [id])
+  uploadedBy String
+  fileUrl    String
+  fileType   String
+  createdAt  DateTime @default(now())
+}

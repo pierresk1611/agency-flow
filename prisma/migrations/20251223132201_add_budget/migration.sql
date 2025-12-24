@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Job" ADD COLUMN     "budget" DOUBLE PRECISION DEFAULT 0;
