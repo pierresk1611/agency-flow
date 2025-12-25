@@ -4,16 +4,23 @@ import { useState, useEffect } from 'react'
 import { format, startOfWeek, addDays, isValid } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Clock, Loader2, Pencil } from 'lucide-react'
+import { Trash2, Clock, Pencil, Loader2 } from 'lucide-react'
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts' 
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { 
+    Dialog, 
+    DialogContent, 
+    DialogHeader, 
+    DialogTitle, 
+    DialogTrigger, 
+    DialogFooter 
+} from "@/components/ui/dialog"
 
-// TLAČIDLO PRE DELETE (s automatickým refreshom)
+// TLAČIDLO PRE DELETE
 const DeleteButton = ({ entryId }: { entryId: string }) => {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -38,11 +45,12 @@ const DeleteButton = ({ entryId }: { entryId: string }) => {
     )
 }
 
-// DIALÓG PRE EDITÁCIU (NOVÝ KOMPONENT)
+// DIALÓG PRE EDITÁCIU
 const EditDialog = ({ entry, allJobs, onSave }: { entry: any, allJobs: any[], onSave: () => void }) => {
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     
+    // Nastavíme, či je JobId, alebo default "INTERNAL"
     const [jobId, setJobId] = useState(entry.jobId || 'INTERNAL')
     const [date, setDate] = useState(format(new Date(entry.date), 'yyyy-MM-dd'))
     const [minutes, setMinutes] = useState(entry.minutes.toString())
@@ -98,7 +106,6 @@ const EditDialog = ({ entry, allJobs, onSave }: { entry: any, allJobs: any[], on
         </Dialog>
     )
 }
-
 
 export function PlannerDisplay({ initialEntries, allJobs }: { initialEntries: any[], allJobs: any[] }) {
     const router = useRouter()
@@ -167,7 +174,7 @@ export function PlannerDisplay({ initialEntries, allJobs }: { initialEntries: an
                                         <p className="font-medium truncate">{e.title}</p>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <Badge variant="outline" className="text-[8px] h-4">{e.minutes}m</Badge>
+                                        <Badge variant="outline" className="text-[8px] h-4 mb-1">{e.minutes}m</Badge>
                                         <EditDialog entry={e} allJobs={allJobs} onSave={() => router.refresh()} />
                                         <DeleteButton entryId={e.id} />
                                     </div>
