@@ -3,7 +3,6 @@ import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { format, addDays } from 'date-fns'
 import { AlertCircle, Clock, TrendingUp, Users, Euro, CheckCircle2, ListChecks, Download, PieChart as PieIcon } from "lucide-react"
@@ -30,7 +29,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const now = new Date()
   const criticalThreshold = addDays(now, 7)
 
-  // 1. DATA FETCH
+  // 1. NAČÍTANIE JOBOV
   const jobs = await prisma.job.findMany({
     where: { archivedAt: null, campaign: { client: { agencyId: agency.id } }, assignments: isCreative ? { some: { userId: session.userId } } : undefined },
     include: { budgets: true, campaign: { include: { client: true } }, assignments: { include: { user: true } } }
@@ -41,17 +40,19 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline >= now && j.deadline <= criticalThreshold)
 
   const budgetData = jobs.filter(j => (j.budget || 0) > 0).slice(0, 5).map(j => ({
-    id: j.id, // Pridané pre preklik
+    id: j.id,
     name: j.title.substring(0, 10),
     plan: Number(j.budget),
     real: Number(j.budgets.reduce((sum, b) => sum + b.amount, 0))
   }))
 
-  const users = await prisma.user.findMany({ 
+  const usersCount = await prisma.user.count({ where: { agencyId: agency.id, active: true } })
+  
+  const allUsersForWorkload = await prisma.user.findMany({ 
     where: { agencyId: agency.id, active: true }, 
     include: { _count: { select: { assignments: { where: { job: { status: { not: 'DONE' }, archivedAt: null } } } } } } 
   })
-  const workloadData = users.map(u => ({ name: u.name || u.email.split('@')[0], value: u._count.assignments })).filter(v => v.value > 0)
+  const workloadData = allUsersForWorkload.map(u => ({ name: u.name || u.email.split('@')[0], value: u._count.assignments })).filter(v => v.value > 0)
 
   const statusCounts = { TODO: jobs.filter(j => j.status === 'TODO').length, IN_PROGRESS: jobs.filter(j => j.status === 'IN_PROGRESS').length, DONE: jobs.filter(j => j.status === 'DONE').length }
   const jobStatusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
@@ -83,24 +84,37 @@ export default async function DashboardPage({ params }: { params: { slug: string
       {/* KPI KARTY */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href={`/${params.slug}/jobs`} className="block transform transition hover:scale-105">
-            <Card className="bg-slate-900 text-white h-full"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50 tracking-widest">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent></Card>
+            <Card className="bg-slate-900 text-white h-full shadow-lg"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50 tracking-widest">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent></Card>
         </Link>
+        
         <Card className="bg-red-600 text-white shadow-lg"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80 tracking-widest">Mešká</p><div className="text-2xl font-black">{overdue.length}</div></CardContent></Card>
+        
         <Card className="bg-amber-500 text-white shadow-lg"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80 tracking-widest">Kritické (7d)</p><div className="text-2xl font-black">{warning.length}</div></CardContent></Card>
-        <Link href={`/${params.slug}/agency`} className="block transform transition hover:scale-105">
-            <Card className="bg-blue-600 text-white h-full"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80 tracking-widest">{isCreative ? 'Môj čas (min)' : 'Tím'}</p><div className="text-2xl font-black">{isCreative ? creativeTimeData.reduce((s,i) => s + i.minutes, 0) : users.length}</div></CardContent></Card>
+        
+        {/* OPRAVA BUGU: Kreatívec ide na Timesheety, Admin na Agency */}
+        <Link 
+            href={isCreative ? `/${params.slug}/timesheets` : `/${params.slug}/agency`} 
+            className="block transform transition hover:scale-105"
+        >
+            <Card className="bg-blue-600 text-white h-full shadow-lg">
+                <CardContent className="pt-4">
+                    <p className="text-[10px] font-bold uppercase opacity-80 tracking-widest">
+                        {isCreative ? 'Môj čas (min)' : 'Tím'}
+                    </p>
+                    <div className="text-2xl font-black">
+                        {isCreative ? creativeTimeData.reduce((s,i) => s + i.minutes, 0) : usersCount}
+                    </div>
+                </CardContent>
+            </Card>
         </Link>
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
-        
-        {/* GRAF 1: PLÁN VS REAL */}
         <Card className="lg:col-span-8 shadow-xl border-none ring-1 ring-slate-200">
             <CardHeader className="border-b bg-slate-50/50">
                 <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                    {/* OPRAVENÁ IKONKA PRE KREATÍVCA (KROK 4) */}
                     {isCreative ? <Clock className="h-3 w-3" /> : <Euro className="h-3 w-3" />} 
-                    {isCreative ? 'Moja časová investícia' : 'Finančný stav projektov (Klik na bar pre detail)'}
+                    {isCreative ? 'Moja časová investícia' : 'Finančný stav projektov'}
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -108,7 +122,6 @@ export default async function DashboardPage({ params }: { params: { slug: string
             </CardContent>
         </Card>
 
-        {/* GRAF 2: STAV ÚLOH */}
         <Link href={`/${params.slug}/jobs`} className="lg:col-span-4 block group">
             <Card className="h-full shadow-xl border-none ring-1 ring-slate-200 group-hover:ring-blue-500 transition-all">
                 <CardHeader className="border-b bg-slate-50/50"><CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><ListChecks className="h-3 w-3" /> Stav úloh</CardTitle></CardHeader>
@@ -123,11 +136,10 @@ export default async function DashboardPage({ params }: { params: { slug: string
             </Card>
         </Link>
 
-        {/* GRAFY PRE ADMINA */}
         {!isCreative && (
             <>
                 <Card className="lg:col-span-6 shadow-xl border-none ring-1 ring-slate-200">
-                    <CardHeader className="border-b bg-slate-50/50"><CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Users className="h-3 w-3" /> Vyťaženosť tímu (Klik pre manažment)</CardTitle></CardHeader>
+                    <CardHeader className="border-b bg-slate-50/50"><CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Users className="h-3 w-3" /> Vyťaženosť tímu</CardTitle></CardHeader>
                     <CardContent className="pt-6"><WorkloadChart data={workloadData} slug={params.slug} /></CardContent>
                 </Card>
 
@@ -140,19 +152,18 @@ export default async function DashboardPage({ params }: { params: { slug: string
             </>
         )}
 
-        {/* URGENTNÉ KARTY (S PREKLIKOM) */}
         <Card className="lg:col-span-12 border-2 border-red-100 shadow-2xl overflow-hidden">
-            <CardHeader className="bg-red-600 text-white py-3"><CardTitle className="font-black uppercase text-xs italic tracking-wider flex items-center gap-2"><AlertCircle className="h-4 w-4" /> Urgentné úlohy (Klik pre detail)</CardTitle></CardHeader>
+            <CardHeader className="bg-red-600 text-white py-3"><CardTitle className="font-black uppercase text-xs italic tracking-wider flex items-center gap-2"><AlertCircle className="h-4 w-4" /> Urgentné úlohy</CardTitle></CardHeader>
             <CardContent className="pt-6 bg-red-50/30">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {overdue.map(j => (
                         <Link key={j.id} href={`/${params.slug}/jobs/${j.id}`} className="block transform transition hover:scale-105">
                             <div className="p-4 bg-white border-2 border-red-500 rounded-xl shadow-md">
-                                <p className="text-[9px] font-black uppercase text-red-600 mb-1">{j.campaign?.client?.name}</p>
+                                <p className="text-[9px] font-black uppercase text-red-600 mb-1">{j.campaign?.client?.name || 'Klient'}</p>
                                 <h4 className="font-bold text-slate-900 truncate">{j.title}</h4>
                                 <div className="mt-3 flex justify-between items-center">
                                     <Badge variant="destructive" className="font-mono text-[9px]">MEŠKÁ</Badge>
-                                    <span className="text-[10px] font-bold text-red-600">{format(new Date(j.deadline), 'dd.MM')}</span>
+                                    <span className="text-[10px] font-bold text-red-600">{format(new Date(j.deadline), 'dd.MM.yyyy')}</span>
                                 </div>
                             </div>
                         </Link>
@@ -160,11 +171,11 @@ export default async function DashboardPage({ params }: { params: { slug: string
                     {warning.map(j => (
                         <Link key={j.id} href={`/${params.slug}/jobs/${j.id}`} className="block transform transition hover:scale-105">
                             <div className="p-4 bg-white border-2 border-amber-400 rounded-xl shadow-md">
-                                <p className="text-[9px] font-black uppercase text-amber-600 mb-1">{j.campaign?.client?.name}</p>
+                                <p className="text-[9px] font-black uppercase text-amber-600 mb-1">{j.campaign?.client?.name || 'Klient'}</p>
                                 <h4 className="font-bold text-slate-900 truncate">{j.title}</h4>
                                 <div className="mt-3 flex justify-between items-center">
                                     <Badge variant="outline" className="border-amber-500 text-amber-600 font-mono text-[9px]">HORÍ</Badge>
-                                    <span className="text-[10px] font-bold text-amber-600">{format(new Date(j.deadline), 'dd.MM')}</span>
+                                    <span className="text-[10px] font-bold text-amber-600">{format(new Date(j.deadline), 'dd.MM.yyyy')}</span>
                                 </div>
                             </div>
                         </Link>
