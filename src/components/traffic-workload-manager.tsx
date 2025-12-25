@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, ArrowRightLeft, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 interface UserWithJobs {
   id: string
@@ -29,6 +29,9 @@ interface UserWithJobs {
 
 export function TrafficWorkloadManager() {
   const router = useRouter()
+  const params = useParams()
+  const slug = params.slug as string
+
   const [users, setUsers] = useState<UserWithJobs[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -75,9 +78,9 @@ export function TrafficWorkloadManager() {
   }
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
+    <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4 font-mono uppercase tracking-tighter">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="text-sm font-medium font-mono uppercase tracking-widest text-[10px]">Analyzujem vyťaženosť tímu...</p>
+        <p className="text-[10px] font-black">Analyzujem kapacity...</p>
     </div>
   )
 
@@ -90,7 +93,7 @@ export function TrafficWorkloadManager() {
   return (
     <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
       {users.length === 0 ? (
-          <div className="col-span-full py-20 text-center text-slate-400 border-2 border-dashed rounded-xl">
+          <div className="col-span-full py-20 text-center text-slate-400 border-2 border-dashed rounded-xl font-mono uppercase text-xs">
               Nenašli sa žiadni kolegovia.
           </div>
       ) : (

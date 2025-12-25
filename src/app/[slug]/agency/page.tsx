@@ -6,6 +6,7 @@ import { TrafficWorkloadManager } from "@/components/traffic-workload-manager"
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 
+// KRITICKÁ POISTKA PRE VERCEL:
 export const dynamic = 'force-dynamic'
 
 export default function AgencyPage({ params }: { params: { slug: string } }) {
@@ -30,16 +31,16 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
       <Tabs defaultValue="traffic" className="space-y-6">
         <div className="border-b">
             <TabsList className="bg-transparent h-auto p-0 gap-6">
-                <TabsTrigger value="traffic" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest">
+                <TabsTrigger value="traffic" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest transition-all">
                     Traffic / Kapacita
                 </TabsTrigger>
-                <TabsTrigger value="clients" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest">
+                <TabsTrigger value="clients" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest transition-all">
                     Klienti
                 </TabsTrigger>
-                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest">
+                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest transition-all">
                     Kolegovia
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest">
+                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-sm font-bold uppercase tracking-widest transition-all">
                     Nastavenia
                 </TabsTrigger>
             </TabsList>
