@@ -9,8 +9,17 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   const session = getSession()
   if (!session) redirect('/login')
 
-  const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
+  const agency = await prisma.agency.findUnique({ 
+    where: { slug: params.slug } 
+  })
+  
   if (!agency) return notFound()
+
+  // Kontrola práv (Traffic menu je pre Admin, Traffic, Account, Superadmin)
+  const allowedRoles = ['ADMIN', 'TRAFFIC', 'ACCOUNT', 'SUPERADMIN']
+  if (!allowedRoles.includes(session.role)) {
+      // Ak je creative, uvidí to tiež, ale s obmedzenými funkciami (iba žiadosti)
+  }
 
   // Načítame všetkých aktívnych užívateľov s ich prácou
   const users = await prisma.user.findMany({
@@ -19,13 +28,21 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     include: {
       assignments: {
         where: { job: { status: { not: 'DONE' }, archivedAt: null } },
-        include: { job: { include: { campaign: { include: { client: true } } } } }
+        include: { 
+            job: { 
+                include: { 
+                    campaign: { 
+                        include: { client: true } 
+                    } 
+                } 
+            } 
+        }
       }
     }
   })
 
-  // LOGIKA ZOSKUPOVANIA: Podľa políčka "position"
-  const groups: Record<string, typeof users> = {}
+  // Logika zoskupovania podľa pozícií
+  const groups: Record<string, any[]> = {}
   users.forEach(u => {
     const pos = u.position || "Ostatní / Nezaradení"
     if (!groups[pos]) groups[pos] = []
@@ -34,9 +51,9 @@ export default async function TrafficPage({ params }: { params: { slug: string }
 
   return (
     <div className="space-y-8 pb-20">
-      <div>
+      <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Traffic & Kapacita</h2>
-        <p className="text-muted-foreground text-sm">Prehľad vyťaženosti tímu agentúry {agency.name} podľa odbornosti.</p>
+        <p className="text-muted-foreground text-sm font-medium">Prehľad vyťaženosti tímu podľa odbornosti.</p>
       </div>
 
       {Object.entries(groups).map(([groupName, members]) => (
@@ -48,8 +65,11 @@ export default async function TrafficPage({ params }: { params: { slug: string }
                 </h3>
                 <div className="h-px flex-1 bg-slate-200" />
             </div>
-            {/* Posielame len členov danej skupiny do managera */}
-            <TrafficWorkloadManager initialUsers={members} role={session.role} slug={params.slug} />
+            <TrafficWorkloadManager 
+                initialUsers={members} 
+                role={session.role} 
+                slug={params.slug} 
+            />
         </div>
       ))}
     </div>
