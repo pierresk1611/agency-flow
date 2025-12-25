@@ -22,7 +22,7 @@ export function AddJobDialog({ campaignId }: { campaignId: string }) {
     setLoading(true)
 
     try {
-      // Voláme API, ktoré sme práve vytvorili
+      // API volanie teraz používa správny, pomenovaný parameter
       const res = await fetch(`/api/campaigns/${campaignId}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,7 +34,7 @@ export function AddJobDialog({ campaignId }: { campaignId: string }) {
         setTitle('')
         setDeadline('')
         setBudget('0')
-        router.refresh() // <--- Toto zabezpečí, že sa job hneď objaví
+        router.refresh() // Po úspechu refreshni, aby sa job objavil
       } else {
         const err = await res.json()
         alert("Chyba: " + (err.error || "Neznáma chyba"))
