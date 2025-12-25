@@ -17,7 +17,7 @@ export default async function PlannerPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // 1. NAČÍTANIE JOBOV (pre dialóg, musí byť zjednodušené)
+  // 1. NAČÍTANIE JOBOV (pre dialóg)
   const allJobs = await prisma.job.findMany({
       where: { 
           archivedAt: null, 
@@ -25,10 +25,10 @@ export default async function PlannerPage({ params }: { params: { slug: string }
       }, 
       include: { 
           campaign: { include: { client: true } },
-          assignments: { where: { userId: session.userId } } // Filtruj len joby, kde je priradený
+          assignments: { where: { userId: session.userId } }
       }
   })
-  // Filter: Kreatívec môže plánovať len tie, kde je priradený
+  // Filter: Iba joby, kde je používateľ priradený
   const usersJobs = allJobs.filter(job => job.assignments.length > 0);
   
 
@@ -39,11 +39,12 @@ export default async function PlannerPage({ params }: { params: { slug: string }
     orderBy: { date: 'asc' }
   })
 
+  // 3. LOGIKA KALENDÁRA
   const today = new Date()
   const weekStart = startOfWeek(today, { weekStartsOn: 1 })
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
-  // LOGIKA GRAFU: SUMARIZÁCIA NAPLÁNOVANÉHO ČASU
+  // 4. LOGIKA GRAFU
   const plannedHoursData = days.map(day => {
     const totalMinutes = entries
       .filter(e => isValid(new Date(e.date)) && format(new Date(e.date), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd'))
@@ -60,7 +61,6 @@ export default async function PlannerPage({ params }: { params: { slug: string }
     <div className="space-y-6 pb-20">
       <div className="flex justify-between items-center border-b pb-4">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Môj Týždeň</h2>
-        {/* Posielame len tie joby, na ktoré má používateľ prístup (ktoré sú mu priradené) */}
         <AddPlannerEntryDialog allJobs={usersJobs} />
       </div>
 
@@ -72,7 +72,7 @@ export default async function PlannerPage({ params }: { params: { slug: string }
           </CardHeader>
           <CardContent className="pt-4 h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={plannedHoursData} margin={{ top: 10, right: 1:0, left: -20, bottom: 0 }}>
+                  <BarChart data={plannedHoursData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
                       <YAxis fontSize={10} axisLine={false} tickLine={false} />
                       <Tooltip />
@@ -102,7 +102,10 @@ export default async function PlannerPage({ params }: { params: { slug: string }
                     dayEntries.map(e => (
                         <div key={e.id} className="p-2 bg-white border rounded text-[10px] shadow-sm flex justify-between items-center">
                             <div>
-                                <p className="font-bold text-blue-600 uppercase">{e.job?.campaign?.client?.name || 'Interná práca'}</p>
+                                {/* Ak job neexistuje (napr. interná práca, jobId je null) */}
+                                <p className="font-bold text-blue-600 uppercase">
+                                    {e.job?.campaign?.client?.name || 'Interná práca'}
+                                </p>
                                 <p className="font-medium truncate">{e.title}</p>
                             </div>
                             <div className="flex flex-col items-end">
