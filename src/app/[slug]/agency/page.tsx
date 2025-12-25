@@ -1,5 +1,4 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ClientsList } from "@/components/clients-list"
 import { TeamList } from "@/components/team-list"
 import { AgencySettings } from "@/components/agency-settings"
 import { getSession } from "@/lib/session"
@@ -14,6 +13,7 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
       redirect('/login')
   }
 
+  // Ak je creative, nemá tu čo robiť
   if (session.role === 'CREATIVE') {
     redirect(`/${params.slug}`)
   }
@@ -25,13 +25,10 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
         <p className="text-muted-foreground text-sm font-medium">Správa tímu a firemných nastavení.</p>
       </div>
 
-      <Tabs defaultValue="clients" className="space-y-6">
+      <Tabs defaultValue="team" className="space-y-6">
         <div className="border-b">
             <TabsList className="bg-transparent h-auto p-0 gap-6">
-                <TabsTrigger value="clients" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
-                    Klienti
-                </TabsTrigger>
-                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-90um rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
+                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
                     Tím / Užívatelia
                 </TabsTrigger>
                 <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
@@ -39,11 +36,6 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
                 </TabsTrigger>
             </TabsList>
         </div>
-
-        <TabsContent value="clients" className="space-y-4 outline-none">
-            {/* KLIENTI: Tieto boli presunuté do sidebaru, preto tu musia byť späť ako obsah Tabs */}
-            <ClientsList />
-        </TabsContent>
 
         <TabsContent value="team" className="space-y-4 outline-none">
            <TeamList />
