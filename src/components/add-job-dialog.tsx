@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Plus, Loader2 } from 'lucide-react'
 
-export function AddJobDialog({ campaignId }: { campaignId: string }) {
+export function AddJobDialog({ campaignId }: { campaignId: string }) { // <-- Potrebujeme campaignId
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -22,11 +22,16 @@ export function AddJobDialog({ campaignId }: { campaignId: string }) {
     setLoading(true)
 
     try {
-      // API volanie teraz používa správny, pomenovaný parameter
-      const res = await fetch(`/api/campaigns/${campaignId}/jobs`, {
+      // API volanie volá novú, statickú adresu a posiela campaignId v body
+      const res = await fetch(`/api/create-job`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, deadline, budget })
+        body: JSON.stringify({ 
+            title, 
+            deadline, 
+            budget,
+            campaignId: campaignId // <--- POSIELAME CAMPAIGN ID
+        })
       })
       
       if (res.ok) {
