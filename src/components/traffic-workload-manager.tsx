@@ -37,13 +37,12 @@ export function TrafficWorkloadManager() {
   const fetchData = async () => {
     try {
       const res = await fetch('/api/agency/users?includeJobs=true')
-      if (!res.ok) throw new Error("Nepodarilo sa načítať dáta o vyťaženosti.")
-      const data = await res.json()
-      if (Array.isArray(data)) {
-          setUsers(data)
-      } else {
-          setUsers([])
+      if (!res.ok) {
+          const errData = await res.json()
+          throw new Error(errData.error || "Nepodarilo sa načítať dáta.")
       }
+      const data = await res.json()
+      setUsers(Array.isArray(data) ? data : [])
     } catch (e: any) { 
         console.error(e)
         setError(e.message)
@@ -78,13 +77,13 @@ export function TrafficWorkloadManager() {
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="text-sm font-medium">Analyzujem kapacity tímu...</p>
+        <p className="text-sm font-medium font-mono uppercase tracking-widest text-[10px]">Analyzujem vyťaženosť tímu...</p>
     </div>
   )
 
   if (error) return (
-    <div className="p-8 text-center border-2 border-dashed rounded-xl text-red-500 bg-red-50">
-        Chyba: {error}
+    <div className="p-8 text-center border-2 border-dashed rounded-xl text-red-500 bg-red-50 font-mono text-xs">
+        SERVER ERROR: {error}
     </div>
   )
 
@@ -96,7 +95,7 @@ export function TrafficWorkloadManager() {
           </div>
       ) : (
         users.map(user => (
-            <Card key={user.id} className="shadow-sm border-slate-200 hover:shadow-md transition-shadow">
+            <Card key={user.id} className="shadow-sm border-slate-200 hover:shadow-md transition-shadow overflow-hidden">
               <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
@@ -109,35 +108,35 @@ export function TrafficWorkloadManager() {
                         {user.name || user.email.split('@')[0]}
                     </CardTitle>
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest truncate">
-                        {user.position || 'Bez pozície'}
+                        {user.position || 'Člen tímu'}
                     </span>
                   </div>
-                  <Badge variant="secondary" className="ml-auto bg-white border-slate-200 text-slate-700 font-bold">
-                    {user.assignments?.length || 0} joby
+                  <Badge variant="secondary" className="ml-auto bg-white border-slate-200 text-slate-700 font-bold text-[10px]">
+                    {user.assignments?.length || 0} JOBY
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="divide-y divide-slate-100">
                   {!user.assignments || user.assignments.length === 0 ? (
-                    <div className="p-10 text-center text-xs text-slate-400 italic">
+                    <div className="p-10 text-center text-[10px] text-slate-400 italic uppercase font-bold tracking-widest">
                         Kolega je aktuálne voľný.
                     </div>
                   ) : (
                     user.assignments.map(assign => (
-                      <div key={assign.id} className="p-4 hover:bg-slate-50/50 transition-colors">
+                      <div key={assign.id} className="p-4 hover:bg-slate-50/30 transition-colors">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <div className="min-w-0 flex-1">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">
-                                {assign.job.campaign.client.name}
+                                {assign.job?.campaign?.client?.name || 'Interný Job'}
                             </p>
                             <h4 className="text-sm font-bold text-slate-800 truncate leading-tight">
-                                {assign.job.title}
+                                {assign.job?.title || 'Nepomenovaná úloha'}
                             </h4>
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-[10px] flex items-center gap-1 text-slate-500 font-bold uppercase">
                                 <Calendar className="h-3 w-3 text-slate-300" /> 
-                                {format(new Date(assign.job.deadline), 'dd.MM.yyyy')}
+                                {assign.job?.deadline ? format(new Date(assign.job.deadline), 'dd.MM.yyyy') : 'Bez termínu'}
                               </span>
                             </div>
                           </div>
@@ -147,7 +146,7 @@ export function TrafficWorkloadManager() {
                               onValueChange={(newId) => handleReassign(assign.id, newId)}
                               disabled={reassigning === assign.id}
                             >
-                              <SelectTrigger className="h-9 text-[10px] font-black border-slate-200 bg-white hover:border-blue-400 transition-all">
+                              <SelectTrigger className="h-8 text-[9px] font-black border-slate-200 bg-white hover:border-blue-400 transition-all uppercase tracking-tighter">
                                 <ArrowRightLeft className="h-3 w-3 mr-2 text-slate-400" />
                                 <SelectValue placeholder="PREHODIŤ" />
                               </SelectTrigger>

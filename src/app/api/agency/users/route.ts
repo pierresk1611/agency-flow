@@ -19,8 +19,8 @@ export async function GET(request: Request) {
         active: true 
       },
       orderBy: { email: 'asc' },
-      include: includeJobs ? {
-        assignments: {
+      include: {
+        assignments: includeJobs ? {
             where: { 
                 job: { 
                     status: { not: 'DONE' }, 
@@ -36,14 +36,14 @@ export async function GET(request: Request) {
                     } 
                 } 
             }
-        }
-      } : undefined
+        } : false
+      }
     })
     
-    return NextResponse.json(users)
+    return NextResponse.json(users || [])
   } catch (error: any) {
     console.error("GET USERS ERROR:", error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Chyba pri načítaní dát: ' + error.message }, { status: 500 })
   }
 }
 
