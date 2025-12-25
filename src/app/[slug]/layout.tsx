@@ -9,7 +9,7 @@ export default async function AgencyLayout({
   params
 }: {
   children: React.ReactNode
-  params: { slug: string }
+  params: { slug: string } // <--- Tu je náš slug
 }) {
   const session = getSession()
   if (!session) redirect('/login')
@@ -26,14 +26,11 @@ export default async function AgencyLayout({
     else redirect('/login')
   }
 
-  // Ak je creative a snaží sa vliezť na /agency manuálne cez URL, vyhodíme ho
-  // To ošetríme priamo v page.tsx v ďalšom kroku
-
   return (
     <div className="h-full relative">
       <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] bg-gray-900">
-        {/* POSIELAME ROLU DO SIDEBARU */}
-        <Sidebar slug={params.slug} role={session.role} />
+        {/* Posielame slug a rolu do sidebaru */}
+        <Sidebar slug={params.slug} role={session.role} /> 
       </div>
       
       <main className="md:pl-72 min-h-screen bg-slate-50/50">
