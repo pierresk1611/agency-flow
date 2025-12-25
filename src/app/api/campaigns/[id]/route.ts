@@ -2,19 +2,17 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
-export async function PATCH(request: Request, { params }: { params: { jobId: string } }) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
     const session = getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const updated = await prisma.job.update({
-      where: { id: params.jobId },
+    const updated = await prisma.campaign.update({
+      where: { id: params.id },
       data: {
-        title: body.title,
-        budget: body.budget ? parseFloat(body.budget) : undefined,
-        status: body.status,
-        deadline: body.deadline ? new Date(body.deadline) : undefined
+        description: body.description,
+        name: body.name
       }
     })
     return NextResponse.json(updated)
