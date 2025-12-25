@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from '@/components/ui/badge'
 import { Building, Plus, Loader2, ArrowRight, Trash2, RotateCcw, Pencil } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation' // <--- IMPORT usePathname
 import Link from 'next/link'
 
 interface Client {
@@ -18,19 +18,21 @@ interface Client {
 }
 interface ScopeOption { id: string; name: string }
 
-export function ClientsList({ role, userId }: { role?: string, userId?: string }) {
+export function ClientsList() {
   const router = useRouter()
+  const pathname = usePathname()
+  // Vytiahneme slug z URL (napr. /super-creative/clients -> super-creative)
+  const slug = pathname.split('/')[1] 
+
   const [clients, setClients] = useState<Client[]>([])
   const [scopesList, setScopesList] = useState<ScopeOption[]>([]) 
   const [loading, setLoading] = useState(true)
   
   // Stavy pre Dialog
   const [open, setOpen] = useState(false)
-  const [editingClient, setEditingClient] = useState<Client | null>(null) // Ak je null = vytvárame, ak je objekt = editujeme
-
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   
-  // Form dáta
   const [newName, setNewName] = useState('')
   const [newPriority, setNewPriority] = useState('3')
   const [selectedScope, setSelectedScope] = useState<string[]>([]) 
@@ -38,7 +40,6 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
   const [customScope, setCustomScope] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // 1. Načítanie dát
   const refreshData = async () => {
     setLoading(true)
     try {
@@ -62,41 +63,21 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
 
   useEffect(() => { refreshData() }, [showArchived])
 
-  // 2. Otvorenie okna pre NOVÉHO klienta
   const openNewDialog = () => {
-      setEditingClient(null)
-      setNewName('')
-      setNewPriority('3')
-      setSelectedScope([])
-      setIsOtherSelected(false)
-      setCustomScope('')
-      setOpen(true)
+      setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope(''); setOpen(true)
   }
 
-  // 3. Otvorenie okna pre EDITÁCIU
   const openEditDialog = (client: Client) => {
       setEditingClient(client)
       setNewName(client.name)
       setNewPriority(client.priority.toString())
-      
-      // Rozparsovanie scope stringu na pole
       const currentScopes = client.scope ? client.scope.split(',').map(s => s.trim()) : []
-      
-      // Zistíme, ktoré scopes sú štandardné a ktoré "Iné"
       const standardScopeNames = scopesList.map(s => s.name)
       const standard = currentScopes.filter(s => standardScopeNames.includes(s))
       const custom = currentScopes.filter(s => !standardScopeNames.includes(s))
-
       setSelectedScope(standard)
-      
-      if (custom.length > 0) {
-          setIsOtherSelected(true)
-          setCustomScope(custom.join(', '))
-      } else {
-          setIsOtherSelected(false)
-          setCustomScope('')
-      }
-      
+      if (custom.length > 0) { setIsOtherSelected(true); setCustomScope(custom.join(', ')) } 
+      else { setIsOtherSelected(false); setCustomScope('') }
       setOpen(true)
   }
 
@@ -104,14 +85,12 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
       setSelectedScope(prev => prev.includes(scopeName) ? prev.filter(s => s !== scopeName) : [...prev, scopeName])
   }
 
-  // 4. Uloženie (Create alebo Update)
   const handleSave = async () => {
     if (!newName.trim()) return
     setSubmitting(true)
     
     let finalScopeList = [...selectedScope]
     if (isOtherSelected && customScope.trim()) {
-        // Pridáme custom scopes
         const customs = customScope.split(',').map(s => s.trim())
         finalScopeList = [...finalScopeList, ...customs]
     }
@@ -128,7 +107,6 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
         
         if (res.ok) {
             setOpen(false)
-            // Ak sme pridali nový scope cez "Iné", refreshneme aj zoznam scopes
             if (isOtherSelected) {
                  const sRes = await fetch('/api/agency/scopes')
                  if(sRes.ok) setScopesList(await sRes.json())
@@ -165,7 +143,6 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
                 <button onClick={() => setShowArchived(true)} className={`px-3 py-1 text-[10px] font-bold rounded-md ${showArchived ? 'bg-white shadow' : 'text-slate-500'}`}>ARCHÍV</button>
             </div>
         </div>
-        
         {!showArchived && (
             <Button onClick={openNewDialog} className="bg-slate-900 text-white"><Plus className="mr-2 h-4 w-4" /> Nový Klient</Button>
         )}
@@ -214,7 +191,8 @@ export function ClientsList({ role, userId }: { role?: string, userId?: string }
                                     <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50" onClick={() => handleArchive(client.id, true)}><RotateCcw className="h-4 w-4 mr-1" /> Obnoviť</Button>
                                 ) : (
                                     <>
-                                        <Link href={`/${window.location.pathname.split('/')[1]}/clients/${client.id}`}><Button variant="ghost" size="sm" className="text-blue-600 font-bold text-xs h-7">DETAIL</Button></Link>
+                                        {/* OPRAVENÝ LINK NA DETAIL */}
+                                        <Link href={`/${slug}/clients/${client.id}`}><Button variant="ghost" size="sm" className="text-blue-600 font-bold text-xs h-7">DETAIL</Button></Link>
                                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(client)} className="h-7 w-7 p-0"><Pencil className="h-3.5 w-3.5 text-slate-400" /></Button>
                                         <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 h-7 w-7 p-0" onClick={() => handleArchive(client.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                                     </>
