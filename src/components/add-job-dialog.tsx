@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Plus, Loader2 } from 'lucide-react'
@@ -12,33 +12,53 @@ export function AddJobDialog({ campaignId }: { campaignId: string }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
   const [budget, setBudget] = useState('0')
 
   const handleCreate = async () => {
+    if (!title || !deadline) return
     setLoading(true)
+
     try {
+      // Voláme API, ktoré sme práve vytvorili
       const res = await fetch(`/api/campaigns/${campaignId}/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, deadline, budget })
       })
+      
       if (res.ok) {
-        setOpen(false); setTitle(''); setDeadline(''); setBudget('0');
-        router.refresh()
+        setOpen(false)
+        setTitle('')
+        setDeadline('')
+        setBudget('0')
+        router.refresh() // <--- Toto zabezpečí, že sa job hneď objaví
+      } else {
+        const err = await res.json()
+        alert("Chyba: " + (err.error || "Neznáma chyba"))
       }
-    } catch (e) { console.error(e) } 
-    finally { setLoading(false) }
+    } catch (e) { 
+        console.error(e)
+        alert("Nepodarilo sa spojiť so serverom.")
+    } finally { 
+        setLoading(false) 
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 text-blue-600">+ Nový job</Button>
+        <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-bold uppercase tracking-wider">
+            + Nový job
+        </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Pridať Job do kampane</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Pridať Job do kampane</DialogTitle>
+          <DialogDescription>Vytvorte novú úlohu pre tím.</DialogDescription>
+        </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Názov jobu</Label>
@@ -56,8 +76,8 @@ export function AddJobDialog({ campaignId }: { campaignId: string }) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleCreate} disabled={loading || !title || !deadline} className="bg-slate-900 text-white">
-            {loading ? <Loader2 className="animate-spin" /> : "Vytvoriť Job"}
+          <Button onClick={handleCreate} disabled={loading || !title || !deadline} className="bg-slate-900 text-white w-full sm:w-auto">
+            {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Vytvoriť Job"}
           </Button>
         </DialogFooter>
       </DialogContent>
