@@ -76,11 +76,9 @@ model User {
   hourlyRate   Float?   @default(0) 
   costRate     Float?   @default(0) 
   active       Boolean  @default(true)
-  
-  // Vzťahy
   assignments  JobAssignment[]
   comments     Comment[]
-  tenderAssignments TenderAssignment[] // SPÄTNÁ VÄZBA NA USERA
+  tenderAssignments TenderAssignment[]
 }
 
 model Client {
@@ -126,7 +124,6 @@ model Job {
   status      JobStatus @default(TODO)
   deadline    DateTime
   budget      Float?   @default(0)
-  
   assignments JobAssignment[]
   comments    Comment[]
   files       File[]
@@ -142,12 +139,11 @@ model JobAssignment {
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
-  
   timesheets  Timesheet[]
   
-  // OPRAVENÉ SPÄTNÉ VÄZBY (Podľa chyby P1012):
+  // OPRAVA VÄZIEB (Pre P1012 error):
   comments    Comment[] 
-  tenderAssignments TenderAssignment[] 
+  tenderAssignments TenderAssignment[]
 }
 
 model Timesheet {
@@ -182,15 +178,15 @@ model BudgetItem {
 model Comment {
   id        String   @id @default(uuid())
   
-  // Väzba na Job (Voliteľná)
+  // Väzba na Job
   jobId     String?
   job       Job?     @relation(fields: [jobId], references: [id])
   
-  // Väzba na JobAssignment (NOVÁ - OPRAVA CHYBY)
+  // Väzba na JobAssignment (OPRAVA CHYBY)
   jobAssignmentId String?
   jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
 
-  // Väzba na Tender (Voliteľná)
+  // Väzba na Tender
   tenderId  String?
   tender    Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
   
@@ -232,16 +228,13 @@ model Tender {
 
 model TenderAssignment {
     id          String   @id @default(uuid())
-    
     tenderId    String
     tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-    
     userId      String
     user        User     @relation(fields: [userId], references: [id])
-    
     roleOnJob   String
-
-    // Väzba na JobAssignment (NOVÁ - OPRAVA CHYBY)
+    
+    // Väzba na JobAssignment (OPRAVA CHYBY)
     jobAssignmentId String? 
     jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
 }

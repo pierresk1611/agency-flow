@@ -4,8 +4,36 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
+  console.log('--- ŠTART MASTER SEEDU ---')
   const passwordHash = await bcrypt.hash('password123', 10)
 
+  // 1. SUPERADMIN
+  const saasAgency = await prisma.agency.upsert({
+    where: { id: 'saas-system-id' },
+    update: { slug: 'admin' },
+    create: { 
+      id: 'saas-system-id', 
+      name: 'AgencyFlow HQ', 
+      slug: 'admin',
+      email: 'support@agencyflow.com'
+    }
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'super@agencyflow.com' },
+    update: { passwordHash, agencyId: saasAgency.id },
+    create: {
+      email: 'super@agencyflow.com',
+      name: 'Marek Superadmin',
+      role: Role.SUPERADMIN,
+      agencyId: saasAgency.id,
+      passwordHash,
+      active: true
+    }
+  })
+  console.log('✅ Superadmin: super@agencyflow.com')
+
+  // 2. KLIENSKÁ AGENTÚRA
   const agency = await prisma.agency.upsert({
     where: { id: 'seed-agency-id' },
     update: { slug: 'super-creative' },
@@ -15,81 +43,72 @@ async function main() {
     }
   })
 
-  // 1. VIACERO UŽÍVATEĽOV (Pre graf vyťaženosti)
+  // 3. TÍM (Traffic, Account, Creative...)
   const usersData = [
-    { email: 'traffic@agency.com', name: 'Peter Traffic', role: Role.TRAFFIC },
-    { email: 'account@agency.com', name: 'Lucka Account', role: Role.ACCOUNT },
-    { email: 'creative@agency.com', name: 'Jozef Dizajnér', role: Role.CREATIVE },
-    { email: 'copy@agency.com', name: 'Milan Copywriter', role: Role.CREATIVE },
-    { email: 'dev@agency.com', name: 'Andrej Developer', role: Role.CREATIVE },
+    { email: 'traffic@agency.com', name: 'Peter Traffic', role: Role.TRAFFIC, hourly: 0, cost: 0 },
+    { email: 'account@agency.com', name: 'Lucka Account', role: Role.ACCOUNT, hourly: 0, cost: 0 },
+    { email: 'creative@agency.com', name: 'Jozef Dizajnér', role: Role.CREATIVE, hourly: 50, cost: 30 },
+    { email: 'copy@agency.com', name: 'Milan Copywriter', role: Role.CREATIVE, hourly: 45, cost: 25 },
   ]
 
   for (const u of usersData) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: { agencyId: agency.id, passwordHash },
-      create: { ...u, agencyId: agency.id, passwordHash, active: true, hourlyRate: 50, costRate: 30 }
+      update: { agencyId: agency.id, passwordHash, role: u.role as Role },
+      create: { 
+        email: u.email, name: u.name, role: u.role as Role, 
+        agencyId: agency.id, passwordHash, active: true,
+        hourlyRate: u.hourly, costRate: u.cost
+      }
     })
   }
-
+  
   const creatives = await prisma.user.findMany({ where: { role: Role.CREATIVE, agencyId: agency.id } })
 
-  // 2. VIACERO KLIENTOV
-  const clients = ['TechCorp s.r.o.', 'Audi Slovakia', 'Tatra Banka', 'McDonalds']
+  // 4. ČÍSELNÍKY
+  const defaultScopes = ["ATL", "BTL", "DIGITAL", "SOCIAL MEDIA", "PR", "BRANDING"]
+  for (const s of defaultScopes) {
+    await prisma.agencyScope.upsert({ where: { agencyId_name: { agencyId: agency.id, name: s } }, update: {}, create: { agencyId: agency.id, name: s } })
+  }
+  const defaultPositions = ["Art Director", "Copywriter", "Account Manager", "Developer", "Project Manager"]
+  for (const p of defaultPositions) {
+    await prisma.agencyPosition.upsert({ where: { agencyId_name: { agencyId: agency.id, name: p } }, update: {}, create: { agencyId: agency.id, name: p } })
+  }
+
+  // 5. DATA (Klienti, Joby)
+  const clients = ['TechCorp s.r.o.', 'Audi Slovakia']
   for (const name of clients) {
     const c = await prisma.client.upsert({
       where: { agencyId_name: { agencyId: agency.id, name } },
       update: {},
-      create: { name, priority: Math.floor(Math.random() * 5) + 1, agencyId: agency.id, scope: 'Digital, ATL' }
+      create: { name, priority: 5, agencyId: agency.id, scope: 'Digital' }
     })
-
-    const campaign = await prisma.campaign.create({ data: { name: `Kampaň ${name} 2025`, clientId: c.id } })
-
-    // 3. VEĽA JOBOV V RÔZNYCH STAVOCH (Pre grafy)
-    for (let i = 1; i <= 3; i++) {
-        const status = i === 1 ? JobStatus.TODO : i === 2 ? JobStatus.IN_PROGRESS : JobStatus.DONE
-        const deadline = new Date()
-        deadline.setDate(deadline.getDate() + (Math.random() * 20 - 10)) // Niektoré meškajú, niektoré v budúcnosti
-
-        const job = await prisma.job.create({
-            data: {
-                title: `Job ${i} pre ${name}`,
-                campaignId: campaign.id,
-                status: status,
-                deadline: deadline,
-                budget: (Math.random() * 2000) + 500,
-                assignments: {
-                    create: {
-                        userId: creatives[Math.floor(Math.random() * creatives.length)].id,
-                        roleOnJob: 'Specialist'
-                    }
-                }
-            }
-        })
-
-        // 4. TIMESHEETY (Pre graf schvaľovania a Plan vs Real)
-        if (status !== JobStatus.TODO) {
-            const ts = await prisma.timesheet.create({
-                data: {
-                    jobAssignmentId: (await prisma.jobAssignment.findFirst({ where: { jobId: job.id } }))!.id,
-                    startTime: new Date(),
-                    endTime: new Date(),
-                    durationMinutes: (Math.random() * 240) + 60,
-                    status: i === 3 ? 'APPROVED' : 'PENDING',
-                    description: 'Práca na zadaní'
-                }
-            })
-
-            if (ts.status === 'APPROVED') {
-                const hours = ts.durationMinutes! / 60
-                await prisma.budgetItem.create({
-                    data: { jobId: job.id, timesheetId: ts.id, hours, rate: 50, amount: hours * 50 }
-                })
-            }
+    const camp = await prisma.campaign.create({ data: { name: `Kampaň ${name} 2025`, clientId: c.id } })
+    await prisma.job.create({
+        data: {
+            title: `Job pre ${name}`,
+            campaignId: camp.id,
+            status: JobStatus.IN_PROGRESS,
+            deadline: new Date(),
+            budget: 1500.0,
+            assignments: { create: { userId: creatives[0].id, roleOnJob: 'Lead' } }
         }
-    }
+    })
   }
-  console.log('🚀 Mega Seed hotový!')
+
+  // 6. TENDER
+  await prisma.tender.create({
+    data: {
+        title: "Veľký Tender: Telekomunikácie",
+        status: JobStatus.TODO,
+        deadline: new Date('2025-05-01'),
+        budget: 5000.0,
+        agencyId: agency.id,
+        isConverted: false
+    }
+  })
+
+  console.log('--- SEED HOTOVÝ ---')
 }
 
 main().catch(e => console.error(e)).finally(() => prisma.$disconnect())
