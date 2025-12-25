@@ -1,58 +1,25 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ClientsList } from "@/components/clients-list"
-import { TeamList } from "@/components/team-list"
-import { AgencySettings } from "@/components/agency-settings"
-import { getSession } from "@/lib/session"
-import { redirect } from "next/navigation"
+import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
+import { redirect, notFound } from 'next/navigation'
+import { ClientsList } from '@/components/clients-list'
 
 export const dynamic = 'force-dynamic'
 
-export default function AgencyPage() {
+export default async function AgencyClientsPage({ params }: { params: { slug: string } }) {
   const session = getSession()
-  
-  if (!session) {
-      redirect('/login')
-  }
+  if (!session) redirect('/login')
 
-  // Kreatívec sem vôbec nesmie vstúpiť
-  if (session.role === 'CREATIVE') {
-    redirect('/')
-  }
+  const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
+  if (!agency) return notFound()
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Administrácia</h2>
-        <p className="text-muted-foreground text-sm font-medium">Správa klientskej bázy, tímu a firemných nastavení.</p>
+        <h2 className="text-3xl font-black text-slate-900 uppercase italic">Klienti</h2>
+        <p className="text-muted-foreground text-sm">Prehľad firiem a klientsky newsfeed.</p>
       </div>
-
-      <Tabs defaultValue="clients" className="space-y-6">
-        <div className="border-b">
-            <TabsList className="bg-transparent h-auto p-0 gap-6">
-                <TabsTrigger value="clients" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
-                    Klienti
-                </TabsTrigger>
-                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
-                    Tím / Užívatelia
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
-                    Moja Agentúra
-                </TabsTrigger>
-            </TabsList>
-        </div>
-
-        <TabsContent value="clients" className="space-y-4 outline-none">
-          <ClientsList />
-        </TabsContent>
-
-        <TabsContent value="team" className="space-y-4 outline-none">
-           <TeamList />
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-4 outline-none">
-            <AgencySettings />
-        </TabsContent>
-      </Tabs>
+      {/* Komponent ClientsList už máme, len ho tu použijeme */}
+      <ClientsList role={session.role} userId={session.userId} />
     </div>
   )
 }

@@ -82,6 +82,11 @@ model User {
   tenderAssignments TenderAssignment[]
   requestsSent     ReassignmentRequest[] @relation("RequestBy")
   requestsReceived ReassignmentRequest[] @relation("TargetUser")
+  
+  // NOVÉ: Plánovač a Notifikácie
+  plannerEntries   PlannerEntry[]
+  notifications    Notification[]
+  clientNotes      ClientNote[]
 }
 
 model Client {
@@ -94,9 +99,21 @@ model Client {
   contacts   ContactPerson[]
   files      File[]
   campaigns  Campaign[]
+  notes      ClientNote[] // NOVÉ: Newsfeed / Poznámky
   archivedAt DateTime?
   createdAt  DateTime @default(now())
   @@unique([agencyId, name])
+}
+
+model ClientNote {
+  id        String   @id @default(uuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  text      String
+  isPinned  Boolean  @default(false) // Dôležité info (prístupy) navrchu
+  createdAt DateTime @default(now())
 }
 
 model ContactPerson {
@@ -131,6 +148,7 @@ model Job {
   comments    Comment[]
   files       File[]
   budgets     BudgetItem[]
+  plannerEntries PlannerEntry[]
   archivedAt  DateTime?
   createdAt   DateTime @default(now())
 }
@@ -146,6 +164,30 @@ model JobAssignment {
   comments    Comment[]
   tenderAssignments TenderAssignment[]
   reassignmentRequests ReassignmentRequest[]
+}
+
+model PlannerEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  date      DateTime
+  minutes   Int      @default(60)
+  title     String?
+  isDone    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model ReassignmentRequest {
@@ -176,8 +218,6 @@ model Timesheet {
   isPaused           Boolean   @default(false)
   lastPauseStart     DateTime?
   totalPausedMinutes Int       @default(0)
-
-  // --- NOVÉ: URGOVANIE ---
   isUrgent           Boolean   @default(false)
 }
 
