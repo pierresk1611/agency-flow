@@ -13,7 +13,25 @@ import { Loader2, ArrowRightLeft, Calendar, MessageSquareShare } from 'lucide-re
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
-export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUsers: any[], role: string, slug: string }) {
+interface UserWithJobs {
+  id: string
+  name: string | null
+  email: string
+  position: string | null
+  assignments: {
+    id: string
+    userId: string
+    roleOnJob: string
+    job: {
+      id: string
+      title: string
+      deadline: string
+      campaign: { client: { name: string } }
+    }
+  }[]
+}
+
+export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUsers: UserWithJobs[], role: string, slug: string }) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   
@@ -22,6 +40,7 @@ export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUs
   const [reason, setReason] = useState('')
   const [targetUserId, setTargetUserId] = useState('')
 
+  // Priame prehodenie (Admin/Traffic)
   const handleDirectReassign = async (assignmentId: string, newUserId: string) => {
     setLoadingId(assignmentId)
     try {
@@ -31,13 +50,11 @@ export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUs
         body: JSON.stringify({ assignmentId, newUserId })
       })
       if (res.ok) router.refresh()
-    } catch (e) { 
-        console.error(e) 
-    } finally { 
-        setLoadingId(null) 
-    }
+    } catch (e) { console.error(e) }
+    finally { setLoadingId(null) }
   }
 
+  // Odoslanie žiadosti (Creative)
   const handleRequestSend = async () => {
     if (!targetUserId || !reason) return
     setLoadingId('request')
@@ -48,64 +65,59 @@ export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUs
         body: JSON.stringify({ assignmentId: activeAssign.id, targetUserId, reason })
       })
       if (res.ok) {
-        alert("Žiadosť bola odoslaná na schválenie.")
+        alert("Žiadosť odoslaná!")
         setRequestOpen(false)
-        setReason('')
-        setTargetUserId('')
         router.refresh()
       }
-    } catch (e) { 
-        console.error(e) 
-    } finally { 
-        setLoadingId(null) 
-    }
+    } catch (e) { console.error(e) }
+    finally { setLoadingId(null) }
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-      {initialUsers.map((user) => (
+    <div className="grid gap-6 grid-cols-1 xl:grid-cols-2">
+      {initialUsers.map(user => (
         <Card key={user.id} className="shadow-sm border-slate-200 overflow-hidden bg-white">
-          <CardHeader className="bg-slate-50/50 border-b py-3 px-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8 border shadow-sm">
-                <AvatarFallback className="text-[10px] font-bold bg-white text-slate-600 uppercase">
+          <CardHeader className="bg-slate-50/50 border-b py-4 px-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                <AvatarFallback className="bg-slate-900 text-white font-black text-sm uppercase">
                     {(user.name || user.email).charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col">
-                <CardTitle className="text-xs font-bold text-slate-800">
+              <div className="flex flex-col min-w-0">
+                <CardTitle className="text-sm font-bold text-slate-800 truncate">
                     {user.name || user.email.split('@')[0]}
                 </CardTitle>
+                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest truncate">
+                    {user.position || 'Bez pozície'}
+                </span>
               </div>
-              <Badge variant="secondary" className="ml-auto text-[9px] font-bold uppercase">
-                {user.assignments.length} Úlohy
+              <Badge variant="secondary" className="ml-auto bg-white border-slate-200 text-slate-700 font-bold text-[10px]">
+                {user.assignments?.length || 0} Úlohy
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
               {user.assignments.length === 0 ? (
-                  <div className="p-6 text-center text-[10px] text-slate-400 italic">
+                  <div className="p-6 text-center text-[10px] text-slate-400 italic uppercase tracking-widest">
                       Bez aktívnych priradení.
                   </div>
               ) : (
                 user.assignments.map((assign: any) => (
-                    <div key={assign.id} className="p-3 flex justify-between items-center group hover:bg-slate-50/50 transition-colors">
-                      <div className="min-w-0 pr-2">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                            {assign.job?.campaign?.client?.name || 'Interný projekt'}
-                        </p>
-                        <h4 className="text-xs font-bold text-slate-800 truncate">
-                            {assign.job?.title}
-                        </h4>
+                    <div key={assign.id} className="p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 group transition-colors hover:bg-slate-50/50">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[8px] font-black text-slate-400 uppercase">{assign.job?.campaign?.client?.name || 'Interný Job'}</p>
+                        <h4 className="text-xs font-bold text-slate-800 truncate">{assign.job?.title}</h4>
                       </div>
     
                       {role !== 'CREATIVE' ? (
                         <Select 
-                            onValueChange={(val) => handleDirectReassign(assign.id, val)} 
-                            disabled={loadingId === assign.id}
+                          onValueChange={(val) => handleDirectReassign(assign.id, val)}
+                          disabled={loadingId === assign.id}
                         >
-                          <SelectTrigger className="h-7 text-[8px] w-28 font-bold uppercase tracking-tighter bg-white shadow-sm">
+                          <SelectTrigger className="h-8 text-[9px] w-full sm:w-28 font-bold uppercase tracking-tighter bg-white shadow-sm">
+                              <ArrowRightLeft className="h-3 w-3 mr-2 text-slate-400" />
                               <SelectValue placeholder="PREHODIŤ" />
                           </SelectTrigger>
                           <SelectContent>
@@ -120,7 +132,7 @@ export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUs
                         <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase" 
+                            className="h-8 text-[9px] font-bold text-blue-600 hover:text-blue-700 uppercase w-full sm:w-auto" 
                             onClick={() => { setActiveAssign(assign); setRequestOpen(true) }}
                         >
                             <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
@@ -134,48 +146,26 @@ export function TrafficWorkloadManager({ initialUsers, role, slug }: { initialUs
         </Card>
       ))}
 
+      {/* DIALÓG ŽIADOSTI */}
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-          <DialogContent className="max-w-md">
-              <DialogHeader>
-                  <DialogTitle className="text-lg font-bold uppercase italic tracking-tight">Žiadosť o presun práce</DialogTitle>
-                  <DialogDescription className="text-xs">
-                      Vaša žiadosť bude doručená Traffic manažérovi.
-                  </DialogDescription>
-              </DialogHeader>
+          <DialogContent>
+              <DialogHeader><DialogTitle className="text-lg">Žiadosť o presun práce</DialogTitle></DialogHeader>
               <div className="grid gap-6 py-4">
-                  <div className="grid gap-2">
-                      <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Navrhnúť kolegu</Label>
+                  <div className="grid gap-2"><Label>Navrhnúť kolegu</Label>
                       <Select onValueChange={setTargetUserId} value={targetUserId}>
-                          <SelectTrigger className="bg-slate-50 border-slate-200">
-                              <SelectValue placeholder="Vyberte kolegu..." />
-                          </SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder="Vyberte kolegu..." /></SelectTrigger>
                           <SelectContent>
-                              {initialUsers.map(u => (
-                                  <SelectItem key={u.id} value={u.id}>
-                                      {u.name || u.email}
-                                  </SelectItem>
-                              ))}
+                              {initialUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>)}
                           </SelectContent>
                       </Select>
                   </div>
-                  <div className="grid gap-2">
-                      <Label className="text-xs font-bold uppercase text-slate-500 tracking-widest">Dôvod žiadosti</Label>
-                      <Textarea 
-                        value={reason} 
-                        onChange={e => setReason(e.target.value)} 
-                        placeholder="Napr. Preťaženie, choroba..." 
-                        className="min-h-[100px] bg-slate-50 border-slate-200"
-                      />
+                  <div className="grid gap-2"><Label>Dôvod (pre Admina)</Label>
+                      <Textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Napr. Preťaženie..." />
                   </div>
               </div>
               <DialogFooter>
-                  <Button variant="outline" onClick={() => setRequestOpen(false)}>Zrušiť</Button>
-                  <Button 
-                    onClick={handleRequestSend} 
-                    disabled={loadingId === 'request' || !targetUserId || !reason} 
-                    className="bg-slate-900 text-white px-8"
-                  >
-                    {loadingId === 'request' ? <Loader2 className="h-4 w-4 animate-spin" /> : "Odoslať žiadosť"}
+                  <Button onClick={handleRequestSend} disabled={loadingId === 'request'} className="bg-slate-900 text-white w-full">
+                    {loadingId === 'request' ? <Loader2 className="animate-spin" /> : "Odoslať žiadosť"}
                   </Button>
               </DialogFooter>
           </DialogContent>

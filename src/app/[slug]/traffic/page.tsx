@@ -1,9 +1,9 @@
-import { TrafficWorkloadManager } from '@/components/traffic-workload-manager'
+import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { TrafficWorkloadManager } from '@/components/traffic-workload-manager'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,23 +14,25 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // NAČÍTANIE DÁT PRE TRAFFIC MANAGER (Useri + Ich Joby)
+  // OCHRANA: Len Admin/Traffic/Superadmin
+  const allowedRoles = ['ADMIN', 'TRAFFIC', 'SUPERADMIN']
+  if (!allowedRoles.includes(session.role)) {
+    redirect(`/${params.slug}`)
+  }
+
+  // NAČÍTANIE VŠETKÝCH AKTÍVNYCH UŽÍVATEĽOV S ICH PRÁCOU (Pre manažment)
   const users = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     orderBy: { position: 'asc' },
     include: {
       assignments: {
         where: { job: { status: { not: 'DONE' }, archivedAt: null } },
-        include: { 
-            job: { 
-                include: { campaign: { include: { client: true } } } 
-            } 
-        }
+        include: { job: { include: { campaign: { include: { client: true } } } } }
       }
     }
   })
 
-  // LOGIKA ZOSKUPOVANIA: Podľa políčka "position"
+  // ZOSKUPOVANIE PODĽA POZÍCIE
   const groups: Record<string, any[]> = {}
   users.forEach(u => {
     const pos = u.position || "Ostatní / Nezaradení"
@@ -54,7 +56,6 @@ export default async function TrafficPage({ params }: { params: { slug: string }
                 </h3>
                 <div className="h-px flex-1 bg-slate-200" />
             </div>
-            {/* POSIELAME NAČÍTANÉ DÁTA PRIAMO KOMPONENTU */}
             <TrafficWorkloadManager 
                 initialUsers={members} 
                 role={session.role} 
