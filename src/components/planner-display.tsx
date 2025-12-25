@@ -1,18 +1,44 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format, startOfWeek, addDays, isValid, differenceInDays } from 'date-fns'
+import { format, startOfWeek, addDays, isValid } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Clock, CalendarDays } from 'lucide-react'
+import { Trash2, Clock, CalendarDays, Loader2 } from 'lucide-react'
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts' 
+import { useRouter } from 'next/navigation'
+
+// TLAČIDLO PRE DELETE (s automatickým refreshom)
+const DeleteButton = ({ entryId }: { entryId: string }) => {
+    const router = useRouter()
+    const [loading, setLoading] = useState(false)
+    
+    const handleDelete = async () => {
+        if(!confirm("Naozaj vymazať túto naplánovanú položku?")) return
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/planner/${entryId}`, { method: 'DELETE' })
+            if (res.ok) router.refresh() 
+        } catch(e) { console.error(e) } finally { setLoading(false) }
+    }
+    return (
+        <div className="flex items-center">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin text-red-500" /> : (
+                <Trash2 
+                    className="h-3 w-3 text-red-400 cursor-pointer hover:text-red-600" 
+                    onClick={handleDelete}
+                />
+            )}
+        </div>
+    )
+}
 
 export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
     const [entries] = useState(initialEntries)
     const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
-        setIsMounted(true) // Zabezpečí, že Recharts sa nespustí na serveri
+        setIsMounted(true)
     }, [])
 
     const today = new Date()
@@ -28,17 +54,15 @@ export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
       return { name: format(day, 'E'), hodiny: totalMinutes / 60, minutes: totalMinutes }
     })
     
-    // UI: Ak to ešte nie je namontované, zobraziť placeholder
     if (!isMounted) return <div className="h-[250px] w-full bg-slate-50 animate-pulse rounded-xl" />
 
 
     return (
         <div className="space-y-6">
-            {/* GRAF VYŤAŽENOSTI NA TÝŽDEŇ */}
             <Card className="shadow-lg border-none ring-1 ring-slate-200 overflow-hidden">
-                <CardHeader className="p-4 bg-slate-900 text-white flex flex-row justify-between items-center">
+                <CardHeader className="p-4 bg-slate-900 text-white flex flex-row items-center justify-between">
                     <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Clock className="h-4 w-4" /> Naplánovaná Kapacita</CardTitle>
-                    <Badge variant="secondary" className="bg-white/10 text-white font-bold text-xs">{plannedHoursData.reduce((s,i) => s + i.minutes, 0)} min</Badge>
+                    <Badge variant="secondary" className="bg-white/10 text-white font-bold text-xs">{Math.floor(plannedHoursData.reduce((s,i) => s + i.minutes, 0) / 60)}h</Badge>
                 </CardHeader>
                 <CardContent className="pt-4 h-[250px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -76,7 +100,7 @@ export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
                                     </div>
                                     <div className="flex flex-col items-end">
                                         <Badge variant="outline" className="text-[8px] h-4 mb-1">{e.minutes}m</Badge>
-                                        <Trash2 className="h-3 w-3 text-red-400 cursor-pointer hover:text-red-600" />
+                                        <DeleteButton entryId={e.id} />
                                     </div>
                                 </div>
                             ))
@@ -88,4 +112,4 @@ export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
             </div>
         </div>
     )
-}
+}```
