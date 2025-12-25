@@ -4,7 +4,7 @@ import { getSession } from '@/lib/session'
 
 export async function POST(
   request: Request,
-  { params }: { params: { tenderId: string } }
+  { params }: { params: { jobId: string } }
 ) {
   try {
     const session = getSession()
@@ -17,19 +17,19 @@ export async function POST(
         return NextResponse.json({ error: 'Chýba odkaz na súbor' }, { status: 400 })
     }
 
-    // Uložíme súbor priradený k Tendru
+    // Uložíme súbor priradený k Jobu
     const file = await prisma.file.create({
       data: {
-        tenderId: params.tenderId,
+        jobId: params.jobId,
         fileUrl: fileUrl.trim(),
         fileType: fileType || 'LINK',
-        uploadedBy: session.userId
+        uploadedBy: session.userId // ID Superadmina alebo užívateľa
       }
     })
 
     return NextResponse.json(file)
   } catch (error: any) {
-    console.error("TENDER FILE ERROR:", error)
+    console.error("JOB FILE ERROR:", error)
     return NextResponse.json({ error: 'Server Error: ' + error.message }, { status: 500 })
   }
 }
