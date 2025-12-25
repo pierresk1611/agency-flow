@@ -32,21 +32,24 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
           </h1>
         </Link>
         <div className="space-y-1">
-          {routes.map((route) => (
-            <Link
-              key={route.href}
-              href={route.href}
-              className={cn(
-                'text-sm group flex p-3 w-full justify-start font-bold cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition-all',
-                pathname === route.href || (pathname.startsWith(route.href) && route.href.length > 5) ? 'text-white bg-white/20' : 'text-zinc-400'
-              )}
-            >
-              <div className="flex items-center flex-1">
-                <route.icon className={cn('h-5 w-5 mr-3', route.color)} />
-                {route.label}
-              </div>
-            </Link>
-          ))}
+          {routes.map((route) => {
+            const isActive = pathname === route.href || (pathname.startsWith(route.href) && route.href.length > 5)
+            return (
+              <Link
+                key={route.href}
+                href={route.href}
+                className={cn(
+                  'text-sm group flex p-3 w-full justify-start font-bold cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition-all',
+                  isActive ? 'text-white bg-white/20 shadow-sm' : 'text-zinc-400'
+                )}
+              >
+                <div className="flex items-center flex-1">
+                  <route.icon className={cn('h-5 w-5 mr-3', route.color)} />
+                  {route.label}
+                </div>
+              </Link>
+            )
+          })}
         </div>
       </div>
       <div className="px-3 py-4 border-t border-white/10">
