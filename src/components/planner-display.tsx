@@ -4,9 +4,14 @@ import { useState, useEffect } from 'react'
 import { format, startOfWeek, addDays, isValid } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Clock, CalendarDays, Loader2 } from 'lucide-react'
+import { Trash2, Clock, Loader2, Pencil } from 'lucide-react'
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts' 
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 // TLAČIDLO PRE DELETE (s automatickým refreshom)
 const DeleteButton = ({ entryId }: { entryId: string }) => {
@@ -33,7 +38,70 @@ const DeleteButton = ({ entryId }: { entryId: string }) => {
     )
 }
 
-export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
+// DIALÓG PRE EDITÁCIU (NOVÝ KOMPONENT)
+const EditDialog = ({ entry, allJobs, onSave }: { entry: any, allJobs: any[], onSave: () => void }) => {
+    const [open, setOpen] = useState(false)
+    const [loading, setLoading] = useState(false)
+    
+    const [jobId, setJobId] = useState(entry.jobId || 'INTERNAL')
+    const [date, setDate] = useState(format(new Date(entry.date), 'yyyy-MM-dd'))
+    const [minutes, setMinutes] = useState(entry.minutes.toString())
+    const [title, setTitle] = useState(entry.title || '')
+
+    const handleSave = async () => {
+        setLoading(true)
+        const finalJobId = jobId === 'INTERNAL' ? null : jobId;
+        try {
+            const res = await fetch(`/api/planner/${entry.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jobId: finalJobId, date, minutes, title })
+            })
+            if (res.ok) {
+                setOpen(false)
+                onSave() // Volá refresh
+            } else {
+                alert("Chyba pri úprave.")
+            }
+        } catch (e) { console.error(e) } finally { setLoading(false) }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600">
+                    <Pencil className="h-3 w-3" />
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>Upraviť záznam</DialogTitle></DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2"><Label>Job</Label>
+                        <Select onValueChange={setJobId} value={jobId}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="INTERNAL">INTERNÁ PRÁCA</SelectItem> 
+                                {allJobs.map(job => (<SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-2"><Label>Popis</Label><Input value={title} onChange={e => setTitle(e.target.value)} /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2"><Label>Dátum</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+                        <div className="grid gap-2"><Label>Minúty</Label><Input type="number" value={minutes} onChange={e => setMinutes(e.target.value)} /></div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleSave} disabled={loading} className="bg-slate-900 text-white w-full">Uložiť zmeny</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
+export function PlannerDisplay({ initialEntries, allJobs }: { initialEntries: any[], allJobs: any[] }) {
+    const router = useRouter()
     const [entries] = useState(initialEntries)
     const [isMounted, setIsMounted] = useState(false)
 
@@ -98,8 +166,9 @@ export function PlannerDisplay({ initialEntries }: { initialEntries: any[] }) {
                                         <p className="font-bold text-blue-600 uppercase">{e.job?.campaign?.client?.name || 'Interná práca'}</p>
                                         <p className="font-medium truncate">{e.title}</p>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <Badge variant="outline" className="text-[8px] h-4 mb-1">{e.minutes}m</Badge>
+                                    <div className="flex items-center gap-1">
+                                        <Badge variant="outline" className="text-[8px] h-4">{e.minutes}m</Badge>
+                                        <EditDialog entry={e} allJobs={allJobs} onSave={() => router.refresh()} />
                                         <DeleteButton entryId={e.id} />
                                     </div>
                                 </div>

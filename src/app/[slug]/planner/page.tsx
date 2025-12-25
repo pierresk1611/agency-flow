@@ -1,12 +1,10 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
-import { format, startOfWeek, addDays, isValid } from 'date-fns'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Trash2, Clock, CalendarDays } from 'lucide-react'
 import { AddPlannerEntryDialog } from '@/components/add-planner-entry-dialog' 
-import { PlannerDisplay } from '@/components/planner-display' // <--- VŠETKO JE TU
+import { PlannerDisplay } from '@/components/planner-display'
+import { Trash2, Clock, CalendarDays } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,14 +15,7 @@ export default async function PlannerPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // NAČÍTANIE ZÁZNAMOV
-  const entries = await prisma.plannerEntry.findMany({
-    where: { userId: session.userId },
-    include: { job: { include: { campaign: { include: { client: true } } } } },
-    orderBy: { date: 'asc' }
-  })
-  
-  // NAČÍTANIE VŠETKÝCH JOBOV PRE DIALÓG
+  // 1. NAČÍTANIE JOBOV
   const allJobs = await prisma.job.findMany({
       where: { 
           archivedAt: null, 
@@ -36,6 +27,13 @@ export default async function PlannerPage({ params }: { params: { slug: string }
       }
   })
   const usersJobs = allJobs.filter(job => job.assignments.length > 0);
+  
+  // 2. NAČÍTANIE ZÁZNAMOV
+  const entries = await prisma.plannerEntry.findMany({
+    where: { userId: session.userId },
+    include: { job: { include: { campaign: { include: { client: true } } } } },
+    orderBy: { date: 'asc' }
+  })
 
 
   return (
@@ -45,7 +43,7 @@ export default async function PlannerPage({ params }: { params: { slug: string }
         <AddPlannerEntryDialog allJobs={usersJobs} />
       </div>
 
-      <PlannerDisplay initialEntries={entries} />
+      <PlannerDisplay initialEntries={entries} allJobs={usersJobs} /> {/* <--- POSIELAME allJobs */}
     </div>
   )
 }
