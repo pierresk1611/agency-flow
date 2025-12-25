@@ -19,23 +19,31 @@ export async function GET(request: Request) {
         active: true 
       },
       orderBy: { email: 'asc' },
-      include: {
-        // Ak chceme joby pre Traffic Management
-        assignments: includeJobs ? {
-            where: { job: { status: { not: 'DONE' }, archivedAt: null } },
+      include: includeJobs ? {
+        assignments: {
+            where: { 
+                job: { 
+                    status: { not: 'DONE' }, 
+                    archivedAt: null 
+                } 
+            },
             include: { 
                 job: { 
-                    include: { campaign: { include: { client: true } } } 
+                    include: { 
+                        campaign: { 
+                            include: { client: true } 
+                        } 
+                    } 
                 } 
             }
-        } : false
-      }
+        }
+      } : undefined
     })
     
     return NextResponse.json(users)
-  } catch (error) {
+  } catch (error: any) {
     console.error("GET USERS ERROR:", error)
-    return NextResponse.json([], { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
 
@@ -50,13 +58,17 @@ export async function POST(request: Request) {
     if (!email || !password || !role) return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) return NextResponse.json({ error: 'Email existuje' }, { status: 400 })
+    if (existing) return NextResponse.json({ error: 'Užívateľ s týmto emailom už existuje' }, { status: 400 })
 
     const passwordHash = await bcrypt.hash(password, 10)
     
     const newUser = await prisma.user.create({
       data: {
-        email, name, position, role, passwordHash,
+        email, 
+        name, 
+        position, 
+        role, 
+        passwordHash,
         hourlyRate: parseFloat(hourlyRate || '0'),
         costRate: parseFloat(costRate || '0'),
         agencyId: session.agencyId,
@@ -65,7 +77,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(newUser)
-  } catch (error) {
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
