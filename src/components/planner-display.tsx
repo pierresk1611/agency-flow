@@ -20,9 +20,10 @@ import {
     DialogFooter 
 } from "@/components/ui/dialog"
 
-// TLAČIDLO PRE DELETE
+
+// TLAČIDLO PRE DELETE (s auto-refreshom)
 const DeleteButton = ({ entryId }: { entryId: string }) => {
-    const router = useRouter()
+    // Odstránil som router.refresh() a používam window.location.reload()
     const [loading, setLoading] = useState(false)
     
     const handleDelete = async () => {
@@ -30,7 +31,7 @@ const DeleteButton = ({ entryId }: { entryId: string }) => {
         setLoading(true)
         try {
             const res = await fetch(`/api/planner/${entryId}`, { method: 'DELETE' })
-            if (res.ok) router.refresh() 
+            if (res.ok) window.location.reload() // <--- SILNÝ REFRESH
         } catch(e) { console.error(e) } finally { setLoading(false) }
     }
     return (
@@ -50,7 +51,6 @@ const EditDialog = ({ entry, allJobs, onSave }: { entry: any, allJobs: any[], on
     const [open, setOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     
-    // Nastavíme, či je JobId, alebo default "INTERNAL"
     const [jobId, setJobId] = useState(entry.jobId || 'INTERNAL')
     const [date, setDate] = useState(format(new Date(entry.date), 'yyyy-MM-dd'))
     const [minutes, setMinutes] = useState(entry.minutes.toString())
@@ -108,7 +108,7 @@ const EditDialog = ({ entry, allJobs, onSave }: { entry: any, allJobs: any[], on
 }
 
 export function PlannerDisplay({ initialEntries, allJobs }: { initialEntries: any[], allJobs: any[] }) {
-    const router = useRouter()
+    const router = useRouter() // Musíme importovať router kvôli onSave v EditDialog
     const [entries] = useState(initialEntries)
     const [isMounted, setIsMounted] = useState(false)
 
@@ -175,7 +175,7 @@ export function PlannerDisplay({ initialEntries, allJobs }: { initialEntries: an
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Badge variant="outline" className="text-[8px] h-4 mb-1">{e.minutes}m</Badge>
-                                        <EditDialog entry={e} allJobs={allJobs} onSave={() => router.refresh()} />
+                                        <EditDialog entry={e} allJobs={allJobs} onSave={() => window.location.reload()} />
                                         <DeleteButton entryId={e.id} />
                                     </div>
                                 </div>

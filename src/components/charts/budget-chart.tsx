@@ -6,20 +6,14 @@ import { useRouter } from "next/navigation"
 
 export function BudgetChart({ data, slug }: { data: any[], slug: string }) {
   const router = useRouter()
-  const [isMounted, setIsMounted] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
-  if (!isMounted) return <div className="h-[300px] bg-slate-50 animate-pulse rounded-lg" />
+  if (!mounted) return <div className="h-[300px] w-full bg-slate-50 animate-pulse rounded-xl" />
 
   if (!data || data.length === 0) {
-    return (
-      <div className="h-[300px] flex items-center justify-center text-muted-foreground italic text-sm border-2 border-dashed rounded-lg">
-        Zatiaľ žiadne dáta pre rozpočty.
-      </div>
-    )
+    return <div className="h-[300px] flex items-center justify-center text-slate-400 italic text-sm">Zatiaľ žiadne finančné dáta.</div>
   }
 
   return (
