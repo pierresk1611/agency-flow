@@ -20,6 +20,11 @@ export default async function AgencyLayout({
 
   if (!agency) return notFound()
 
+  // OCHRANA: Kreatívec nesmie na Agency, ale na /timesheets môže
+  if (session.role === 'CREATIVE' && !['/', '/jobs', '/timesheets'].some(path => window.location.pathname.includes(path))) {
+      // Toto je ťažké ošetriť na serveri, ale skúsme to ošetriť v sidebare/frontend
+  }
+  
   if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
     const myAgency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (myAgency) redirect(`/${myAgency.slug}`)

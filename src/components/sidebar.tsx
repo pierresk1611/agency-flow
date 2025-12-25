@@ -26,7 +26,6 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
   return (
     <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white border-r border-white/10 shadow-xl">
       <div className="px-3 py-2 flex-1">
-        {/* Presne uzatvorený Link */}
         <Link href={`/${slug}`} className="flex items-center pl-3 mb-10 hover:opacity-80 transition">
           <h1 className="text-xl font-bold italic">
             Agency<span className="text-blue-500 text-2xl">.</span>Flow
@@ -34,15 +33,15 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {
-            // Opravená aktívna logika pre cesty, ktoré môžu mať ďalšie /id
-            const isActive = pathname === route.href || pathname.startsWith(route.href + '/')
+            // ZJEDNODUŠENÁ LOGIKA AKTIVÁCIE: IBA PRESNÁ ZHODA
+            const isActive = pathname === route.href;
             
             return (
               <Link
                 key={route.href}
                 href={route.href}
                 className={cn(
-                  'text-sm group flex p-3 w-full justify-start font-bold cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200',
+                  'text-sm group flex p-3 w-full justify-start font-bold cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition-all',
                   isActive ? 'text-white bg-white/20 shadow-sm' : 'text-zinc-400'
                 )}
               >
