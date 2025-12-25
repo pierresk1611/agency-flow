@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button'
 export function Sidebar({ slug, role }: { slug: string; role: string }) {
   const pathname = usePathname()
 
-  // Definícia ciest - všetky sú teraz pod slugom
+  // Cesty sú teraz definované s dynamickým slugom a sú všetky na rovnakej úrovni
   const routes = [
     { label: 'Dashboard', icon: LayoutDashboard, href: `/${slug}`, color: 'text-sky-500' },
     { label: 'Plánovač', icon: CalendarDays, href: `/${slug}/planner`, color: 'text-emerald-500' },
     { label: 'Klienti', icon: Building2, href: `/${slug}/clients`, color: 'text-blue-500' },
     { label: 'Joby & Kampane', icon: Briefcase, href: `/${slug}/jobs`, color: 'text-violet-500' },
-    { label: 'Traffic / Kapacita', icon: TrendingUp, href: `/${slug}/traffic`, color: 'text-orange-500' }, // <--- Správna cesta
+    { label: 'Traffic / Kapacita', icon: TrendingUp, href: `/${slug}/traffic`, color: 'text-orange-500' },
     { label: 'Timesheety', icon: Clock, href: `/${slug}/timesheets`, color: 'text-pink-700' },
   ]
 
@@ -34,8 +34,8 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {
-            // Opravená logika pre aktiváciu linku (zahrňuje /traffic, /jobs/id, atď.)
-            const isActive = pathname === route.href || pathname.startsWith(route.href + '/') || (route.href.length > 1 && pathname.startsWith(route.href))
+            // Logika pre aktiváciu linku: Presná zhoda alebo začiatok cesty (napr. /slug/jobs/id)
+            const isActive = pathname === route.href || pathname.startsWith(route.href + '/');
             
             return (
               <Link
@@ -56,14 +56,4 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </div>
       </div>
       <div className="px-3 py-4 border-t border-white/10">
-        <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
-            onClick={() => {
-                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-                window.location.href = "/login"
-            }}>
-            <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
-        </Button>
-      </div>
-    </div>
-  )
-}
+        <Button variant="ghost" classNa
