@@ -1,22 +1,13 @@
-import { PrismaClient, Role, JobStatus } from '@prisma/client'
+import { PrismaClient, Role } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('--- ŠTART MASTER SEEDU ---')
+  console.log('--- ŠTART BEZPEČNÉHO FIXER SEEDU ---')
   const passwordHash = await bcrypt.hash('password123', 10)
 
-  const agency = await prisma.agency.upsert({
-    where: { id: 'seed-agency-id' },
-    update: { slug: 'super-creative' },
-    create: { 
-      id: 'seed-agency-id', name: 'Super Creative Agency', slug: 'super-creative',
-      companyId: '12345678', vatId: 'SK2020202020', address: 'Mýtna 1, Bratislava', email: 'hello@supercreative.sk'
-    }
-  })
-
-  // ZÁKLADNÉ POZÍCIE PODĽA ZADANIA
+  // 1. ZOZNAM POZÍCIÍ (Tvoj kompletný zoznam)
   const defaultPositions = [
     "Managing Director / CEO", "Executive Director", "Operations Director", "Finance Director / CFO",
     "Account Executive", "Account Manager", "Senior Account Manager", "Account Director", "Group Account Director",
@@ -27,29 +18,52 @@ async function main() {
     "HR Manager", "Office Manager", "IT Support"
   ]
 
-  console.log('Nahrávam pozície...')
-  for (const posName of defaultPositions) {
-    await prisma.agencyPosition.upsert({
-      where: { agencyId_name: { agencyId: agency.id, name: posName } },
-      update: {},
-      create: { agencyId: agency.id, name: posName }
-    })
+  // 2. NÁJDEME VŠETKY AGENTÚRY V SYSTÉME (Vrátane tvojich testerov)
+  const allAgencies = await prisma.agency.findMany()
+  console.log(`Nájdených agentúr: ${allAgencies.length}`)
+
+  // 3. PRE KAŽDÚ AGENTÚRU DOPLNÍME CHÝBAJÚCE POZÍCIE
+  for (const agency of allAgencies) {
+    console.log(`Dopĺňam pozície pre: ${agency.name}...`)
+    
+    for (const posName of defaultPositions) {
+      await prisma.agencyPosition.upsert({
+        where: { 
+          agencyId_name: { 
+            agencyId: agency.id, 
+            name: posName 
+          } 
+        },
+        update: {}, // Ak pozícia už existuje, neurob nič
+        create: { 
+          agencyId: agency.id, 
+          name: posName 
+        }
+      })
+    }
   }
 
-  // UŽÍVATELIA
+  // 4. ZABEZPEČÍME EXISTENCIU SUPERADMINA (Nezmaže ho, ak existuje)
   await prisma.user.upsert({
     where: { email: 'super@agencyflow.com' },
-    update: { passwordHash },
-    create: { email: 'super@agencyflow.com', name: 'Marek Superadmin', role: Role.SUPERADMIN, passwordHash, active: true }
+    update: {},
+    create: {
+      email: 'super@agencyflow.com',
+      name: 'Marek Superadmin',
+      role: Role.SUPERADMIN,
+      passwordHash,
+      active: true
+    }
   })
 
-  await prisma.user.upsert({
-    where: { email: 'traffic@agency.com' },
-    update: { agencyId: agency.id, passwordHash },
-    create: { email: 'traffic@agency.com', name: 'Peter Traffic', role: Role.TRAFFIC, agencyId: agency.id, passwordHash, active: true }
-  })
-
-  console.log('--- SEED DOKONČENÝ ---')
+  console.log('--- VŠETKY DÁTA SÚ ZOSYNCHRONIZOVANÉ A BEZPEČNÉ ---')
 }
 
-main().catch(e => console.error(e)).finally(() => prisma.$disconnect())
+main()
+  .catch((e) => {
+    console.error('❌ Chyba:', e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
