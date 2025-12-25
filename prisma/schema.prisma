@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- ENUMS ---
-
 enum Role {
   SUPERADMIN
   ADMIN
@@ -30,8 +28,6 @@ enum TimesheetStatus {
   REJECTED
 }
 
-// --- MODELS ---
-
 model Agency {
   id         String   @id @default(uuid())
   name       String
@@ -41,12 +37,11 @@ model Agency {
   vatId      String?
   address    String?
   email      String?
-  
   users      User[]
   clients    Client[]
   scopes     AgencyScope[]
   positions  AgencyPosition[]
-  tenders    Tender[]        // Väzba na Tendre
+  tenders    Tender[]
   createdAt  DateTime @default(now())
 }
 
@@ -78,10 +73,9 @@ model User {
   hourlyRate   Float?   @default(0) 
   costRate     Float?   @default(0) 
   active       Boolean  @default(true)
-  
   assignments  JobAssignment[]
   comments     Comment[]
-  tenderAssignments TenderAssignment[] // Väzba na priradenia v tendroch
+  tenderAssignments TenderAssignment[]
 }
 
 model Client {
@@ -127,7 +121,6 @@ model Job {
   status      JobStatus @default(TODO)
   deadline    DateTime
   budget      Float?   @default(0)
-  
   assignments JobAssignment[]
   comments    Comment[]
   files       File[]
@@ -143,10 +136,9 @@ model JobAssignment {
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
-  
   timesheets  Timesheet[]
-  comments    Comment[]    // Spätná väzba pre komentáre priradenia
-  tenderAssignments TenderAssignment[] // Spätná väzba pre priradenia v tendroch
+  comments    Comment[] 
+  tenderAssignments TenderAssignment[]
 }
 
 model Timesheet {
@@ -160,7 +152,6 @@ model Timesheet {
   status          TimesheetStatus @default(PENDING)
   approvedBy      String?         
   approvedAt      DateTime?
-  
   budgetItem      BudgetItem?
   isPaused           Boolean   @default(false)
   lastPauseStart     DateTime?
@@ -181,19 +172,12 @@ model BudgetItem {
 
 model Comment {
   id        String   @id @default(uuid())
-  
-  // Väzba na Job
   jobId     String?
   job       Job?     @relation(fields: [jobId], references: [id])
-  
-  // Väzba na JobAssignment
   jobAssignmentId String?
   jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
-
-  // Väzba na Tender
   tenderId  String?
   tender    Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
-  
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   text      String
@@ -203,15 +187,15 @@ model Comment {
 model File {
   id         String   @id @default(uuid())
   
+  // NOVÉ: Názov súboru/odkazu
+  name       String?  @default("")
+
   jobId      String?  
   job        Job?     @relation(fields: [jobId], references: [id])
-  
   clientId   String?
   client     Client?  @relation(fields: [clientId], references: [id])
-  
   tenderId   String?
   tender     Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
-
   uploadedBy String
   fileUrl    String
   fileType   String
@@ -223,12 +207,11 @@ model Tender {
   agencyId    String
   agency      Agency    @relation(fields: [agencyId], references: [id])
   title       String
-  description String?   // Brief zadaný pri vytvorení
+  description String?
   status      JobStatus @default(TODO) 
   deadline    DateTime
   budget      Float?    @default(0)
-  isConverted Boolean   @default(false)
-  
+  isConverted Boolean @default(false)
   assignments TenderAssignment[]
   comments    Comment[]
   files       File[]
@@ -239,12 +222,9 @@ model TenderAssignment {
     id          String   @id @default(uuid())
     tenderId    String
     tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-    
     userId      String
     user        User     @relation(fields: [userId], references: [id])
-    
     roleOnJob   String
-
     jobAssignmentId String? 
     jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
 }

@@ -10,7 +10,7 @@ import { TimerButton } from '@/components/timer-button'
 import { CommentsSection } from '@/components/comments-section'
 import { AssignUserDialog } from '@/components/assign-user-dialog'
 import { AddFileDialog } from '@/components/add-file-dialog'
-import { EditCampaignDescription } from '@/components/edit-campaign-description' // <--- NOVÝ IMPORT
+import { EditCampaignDescription } from '@/components/edit-campaign-description'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getSession } from '@/lib/session'
 
@@ -47,10 +47,8 @@ export default async function JobDetailPage({ params }: { params: { slug: string
 
   const isCreative = session.role === 'CREATIVE'
   const isAssigned = job.assignments.some(a => a.userId === session.userId)
-  
   if (isCreative && !isAssigned) return notFound()
 
-  // Kontrola, či bežia stopky
   let runningStartTime: string | null = null
   let isPaused = false
   let totalPausedMinutes = 0
@@ -75,7 +73,6 @@ export default async function JobDetailPage({ params }: { params: { slug: string
 
   return (
     <div className="space-y-6 pb-10">
-      {/* HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
             <Link href={`/${params.slug}/jobs`}>
@@ -101,7 +98,6 @@ export default async function JobDetailPage({ params }: { params: { slug: string
       </div>
       
       <div className="grid gap-6 md:grid-cols-3 items-start">
-        {/* LEFT: BRIEF & CHAT */}
         <div className="md:col-span-2 space-y-6">
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="pb-3 border-b bg-slate-50/30 flex flex-row items-center justify-between">
@@ -109,7 +105,6 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         <FileText className="h-4 w-4 text-slate-500" />
                         <CardTitle className="text-sm font-bold uppercase tracking-wider">Zadanie / Brief</CardTitle>
                     </div>
-                    {/* EDITÁCIA BRIEFU (UPRAVUJE KAMPAŇ) */}
                     {!isCreative && (
                         <EditCampaignDescription 
                             campaignId={job.campaignId} 
@@ -117,17 +112,14 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         />
                     )}
                 </CardHeader>
-                <CardContent className="pt-4 text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                    {job.campaign.description || (
-                        <div className="text-slate-400 italic py-4">Zadanie zatiaľ nebolo vyplnené.</div>
-                    )}
+                <CardContent className="pt-4 text-sm text-slate-700 whitespace-pre-line leading-relaxed min-h-[100px]">
+                    {job.campaign.description || <div className="text-slate-400 italic py-4">Zadanie zatiaľ nebolo vyplnené.</div>}
                 </CardContent>
             </Card>
 
             <CommentsSection jobId={job.id} comments={job.comments} currentUserId={session.userId} />
         </div>
 
-        {/* RIGHT: TEAM & FILES */}
         <div className="space-y-6">
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
@@ -138,9 +130,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                     {job.assignments.map(a => (
                         <div key={a.id} className="flex items-center gap-3 text-sm">
                             <Avatar className="h-8 w-8 border">
-                                <AvatarFallback className="bg-slate-100 text-slate-600 font-bold text-xs uppercase">
-                                    {(a.user.name || a.user.email).charAt(0)}
-                                </AvatarFallback>
+                                <AvatarFallback className="bg-slate-100 text-slate-600 font-bold text-xs uppercase">{(a.user.name || a.user.email).charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col">
                                 <span className="font-semibold text-slate-700 truncate max-w-[150px]">{a.user.name || a.user.email.split('@')[0]}</span>
@@ -151,33 +141,29 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                 </CardContent>
             </Card>
 
-            <Card className="shadow-sm">
+            <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Paperclip className="h-4 w-4" /> Súbory a Odkazy</CardTitle>
+                    <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Paperclip className="h-4 w-4 text-slate-400" /> Súbory a Odkazy</CardTitle>
                     <AddFileDialog jobId={job.id} />
                 </CardHeader>
                 <CardContent className="pt-4 space-y-2">
                     {job.files.length === 0 ? (
-                        <p className="text-xs text-center text-slate-400 py-4">Žiadne prílohy.</p>
+                        <p className="text-xs text-center text-slate-400 py-4 italic">Žiadne prílohy.</p>
                     ) : (
                         job.files.map(file => (
                             <div key={file.id} className="flex items-center justify-between p-2 border rounded-md bg-white hover:bg-slate-50 transition group">
                                 <div className="flex items-center gap-2 min-w-0">
                                     {getFileIcon(file.fileType)}
-                                    <span className="text-[11px] font-medium truncate text-slate-700">{file.fileUrl}</span>
+                                    <span className="text-[11px] font-bold truncate text-slate-800 uppercase tracking-tighter">
+                                        {file.name || "Bez názvu"}
+                                    </span>
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                                    {file.fileType === 'LINK' ? (
-                                        <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
-                                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                                                <ExternalLink className="h-3.5 w-3.5 text-blue-500" />
-                                            </Button>
-                                        </a>
-                                    ) : (
+                                    <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
                                         <Button variant="ghost" size="icon" className="h-7 w-7">
-                                            <Download className="h-3.5 w-3.5 text-slate-400" />
+                                            <ExternalLink className="h-3.5 w-3.5 text-blue-500" />
                                         </Button>
-                                    )}
+                                    </a>
                                 </div>
                             </div>
                         ))
