@@ -23,6 +23,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
   }
 
   // 1. ZÍSKANIE JOBOV
+  // Kreatívec vidí len tie, kde je priradený
   const activeJobs = await prisma.job.findMany({
     where: { 
       archivedAt: null, 
@@ -35,14 +36,15 @@ export default async function JobsPage({ params }: { params: { slug: string } })
     }
   })
 
-  // 2. ZÍSKANIE TENDROV (Ak nie je creative, alebo ak je priradený - pre zjednodušenie teraz creative vidí tendre)
-  // Poznámka: Creative vidí tendre, aby vedel o pitchoch.
+  // 2. ZÍSKANIE TENDROV
+  // Tendre zatiaľ ukazujeme všetkým (aby kreatívec vedel, že sa niečo chystá), 
+  // alebo ich môžeme pre kreatívca skryť, ak tam nie je priradený (zatiaľ necháme viditeľné)
   const activeTenders = await prisma.tender.findMany({
       where: { agencyId: agency.id, archivedAt: null },
-      // Tendre nemajú kampaň, tak simulujeme štruktúru pre tabuľku
+      // Tender nemá kampaň ani klienta v štruktúre, takže nič neincludujeme, čo by mohlo padnúť
   })
   
-  // 3. SPÁJANIE DÁT
+  // 3. SPÁJANIE DÁT (Bezpečné mapovanie)
   const activeProjects = [
       ...activeJobs.map(job => ({
           id: job.id,
@@ -50,7 +52,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
           type: 'JOB',
           status: job.status,
           priority: job.campaign.client?.priority || 0,
-          clientName: job.campaign.client?.name || 'N/A',
+          clientName: job.campaign.client?.name || 'Neznámy klient',
           campaignName: job.campaign.name,
           deadline: job.deadline,
           budget: job.budget
@@ -61,8 +63,8 @@ export default async function JobsPage({ params }: { params: { slug: string } })
           type: 'TENDER',
           status: tender.status,
           priority: 6, // Tendre dáme vizuálne nad P5 (ako 6)
-          clientName: 'INTERNÝ PITCH',
-          campaignName: 'New Business',
+          clientName: 'NEW BUSINESS', // Placeholder, lebo Tender nemá klienta
+          campaignName: 'Interný Pitch',
           deadline: tender.deadline,
           budget: tender.budget
       }))
@@ -108,8 +110,8 @@ export default async function JobsPage({ params }: { params: { slug: string } })
             </TableHeader>
             <TableBody>
               {sortedProjects.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-20 text-slate-400 italic text-sm">
-                    Žiadne aktívne projekty.
+                <TableRow><TableCell colSpan={isCreative ? 5 : 6} className="text-center py-20 text-slate-400 italic text-sm">
+                    {isCreative ? 'Nemáte priradené žiadne aktívne úlohy.' : 'Žiadne aktívne projekty.'}
                 </TableCell></TableRow>
               ) : (
                 sortedProjects.map((proj) => (
@@ -160,7 +162,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
                       </div>
                     </TableCell>
                     
-                    {/* ROZPOČET */}
+                    {/* ROZPOČET (Skrytý pre kreatívca) */}
                     {!isCreative && (
                       <TableCell className="font-mono text-xs font-bold text-slate-600">
                         {proj.budget?.toFixed(0)} €
@@ -170,20 +172,17 @@ export default async function JobsPage({ params }: { params: { slug: string } })
                     {/* AKCIE */}
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end items-center gap-2">
-                          {/* Ak je to TENDER, zatiaľ nemáme stránku detailu, tak dáme len placeholder alebo ho zakážeme, 
-                              ALEBO (ak si už vytvoril folder tenders/[id]) smerujeme tam. 
-                              Pre istotu smerujem Joby na joby a Tendre zatiaľ neriešim preklik, kým nemáme stránku.
-                          */}
-                          {proj.type === 'JOB' && (
+                          {proj.type === 'JOB' ? (
                             <>
                                 <Link href={`/${params.slug}/jobs/${proj.id}`}>
                                     <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 h-8">Detail</Button>
                                 </Link>
+                                {/* Archiváciu vidí len admin */}
                                 {!isCreative && <JobActions jobId={proj.id} />}
                             </>
-                          )}
-                          {proj.type === 'TENDER' && (
-                              <Badge variant="outline" className="text-purple-600 border-purple-200">Prebieha</Badge>
+                          ) : (
+                              // Tendre zatiaľ nemajú detail pre kreatívca, alebo ho dorobíme v ďalšom kroku
+                              <Badge variant="outline" className="text-purple-600 border-purple-200">Info u Traffica</Badge>
                           )}
                       </div>
                     </TableCell>
