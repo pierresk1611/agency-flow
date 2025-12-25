@@ -3,15 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger, // <--- KRITICKÝ IMPORT
-  DialogFooter 
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Loader2 } from 'lucide-react'
@@ -30,7 +23,7 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
   const handleSave = async () => {
     if (!title || !date) return
     setLoading(true)
-    const finalJobId = jobId === 'INTERNAL' ? '' : jobId;
+    const finalJobId = jobId && jobId !== 'INTERNAL' ? jobId : null;
 
     try {
       const res = await fetch(`/api/planner`, {
@@ -44,9 +37,10 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
         })
       })
       if (res.ok) {
-        setOpen(false)
+        // ZAVRI OKNO AŽ POTOM REFRESHUJ
+        setOpen(false) 
         setJobId(''); setDate(format(new Date(), 'yyyy-MM-dd')); setMinutes('60'); setTitle('')
-        router.refresh()
+        router.refresh() // Automatický refresh po uložení
       } else {
           alert("Chyba: Nepodarilo sa uložiť plán.")
       }
@@ -58,7 +52,7 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
       <DialogTrigger asChild>
         <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"><Plus className="h-4 w-4 mr-2" /> Naplánovať prácu</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="dialog-content-fixed-mobile"> {/* <--- PRIDANÁ TRIEDA */}
         <DialogHeader><DialogTitle>Nový záznam v Plánovači</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">

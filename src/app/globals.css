@@ -76,3 +76,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* --- ZABEZPEČENIE PRE SPRÁVNE ZOBRAZENIE DIALÓGOV NA MOBILE --- */
+@layer base {
+  /* Fix pre Safari a Chrome, aby dialóg nebol mimo viewport na mobile */
+  .dialog-content-fixed-mobile {
+    /* Vynútenie správneho centorvania na mobile */
+    @apply fixed inset-0 overflow-y-auto !h-auto !w-full max-w-lg translate-y-0 duration-300 sm:max-w-lg sm:translate-y-[-50%] sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%];
+  }
+
+  /* Pre zjednodušenie */
+  .dialog-content-lg {
+    @apply max-w-xl;
+  }
+}
+
+/* Tvoje Shadcn base a utilities tu musia byť hore */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
