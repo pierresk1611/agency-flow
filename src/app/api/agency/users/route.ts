@@ -5,10 +5,13 @@ import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = new URL(request.url)
+    const includeJobs = searchParams.get('includeJobs') === 'true'
 
     const users = await prisma.user.findMany({
       where: { 
@@ -16,19 +19,20 @@ export async function GET() {
         active: true 
       },
       orderBy: { email: 'asc' },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        position: true,
-        role: true,
-        hourlyRate: true,
-        costRate: true,
-        active: true
+      include: {
+        // Ak chceme joby pre Traffic Management
+        assignments: includeJobs ? {
+            where: { job: { status: { not: 'DONE' }, archivedAt: null } },
+            include: { 
+                job: { 
+                    include: { campaign: { include: { client: true } } } 
+                } 
+            }
+        } : false
       }
     })
     
-    return NextResponse.json(users || [])
+    return NextResponse.json(users)
   } catch (error) {
     console.error("GET USERS ERROR:", error)
     return NextResponse.json([], { status: 500 })
@@ -43,36 +47,16 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { email, name, password, role, position, hourlyRate, costRate } = body
 
-    if (!email || !password || !role) {
-      return NextResponse.json({ error: 'Email, heslo a rola sú povinné' }, { status: 400 })
-    }
+    if (!email || !password || !role) return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      return NextResponse.json({ error: 'Užívateľ s týmto emailom už existuje' }, { status: 400 })
-    }
-
-    // Učiaca sa logika pre Pozície
-    if (position) {
-      const exists = await prisma.agencyPosition.findFirst({
-        where: { agencyId: session.agencyId, name: position }
-      })
-      if (!exists) {
-        await prisma.agencyPosition.create({ 
-          data: { agencyId: session.agencyId, name: position } 
-        })
-      }
-    }
+    if (existing) return NextResponse.json({ error: 'Email existuje' }, { status: 400 })
 
     const passwordHash = await bcrypt.hash(password, 10)
-
+    
     const newUser = await prisma.user.create({
       data: {
-        email,
-        name,
-        position,
-        passwordHash,
-        role,
+        email, name, position, role, passwordHash,
         hourlyRate: parseFloat(hourlyRate || '0'),
         costRate: parseFloat(costRate || '0'),
         agencyId: session.agencyId,
@@ -80,11 +64,8 @@ export async function POST(request: Request) {
       }
     })
 
-    const { passwordHash: _, ...userWithoutPassword } = newUser
-    return NextResponse.json(userWithoutPassword)
-
-  } catch (error: any) {
-    console.error("Create user error:", error)
-    return NextResponse.json({ error: 'Chyba servera pri vytváraní užívateľa' }, { status: 500 })
+    return NextResponse.json(newUser)
+  } catch (error) {
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
   }
 }
