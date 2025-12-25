@@ -8,6 +8,7 @@ datasource db {
 }
 
 // --- ENUMS ---
+
 enum Role {
   SUPERADMIN
   ADMIN
@@ -40,11 +41,12 @@ model Agency {
   vatId      String?
   address    String?
   email      String?
+  
   users      User[]
   clients    Client[]
   scopes     AgencyScope[]
   positions  AgencyPosition[]
-  tenders    Tender[]
+  tenders    Tender[]        // Väzba na Tendre
   createdAt  DateTime @default(now())
 }
 
@@ -76,9 +78,10 @@ model User {
   hourlyRate   Float?   @default(0) 
   costRate     Float?   @default(0) 
   active       Boolean  @default(true)
+  
   assignments  JobAssignment[]
   comments     Comment[]
-  tenderAssignments TenderAssignment[]
+  tenderAssignments TenderAssignment[] // Väzba na priradenia v tendroch
 }
 
 model Client {
@@ -124,6 +127,7 @@ model Job {
   status      JobStatus @default(TODO)
   deadline    DateTime
   budget      Float?   @default(0)
+  
   assignments JobAssignment[]
   comments    Comment[]
   files       File[]
@@ -139,11 +143,10 @@ model JobAssignment {
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
-  timesheets  Timesheet[]
   
-  // OPRAVA VÄZIEB (Pre P1012 error):
-  comments    Comment[] 
-  tenderAssignments TenderAssignment[]
+  timesheets  Timesheet[]
+  comments    Comment[]    // Spätná väzba pre komentáre priradenia
+  tenderAssignments TenderAssignment[] // Spätná väzba pre priradenia v tendroch
 }
 
 model Timesheet {
@@ -157,6 +160,7 @@ model Timesheet {
   status          TimesheetStatus @default(PENDING)
   approvedBy      String?         
   approvedAt      DateTime?
+  
   budgetItem      BudgetItem?
   isPaused           Boolean   @default(false)
   lastPauseStart     DateTime?
@@ -182,7 +186,7 @@ model Comment {
   jobId     String?
   job       Job?     @relation(fields: [jobId], references: [id])
   
-  // Väzba na JobAssignment (OPRAVA CHYBY)
+  // Väzba na JobAssignment
   jobAssignmentId String?
   jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
 
@@ -198,12 +202,16 @@ model Comment {
 
 model File {
   id         String   @id @default(uuid())
+  
   jobId      String?  
   job        Job?     @relation(fields: [jobId], references: [id])
+  
   clientId   String?
   client     Client?  @relation(fields: [clientId], references: [id])
+  
   tenderId   String?
   tender     Tender?  @relation(fields: [tenderId], references: [id], onDelete: Cascade) 
+
   uploadedBy String
   fileUrl    String
   fileType   String
@@ -215,10 +223,11 @@ model Tender {
   agencyId    String
   agency      Agency    @relation(fields: [agencyId], references: [id])
   title       String
+  description String?   // Brief zadaný pri vytvorení
   status      JobStatus @default(TODO) 
   deadline    DateTime
   budget      Float?    @default(0)
-  isConverted Boolean @default(false)
+  isConverted Boolean   @default(false)
   
   assignments TenderAssignment[]
   comments    Comment[]
@@ -230,11 +239,12 @@ model TenderAssignment {
     id          String   @id @default(uuid())
     tenderId    String
     tender      Tender    @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+    
     userId      String
     user        User     @relation(fields: [userId], references: [id])
-    roleOnJob   String
     
-    // Väzba na JobAssignment (OPRAVA CHYBY)
+    roleOnJob   String
+
     jobAssignmentId String? 
     jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
 }
