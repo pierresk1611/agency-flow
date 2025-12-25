@@ -23,13 +23,14 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { jobId, date, minutes, title } = body
 
+  // Vytvoríme záznam
   const entry = await prisma.plannerEntry.create({
     data: {
       userId: session.userId,
       jobId,
       date: new Date(date),
       minutes: parseInt(minutes),
-      title
+      title: title || 'Naplánovaná práca'
     }
   })
   return NextResponse.json(entry)
