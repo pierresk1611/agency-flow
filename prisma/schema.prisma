@@ -7,6 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- ENUMS ---
 enum Role {
   SUPERADMIN
   ADMIN
@@ -27,6 +28,8 @@ enum TimesheetStatus {
   APPROVED
   REJECTED
 }
+
+// --- MODELS ---
 
 model Agency {
   id         String   @id @default(uuid())
@@ -76,6 +79,8 @@ model User {
   assignments  JobAssignment[]
   comments     Comment[]
   tenderAssignments TenderAssignment[]
+  requestsSent     ReassignmentRequest[] @relation("RequestBy")
+  requestsReceived ReassignmentRequest[] @relation("TargetUser")
 }
 
 model Client {
@@ -137,8 +142,22 @@ model JobAssignment {
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
   timesheets  Timesheet[]
-  comments    Comment[] 
+  comments    Comment[]
   tenderAssignments TenderAssignment[]
+  reassignmentRequests ReassignmentRequest[] // Spätka pre žiadosti
+}
+
+model ReassignmentRequest {
+  id              String   @id @default(uuid())
+  assignmentId    String
+  assignment      JobAssignment @relation(fields: [assignmentId], references: [id])
+  requestByUserId String
+  requestByUser   User     @relation("RequestBy", fields: [requestByUserId], references: [id])
+  targetUserId    String
+  targetUser      User     @relation("TargetUser", fields: [targetUserId], references: [id])
+  reason          String
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt       DateTime @default(now())
 }
 
 model Timesheet {
@@ -186,10 +205,7 @@ model Comment {
 
 model File {
   id         String   @id @default(uuid())
-  
-  // NOVÉ: Názov súboru/odkazu
   name       String?  @default("")
-
   jobId      String?  
   job        Job?     @relation(fields: [jobId], references: [id])
   clientId   String?
