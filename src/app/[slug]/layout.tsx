@@ -20,11 +20,6 @@ export default async function AgencyLayout({
 
   if (!agency) return notFound()
 
-  // OCHRANA: Creative nemôže ísť na /agency, Admin nemôže ísť na /superadmin
-  if (session.role === 'CREATIVE' && params.slug !== agency.slug) {
-      redirect(`/${agency.slug}`)
-  }
-  
   if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
     const myAgency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (myAgency) redirect(`/${myAgency.slug}`)
@@ -34,8 +29,7 @@ export default async function AgencyLayout({
   return (
     <div className="h-full relative">
       <div className="hidden h-full md:flex md:w-72 md:flex-col md:fixed md:inset-y-0 z-[80] bg-gray-900">
-        {/* Posielame slug a rolu */}
-        <Sidebar slug={params.slug} role={session.role} /> 
+        <Sidebar slug={params.slug} role={session.role} />
       </div>
       
       <main className="md:pl-72 min-h-screen bg-slate-50/50">
