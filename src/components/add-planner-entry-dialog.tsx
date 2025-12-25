@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
-export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) { // <--- ZMENA
+export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -23,19 +23,24 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) { // <---
   const handleSave = async () => {
     if (!title || !date) return
     setLoading(true)
+
+    // Logika: Ak je jobId "INTERNAL", pošleme do API prázdny reťazec, ktorý sa premení na null
+    const finalJobId = jobId === 'INTERNAL' ? '' : jobId;
+
     try {
       const res = await fetch(`/api/planner`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          jobId, 
+          jobId: finalJobId, 
           date, 
           minutes: minutes,
           title
         })
       })
       if (res.ok) {
-        setOpen(false); setJobId(''); setDate(format(new Date(), 'yyyy-MM-dd')); setMinutes('60'); setTitle('')
+        setOpen(false)
+        setJobId(''); setDate(format(new Date(), 'yyyy-MM-dd')); setMinutes('60'); setTitle('')
         router.refresh()
       } else {
           alert("Chyba: Nepodarilo sa uložiť plán.")
@@ -45,16 +50,20 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) { // <---
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"><Plus className="h-4 w-4 mr-2" /> Naplánovať prácu</Button></DialogTrigger>
+      <DialogTrigger asChild>
+        {/* TLAČIDLO TEREZ FUNGUJE */}
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"><Plus className="h-4 w-4 mr-2" /> Naplánovať prácu</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Nový záznam v Plánovači</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Job / Projekt (Voliteľné)</Label>
             <Select onValueChange={setJobId} value={jobId}>
-              <SelectTrigger><SelectValue placeholder="Vyberte job alebo internú prácu" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Vyberte job, na ktorom budete pracovať" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">[ INTERNÁ PRÁCA / BEZ KLIENTA ]</SelectItem>
+                {/* OPRAVA: Vymeň prázdny string za unikátny názov */}
+                <SelectItem value="INTERNAL">INTERNÁ PRÁCA / BEZ KLIENTA</SelectItem> 
                 {allJobs.map(job => (
                     <SelectItem key={job.id} value={job.id}>
                         {job.title} ({job.campaign.client.name})

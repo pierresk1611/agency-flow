@@ -8,7 +8,6 @@ export async function GET(request: Request) {
   const session = getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Plánovač má vidieť VŠETKY joby agentúry, aby si mohol vybrať
   const entries = await prisma.plannerEntry.findMany({
     where: { userId: session.userId },
     include: { job: { include: { campaign: { include: { client: true } } } } },
@@ -24,17 +23,19 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { jobId, date, minutes, title } = body
 
-  // Logika: jobId je voliteľné (ak je prázdny reťazec, dáme null)
-  const finalJobId = jobId || null; 
+  // OPRAVA: Preveď prázdny reťazec alebo "INTERNAL" na null, ak nemá Job ID
+  const finalJobId = jobId && jobId !== '' && jobId !== 'INTERNAL' ? jobId : null; 
 
-  // Vytvoríme záznam
+  if (!title || !date) return NextResponse.json({ error: 'Chýba názov alebo dátum' }, { status: 400 })
+
+
   const entry = await prisma.plannerEntry.create({
     data: {
       userId: session.userId,
-      jobId: finalJobId, // Ak je prázdne, uloží sa null
+      jobId: finalJobId, // Uloží null, ak je to interná práca
       date: new Date(date),
       minutes: parseInt(minutes),
-      title: title || 'Naplánovaná interná práca'
+      title: title
     }
   })
   return NextResponse.json(entry)
