@@ -4,9 +4,9 @@ import { redirect, notFound } from 'next/navigation'
 import { format, startOfWeek, addDays, isValid } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, TrendingUp, Clock } from 'lucide-react'
+import { Trash2, Clock, CalendarDays } from 'lucide-react'
 import { AddPlannerEntryDialog } from '@/components/add-planner-entry-dialog' 
-import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts' // <--- IMPORT
+import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts' 
 
 export const dynamic = 'force-dynamic'
 
@@ -17,17 +17,26 @@ export default async function PlannerPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // NAČÍTANIE DÁT
+  // 1. NAČÍTANIE JOBOV (pre dialóg, musí byť zjednodušené)
+  const allJobs = await prisma.job.findMany({
+      where: { 
+          archivedAt: null, 
+          campaign: { client: { agencyId: agency.id } },
+      }, 
+      include: { 
+          campaign: { include: { client: true } },
+          assignments: { where: { userId: session.userId } } // Filtruj len joby, kde je priradený
+      }
+  })
+  // Filter: Kreatívec môže plánovať len tie, kde je priradený
+  const usersJobs = allJobs.filter(job => job.assignments.length > 0);
+  
+
+  // 2. NAČÍTANIE ZÁZNAMOV
   const entries = await prisma.plannerEntry.findMany({
     where: { userId: session.userId },
     include: { job: { include: { campaign: { include: { client: true } } } } },
     orderBy: { date: 'asc' }
-  })
-  
-  // NAČÍTANIE VŠETKÝCH JOBOV PRE PLÁNOVAČ
-  const allJobs = await prisma.job.findMany({
-      where: { archivedAt: null, campaign: { client: { agencyId: agency.id } } }, // VŠETKY JOBY
-      include: { campaign: { include: { client: true } } }
   })
 
   const today = new Date()
@@ -51,20 +60,23 @@ export default async function PlannerPage({ params }: { params: { slug: string }
     <div className="space-y-6 pb-20">
       <div className="flex justify-between items-center border-b pb-4">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Môj Týždeň</h2>
-        {/* TLAČIDLO TERAZ POSIELA VŠETKY JOBY */}
-        <AddPlannerEntryDialog allJobs={allJobs} /> 
+        {/* Posielame len tie joby, na ktoré má používateľ prístup (ktoré sú mu priradené) */}
+        <AddPlannerEntryDialog allJobs={usersJobs} />
       </div>
 
       {/* GRAF VYŤAŽENOSTI NA TÝŽDEŇ */}
       <Card className="shadow-lg border-none ring-1 ring-slate-200 overflow-hidden">
-          <CardHeader className="p-4 bg-slate-900 text-white"><CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2"><Clock className="h-4 w-4" /> Naplánovaný čas (Hodiny)</CardTitle></CardHeader>
+          <CardHeader className="p-4 bg-slate-900 text-white flex flex-row items-center justify-between">
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><Clock className="h-4 w-4" /> Naplánovaná Kapacita</CardTitle>
+              <Badge variant="secondary" className="bg-white/10 text-white font-bold text-xs">{plannedHoursData.reduce((s,i) => s + i.minutes, 0)} min</Badge>
+          </CardHeader>
           <CardContent className="pt-4 h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={plannedHoursData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <BarChart data={plannedHoursData} margin={{ top: 10, right: 1:0, left: -20, bottom: 0 }}>
                       <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
                       <YAxis fontSize={10} axisLine={false} tickLine={false} />
                       <Tooltip />
-                      <Bar dataKey="hodiny" name="Naplánované hodiny" fill="#34d399" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="hodiny" name="Hodiny" fill="#34d399" radius={[4, 4, 0, 0]} />
                   </BarChart>
               </ResponsiveContainer>
           </CardContent>
