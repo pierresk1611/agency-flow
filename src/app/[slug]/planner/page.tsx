@@ -28,12 +28,12 @@ export default async function PlannerPage({ params }: { params: { slug: string }
           assignments: { where: { userId: session.userId } }
       }
   })
+  // Filter: Iba joby, kde je používateľ priradený (pre dialóg)
   const usersJobs = allJobs.filter(job => job.assignments.length > 0);
   
   // 2. NAČÍTANIE ZÁZNAMOV
   const entries = await prisma.plannerEntry.findMany({
     where: { userId: session.userId },
-    // KRITICKÝ OCHRANNÝ FILTER: Ak job bol zmazaný, nepadni
     include: { job: { include: { campaign: { include: { client: true } } } } },
     orderBy: { date: 'asc' }
   })
@@ -98,4 +98,20 @@ export default async function PlannerPage({ params }: { params: { slug: string }
                         <div key={e.id} className="p-2 bg-white border rounded text-[10px] shadow-sm flex justify-between items-center">
                             <div>
                                 <p className="font-bold text-blue-600 uppercase">{e.job?.campaign?.client?.name || 'Interná práca'}</p>
-                                <p className="font-medium truncate"></p>
+                                <p className="font-medium truncate">{e.title}</p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <Badge variant="outline" className="text-[8px] h-4 mb-1">{e.minutes}m</Badge>
+                                <Trash2 className="h-3 w-3 text-red-400 cursor-pointer hover:text-red-600" />
+                            </div>
+                        </div>
+                    ))
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
