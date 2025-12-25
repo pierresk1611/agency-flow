@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator' // <--- PRIDANÝ Separator
+import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Trophy, FileText, Download, Users, Briefcase, Calendar, Euro } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -26,6 +26,14 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
 
   if (!tender || tender.agency.slug !== params.slug) return notFound()
 
+  // OPRAVA: Premenná pre kontrolu oprávnení (pridaný ACCOUNT)
+  const canConvert = !tender.isConverted && (
+    session.role === 'ADMIN' || 
+    session.role === 'TRAFFIC' || 
+    session.role === 'SUPERADMIN' || 
+    session.role === 'ACCOUNT'
+  )
+
   return (
     <div className="space-y-6 pb-12">
       {/* HEADER */}
@@ -43,11 +51,12 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
                     <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50 font-bold italic px-3 animate-pulse">Aktívny Pitch</Badge>
                 )}
             </div>
-            <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-widest font-bold font-mono">ID: {tender.id}</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-widest font-bold">ID: {tender.id}</p>
           </div>
         </div>
 
-        {!tender.isConverted && (session.role === 'ADMIN' || session.role === 'TRAFFIC' || session.role === 'SUPERADMIN') && (
+        {/* TLAČIDLO - Používa novú podmienku canConvert */}
+        {canConvert && (
             <ConvertTenderButton tenderId={tender.id} slug={params.slug} />
         )}
       </div>
@@ -89,7 +98,7 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
                                         </div>
                                         <span className="text-xs font-bold text-slate-700 truncate">{f.fileUrl}</span>
                                     </div>
-                                    <Download className="h-4 w-4 text-slate-300" />
+                                    <Download className="h-4 w-4 text-slate-300 cursor-pointer hover:text-slate-600" />
                                 </div>
                             ))
                         )}
@@ -106,12 +115,12 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
                         <Users className="h-4 w-4" /> Pitch Team
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-6 space-y-4 px-6">
+                <CardContent className="pt-4 space-y-4 px-6">
                     {tender.assignments.length === 0 ? (
                         <p className="text-xs text-slate-400 text-center py-4 italic">Nikto zatiaľ nepracuje na ponuke.</p>
                     ) : (
                         tender.assignments.map(a => (
-                            <div key={a.id} className="flex items-center gap-3">
+                            <div key={a.id} className="flex items-center gap-3 text-sm">
                                 <Avatar className="h-9 w-9 border-2 border-white shadow-md">
                                     <AvatarFallback className="bg-purple-100 text-purple-700 text-xs font-black uppercase">
                                         {(a.user.name || a.user.email).charAt(0).toUpperCase()}
@@ -119,7 +128,7 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
                                 </Avatar>
                                 <div className="flex flex-col">
                                     <span className="font-bold text-sm text-slate-800">{a.user.name || a.user.email.split('@')[0]}</span>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{a.roleOnJob}</span>
+                                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{a.roleOnJob}</span>
                                 </div>
                             </div>
                         ))

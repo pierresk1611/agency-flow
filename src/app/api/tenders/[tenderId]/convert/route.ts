@@ -7,7 +7,11 @@ export async function POST(
   { params }: { params: { tenderId: string } }
 ) {
   const session = getSession()
-  if (!session || (session.role !== 'ADMIN' && session.role !== 'TRAFFIC')) {
+  
+  // OPRAVA: Pridaný ACCOUNT do zoznamu povolených rolí
+  const allowedRoles = ['ADMIN', 'TRAFFIC', 'SUPERADMIN', 'ACCOUNT'];
+  
+  if (!session || !allowedRoles.includes(session.role)) {
     return NextResponse.json({ error: 'Prístup zamietnutý' }, { status: 403 })
   }
 
@@ -20,9 +24,9 @@ export async function POST(
 
     if (!tender) return NextResponse.json({ error: 'Tender nenájdený' }, { status: 404 })
 
-    // 2. TRANSAKCIA: Vytvoríme klienta a všetko pod ním
+    // 2. TRANSAKCIA: Vytvorenie klienta a preklopenie dát
     const result = await prisma.$transaction(async (tx) => {
-      // A. Vytvoríme klienta (použijeme názov tendra ako dočasný názov firmy)
+      // A. Vytvoríme klienta
       const newClient = await tx.client.create({
         data: {
           name: tender.title.replace('Tender: ', ''),
@@ -52,7 +56,12 @@ export async function POST(
       })
 
       // D. Presunieme priradených ľudí (TenderAssignment -> JobAssignment)
-      for (const ta of tender.assignments) {
+      // Poznámka: Keďže TenderAssignment je iný model, vytvoríme nové záznamy
+      const tenderAssignments = await tx.tenderAssignment.findMany({
+        where: { tenderId: tender.id }
+      })
+
+      for (const ta of tenderAssignments) {
         await tx.jobAssignment.create({
           data: {
             jobId: newJob.id,
@@ -70,7 +79,7 @@ export async function POST(
           })
       }
 
-      // F. Označíme tender ako vyhraný/skonvertovaný
+      // F. Označíme tender ako vyhraný
       await tx.tender.update({
         where: { id: tender.id },
         data: { isConverted: true, status: 'DONE' }
@@ -80,8 +89,8 @@ export async function POST(
     })
 
     return NextResponse.json(result)
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Chyba pri konverzii' }, { status: 500 })
+  } catch (error: any) {
+    console.error("CONVERT ERROR:", error)
+    return NextResponse.json({ error: 'Chyba pri konverzii: ' + error.message }, { status: 500 })
   }
 }
