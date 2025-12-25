@@ -170,8 +170,8 @@ model PlannerEntry {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  jobId     String
-  job       Job      @relation(fields: [jobId], references: [id])
+  jobId     String? // Voliteľné
+  job       Job?     @relation(fields: [jobId], references: [id]) // <--- OPRAVA: Aj job je voliteľný!
   date      DateTime
   minutes   Int      @default(60)
   title     String?

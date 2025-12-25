@@ -3,87 +3,90 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger, // <--- KRITICKÝ IMPORT
+  DialogFooter 
+} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea" // <--- Pridaný textarea
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Loader2 } from 'lucide-react'
+import { format } from 'date-fns'
 
-export function AddTenderDialog({ slug }: { slug: string }) {
+export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   
+  const [jobId, setJobId] = useState('')
+  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [minutes, setMinutes] = useState('60')
   const [title, setTitle] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [budget, setBudget] = useState('0')
-  const [description, setDescription] = useState('')
 
-  const handleCreate = async () => {
-    if (!title || !deadline) return
+  const handleSave = async () => {
+    if (!title || !date) return
     setLoading(true)
+    const finalJobId = jobId === 'INTERNAL' ? '' : jobId;
+
     try {
-      const res = await fetch(`/api/tenders`, { // <--- OPRAVENÁ URL
+      const res = await fetch(`/api/planner`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          title, 
-          deadline, 
-          budget,
-          description
+          jobId: finalJobId, 
+          date, 
+          minutes: minutes,
+          title
         })
       })
-      
       if (res.ok) {
         setOpen(false)
-        setTitle(''); setDeadline(''); setBudget('0'); setDescription('')
+        setJobId(''); setDate(format(new Date(), 'yyyy-MM-dd')); setMinutes('60'); setTitle('')
         router.refresh()
       } else {
-        const err = await res.json()
-        alert("Chyba: " + err.error)
+          alert("Chyba: Nepodarilo sa uložiť plán.")
       }
-    } catch (e) {
-      alert("Nepodarilo sa spojiť so serverom.")
-    } finally {
-      setLoading(false)
-    }
+    } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-purple-700 hover:bg-purple-800 text-white gap-2">
-            <Plus className="h-4 w-4" /> Nový Pitch / Tender
-        </Button>
+        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"><Plus className="h-4 w-4 mr-2" /> Naplánovať prácu</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nový Tender</DialogTitle>
-          <DialogDescription>Zadajte základné zadanie pre tento pitching.</DialogDescription>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>Nový záznam v Plánovači</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>Názov tendra</Label>
-            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Napr. McDonalds – Social 2025" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-                <Label>Deadline</Label>
-                <Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
-            </div>
-            <div className="grid gap-2">
-                <Label>Budget / Fee (€)</Label>
-                <Input type="number" value={budget} onChange={e => setBudget(e.target.value)} />
-            </div>
+            <Label>Job / Projekt (Voliteľné)</Label>
+            <Select onValueChange={setJobId} value={jobId}>
+              <SelectTrigger><SelectValue placeholder="Vyberte job, na ktorom budete pracovať" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="INTERNAL">INTERNÁ PRÁCA / BEZ KLIENTA</SelectItem> 
+                {allJobs.map(job => (
+                    <SelectItem key={job.id} value={job.id}>
+                        {job.title} ({job.campaign.client.name})
+                    </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
-            <Label>Zadanie (Brief)</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="O čom je tento tender?" />
+            <Label>Popis úlohy</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Napr. Príprava podkladov k tendru..." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2"><Label>Dátum</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+            <div className="grid gap-2"><Label>Odhad minút</Label><Input type="number" value={minutes} onChange={e => setMinutes(e.target.value)} /></div>
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleCreate} disabled={loading || !title || !deadline} className="bg-purple-700 text-white">
-            {loading ? <Loader2 className="animate-spin" /> : "Vytvoriť Tender"}
+          <Button onClick={handleSave} disabled={loading || !title || !date} className="bg-emerald-600 text-white w-full">
+            {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Uložiť do plánu"}
           </Button>
         </DialogFooter>
       </DialogContent>
