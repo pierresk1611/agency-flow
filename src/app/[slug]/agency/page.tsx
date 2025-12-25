@@ -13,7 +13,6 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
       redirect('/login')
   }
 
-  // Ak je creative, nemá tu čo robiť
   if (session.role === 'CREATIVE') {
     redirect(`/${params.slug}`)
   }
