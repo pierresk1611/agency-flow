@@ -2,32 +2,29 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
-export async function POST(request: Request) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { tenderId: string } }
+) {
   try {
     const session = getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { title, deadline, budget, description } = body
+    const { description, title, budget, status } = body
 
-    if (!title || !deadline) {
-        return NextResponse.json({ error: 'Názov a deadline sú povinné' }, { status: 400 })
-    }
-
-    const tender = await prisma.tender.create({
+    const updated = await prisma.tender.update({
+      where: { id: params.tenderId },
       data: {
+        description,
         title,
-        description: description || "",
-        deadline: new Date(deadline),
-        budget: parseFloat(budget || '0'),
-        agencyId: session.agencyId,
-        status: 'TODO'
+        status,
+        budget: budget ? parseFloat(budget) : undefined
       }
     })
 
-    return NextResponse.json(tender)
-  } catch (error: any) {
-    console.error("TENDER CREATE ERROR:", error)
+    return NextResponse.json(updated)
+  } catch (error) {
     return NextResponse.json({ error: 'Server Error' }, { status: 500 })
   }
 }
