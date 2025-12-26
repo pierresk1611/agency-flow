@@ -1,15 +1,18 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { format, addDays } from 'date-fns'
-import { AlertCircle, Clock, TrendingUp, Users, Euro, CheckCircle2, ListChecks, Download, PieChart as PieIcon, BarChart3 } from "lucide-react"
+import { format, addDays, differenceInDays } from 'date-fns'
+import { 
+  AlertCircle, Clock, TrendingUp, Users, Euro, 
+  CheckCircle2, ListChecks, Download, PieChart as PieIcon, BarChart3, Calendar
+} from "lucide-react"
 import Link from 'next/link'
 
-// Importy grafov
+// Importy grafov (Uisti sa, že sú v package.json!)
 import { BudgetChart } from "@/components/charts/budget-chart"
 import { WorkloadChart } from "@/components/charts/workload-chart"
 import { TimesheetStatusChart } from "@/components/charts/timesheet-status-chart"
@@ -30,21 +33,24 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const now = new Date()
   const criticalThreshold = addDays(now, 7)
 
-  // 1. NAČÍTANIE JOBOV (Filtrované cez klienta a archív)
+  // 1. NAČÍTANIE JOBOV (Null-safe query)
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
       campaign: { client: { agencyId: agency.id } },
       assignments: isCreative ? { some: { userId: session.userId } } : undefined
     },
-    include: { budgets: true, campaign: { include: { client: true } }, assignments: { include: { user: true } } }
+    include: { 
+      budgets: true, 
+      campaign: { include: { client: true } } 
+    }
   }) || []
 
   // 2. ANALYTIKA: TIMING
   const overdue = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline < now)
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline >= now && j.deadline <= criticalThreshold)
 
-  // 3. ANALYTIKA: BUDGETY (Plan vs Real)
+  // 3. BUDGET DÁTA PRE GRAF (Safe Mapping)
   const budgetData = jobs.filter(j => (j.budget || 0) > 0).slice(0, 5).map(j => ({
       id: j.id,
       name: j.title.substring(0, 10),
@@ -52,7 +58,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
       real: Number(j.budgets?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0)
   }))
 
-  // 4. ANALYTIKA: VYŤAŽENOSŤ TÍMU
+  // 4. VYŤAŽENOSŤ TÍMU (Admin only)
   let workloadData: any[] = []
   if (!isCreative) {
     const users = await prisma.user.findMany({ 
@@ -62,7 +68,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
     workloadData = users.map(u => ({ name: u.name || u.email.split('@')[0], value: u._count?.assignments || 0 })).filter(v => v.value > 0)
   }
 
-  // 5. ANALYTIKA: STAV ÚLOH
+  // 5. STATUSY JOBOV
   const statusCounts = {
       TODO: jobs.filter(j => j.status === 'TODO').length,
       IN_PROGRESS: jobs.filter(j => j.status === 'IN_PROGRESS').length,
@@ -71,18 +77,17 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const jobStatusData = [{ name: 'TODO', value: statusCounts.TODO }, { name: 'IN_PROGRESS', value: statusCounts.IN_PROGRESS }, { name: 'DONE', value: statusCounts.DONE }]
 
   // 6. TIMESHEET ANALYTIKA
-  const pendingCount = await prisma.timesheet.count({
+  const pendingCount = await prisma.timesheet.count({ 
     where: { 
-        status: 'PENDING', 
-        endTime: { not: null },
-        jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } }
-    }
+        status: 'PENDING', endTime: { not: null },
+        jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } } 
+    } 
   })
   const approvedCount = await prisma.timesheet.count({
     where: { 
-        status: 'APPROVED', 
-        jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } }
-      }
+        status: 'APPROVED',
+        jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } } 
+    }
   })
   const tsData = [{ name: 'Výkazy', approved: approvedCount, pending: pendingCount }]
 
@@ -97,10 +102,10 @@ export default async function DashboardPage({ params }: { params: { slug: string
   // 8. KREATÍVCOVA ŠPECIÁLNA ANALYTIKA
   let creativeTimeData: any[] = []
   if (isCreative) {
-    const myTs = await prisma.timesheet.findMany({
-        where: { jobAssignment: { userId: session.userId }, endTime: { not: null } },
-        orderBy: { startTime: 'asc' },
-        take: 10
+    const myTs = await prisma.timesheet.findMany({ 
+        where: { jobAssignment: { userId: session.userId }, endTime: { not: null } }, 
+        orderBy: { startTime: 'asc' }, 
+        take: 10 
     })
     creativeTimeData = myTs.map(t => ({ name: format(new Date(t.startTime), 'd.M.'), minutes: t.durationMinutes || 0 }))
   }
@@ -121,12 +126,9 @@ export default async function DashboardPage({ params }: { params: { slug: string
         )}
       </div>
 
-      {/* KPI KARTY */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href={`/${params.slug}/jobs`} className="block transform transition hover:scale-105">
-            <Card className="bg-slate-900 text-white h-full shadow-lg border-none">
-                <CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent>
-            </Card>
+            <Card className="bg-slate-900 text-white h-full shadow-lg border-none"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent></Card>
         </Link>
         <Card className="bg-red-600 text-white shadow-lg border-none">
             <CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-80">Mešká</p><div className="text-2xl font-black">{overdue.length}</div></CardContent>
@@ -155,9 +157,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
         {!isCreative && (
             <Card className="lg:col-span-8 shadow-xl border-none ring-1 ring-slate-200">
                 <CardHeader className="border-b bg-slate-50/50 py-3"><CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500"><Euro className="h-3 w-3" /> Finančný stav projektov</CardTitle></CardHeader>
-                <CardContent className="p-4">
-                    <BudgetChart data={budgetData} slug={params.slug} />
-                </CardContent>
+                <CardContent className="p-4"><BudgetChart data={budgetData} slug={params.slug} /></CardContent>
             </Card>
         )}
 
@@ -168,8 +168,8 @@ export default async function DashboardPage({ params }: { params: { slug: string
                 <JobStatusChart data={jobStatusData} />
                 <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
                     <div className="bg-red-50 p-2 rounded-lg text-red-700 font-black text-xs">{statusCounts.TODO}</div>
-                    <div className="bg-blue-50 p-2 rounded-lg text-blue-700 font-black">{statusCounts.IN_PROGRESS}</div>
-                    <div className="bg-green-50 p-2 rounded-lg text-green-700 font-black">{statusCounts.DONE}</div>
+                    <div className="bg-blue-50 p-2 rounded-lg text-blue-700 font-black">WORK: {statusCounts.IN_PROGRESS}</div>
+                    <div className="bg-green-50 p-2 rounded-lg text-green-700 font-black">DONE: {statusCounts.DONE}</div>
                 </div>
             </CardContent>
         </Card>
