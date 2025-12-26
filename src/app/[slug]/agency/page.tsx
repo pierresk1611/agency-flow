@@ -6,22 +6,22 @@ import { redirect } from "next/navigation"
 
 export const dynamic = 'force-dynamic'
 
-export default function AgencyPage() {
-  const session = getSession()
+export default async function AgencyPage() {
+  const session = await getSession()
   
   if (!session) {
       redirect('/login')
   }
 
-  if (session.role === 'CREATIVE') {
-    redirect('/')
-  }
+  const isReadOnly = session.role === 'CREATIVE'
 
   return (
     <div className="space-y-6 pb-10">
       <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Administrácia</h2>
-        <p className="text-muted-foreground text-sm font-medium">Správa tímu a nastavení agentúry.</p>
+        <p className="text-muted-foreground text-sm font-medium">
+          Správa tímu a nastavení agentúry {isReadOnly ? '(len na čítanie)' : ''}
+        </p>
       </div>
 
       <Tabs defaultValue="team" className="space-y-6">
@@ -37,11 +37,11 @@ export default function AgencyPage() {
         </div>
 
         <TabsContent value="team" className="space-y-4 outline-none">
-           <TeamList />
+           <TeamList readOnly={isReadOnly} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4 outline-none">
-            <AgencySettings />
+            <AgencySettings readOnly={isReadOnly} />
         </TabsContent>
       </Tabs>
     </div>
