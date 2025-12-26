@@ -60,7 +60,7 @@ export function TrafficWorkloadManager({
         body: JSON.stringify({ assignmentId: activeAssign.id, targetUserId, reason })
       })
       if (res.ok) {
-        alert("Žiadosť o presun bola odoslaná.")
+        alert("Žiadosť o presun práce bola odoslaná.")
         setRequestOpen(false)
         setReason('')
         setTargetUserId('')
@@ -90,7 +90,7 @@ export function TrafficWorkloadManager({
                 </CardTitle>
               </div>
               <Badge variant="secondary" className="ml-auto text-[9px] font-bold uppercase">
-                {user.assignments.length} ÚLOHY
+                {user.assignments.length} Úlohy
               </Badge>
             </div>
           </CardHeader>
@@ -129,7 +129,6 @@ export function TrafficWorkloadManager({
                           </SelectContent>
                         </Select>
                       ) : (
-                        // CREATIVE VIDÍ TLAČIDLO LEN PRI SVOJICH ASSIGNMENTOCH
                         assign.userId === currentUserId && (
                             <Button 
                                 variant="ghost" 
@@ -149,11 +148,11 @@ export function TrafficWorkloadManager({
         </Card>
       ))}
 
-      {/* DIALÓG PRE ŽIADOSŤ */}
+      {/* DIALÓG PRE ŽIADOSŤ O PRESUN */}
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
           <DialogContent className="max-w-md">
               <DialogHeader>
-                  <DialogTitle className="text-lg font-bold uppercase italic">Žiadosť o presun práce</DialogTitle>
+                  <DialogTitle className="text-lg font-bold uppercase italic tracking-tight">Žiadosť o presun práce</DialogTitle>
                   <DialogDescription className="text-xs">Uveďte dôvod a navrhnite kolegu.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-6 py-4">

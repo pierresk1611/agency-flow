@@ -16,7 +16,7 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   
   if (!agency) return notFound()
 
-  // 1. NAČÍTANIE VŠETKÝCH AKTÍVNYCH UŽÍVATEĽOV
+  // 1. NAČÍTANIE DÁT Z DATABÁZY
   const rawUsers = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     orderBy: { position: 'asc' },
@@ -26,9 +26,7 @@ export default async function TrafficPage({ params }: { params: { slug: string }
         include: { 
             job: { 
                 include: { 
-                    campaign: { 
-                        include: { client: true } 
-                    } 
+                    campaign: { include: { client: true } } 
                 } 
             } 
         }
@@ -36,12 +34,11 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     }
   })
 
-  // 2. OČISTA DÁT (Serializácia pre Vercel)
-  // Toto zabezpečí, že dátumy nezhodia server
+  // 2. RUČNÁ SERIALIZÁCIA (Prevod dátumov na stringy - ZABRÁNI CHYBE 500)
   const sanitizedUsers = rawUsers.map(user => ({
     id: user.id,
     email: user.email,
-    name: user.name,
+    name: user.name || user.email.split('@')[0],
     position: user.position || "Bez pozície",
     role: user.role,
     assignments: user.assignments.map(a => ({
@@ -51,17 +48,16 @@ export default async function TrafficPage({ params }: { params: { slug: string }
       job: {
         id: a.job.id,
         title: a.job.title,
-        deadline: a.job.deadline.toISOString(), // Konverzia dátumu na text
+        deadline: a.job.deadline.toISOString(), // <--- Date na String
         clientName: a.job.campaign.client.name,
-        campaignName: a.job.campaign.name
       }
     }))
   }))
 
-  // 3. ZOSKUPOVANIE PODĽA POZÍCIE
+  // 3. ZOSKUPOVANIE
   const groups: Record<string, any[]> = {}
   sanitizedUsers.forEach(u => {
-    const pos = u.position || "Ostatní"
+    const pos = u.position || "Ostatní / Nezaradení"
     if (!groups[pos]) groups[pos] = []
     groups[pos].push(u)
   })
@@ -72,32 +68,30 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     <div className="space-y-8 pb-20">
       <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Traffic & Kapacita</h2>
-        <p className="text-muted-foreground text-sm font-medium">Prehľad vyťaženosti tímu podľa odbornosti.</p>
+        <p className="text-muted-foreground text-sm font-medium">Riadenie vyťaženosti a schvaľovanie presunov.</p>
       </div>
 
-      {/* INBOX ŽIADOSTÍ (Iba pre manažérov) */}
+      {/* Zobrazenie žiadostí pre manažment */}
       {isManager && <TrafficRequestsInbox />}
 
-      <div className="space-y-12">
-        {Object.entries(groups).map(([groupName, members]) => (
-            <div key={groupName} className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-4 py-1 border rounded-full">
-                        {groupName} ({members.length})
-                    </h3>
-                    <div className="h-px flex-1 bg-slate-200" />
-                </div>
-                
-                <TrafficWorkloadManager 
-                    initialUsers={members}
-                    allUsersList={sanitizedUsers} // Posielame očistený zoznam
-                    role={session.role} 
-                    currentUserId={session.userId}
-                />
+      {Object.entries(groups).map(([groupName, members]) => (
+        <div key={groupName} className="space-y-4">
+            <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-4 py-1 border rounded-full whitespace-nowrap">
+                    {groupName} ({members.length})
+                </h3>
+                <div className="h-px flex-1 bg-slate-200" />
             </div>
-        ))}
-      </div>
+            
+            <TrafficWorkloadManager 
+                initialUsers={members}
+                allUsersList={sanitizedUsers} 
+                role={session.role} 
+                currentUserId={session.userId}
+            />
+        </div>
+      ))}
     </div>
   )
 }
