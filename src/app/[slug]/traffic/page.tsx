@@ -2,8 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { TrafficWorkloadManager } from '@/components/traffic-workload-manager'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2 } from 'lucide-react'
+import { TrafficRequestsInbox } from '@/components/traffic-requests-inbox' // <--- NOVÝ IMPORT
 
 export const dynamic = 'force-dynamic'
 
@@ -14,25 +13,22 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // OCHRANA: Len Admin/Traffic/Superadmin
-  const allowedRoles = ['ADMIN', 'TRAFFIC', 'SUPERADMIN']
-  if (!allowedRoles.includes(session.role)) {
-    redirect(`/${params.slug}`)
-  }
-
-  // NAČÍTANIE VŠETKÝCH AKTÍVNYCH UŽÍVATEĽOV S ICH PRÁCOU (Pre manažment)
+  // NAČÍTANIE UŽÍVATEĽOV
   const users = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     orderBy: { position: 'asc' },
     include: {
       assignments: {
         where: { job: { status: { not: 'DONE' }, archivedAt: null } },
-        include: { job: { include: { campaign: { include: { client: true } } } } }
+        include: { 
+            job: { 
+                include: { campaign: { include: { client: true } } } 
+            } 
+        }
       }
     }
   })
 
-  // ZOSKUPOVANIE PODĽA POZÍCIE
   const groups: Record<string, any[]> = {}
   users.forEach(u => {
     const pos = u.position || "Ostatní / Nezaradení"
@@ -40,12 +36,18 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     groups[pos].push(u)
   })
 
+  // Kontrola, či môže vidieť Inbox (Creative ho nevidí)
+  const isManager = session.role === 'ADMIN' || session.role === 'TRAFFIC' || session.role === 'SUPERADMIN' || session.role === 'ACCOUNT'
+
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Traffic & Kapacita</h2>
-        <p className="text-muted-foreground text-sm font-medium">Prehľad vyťaženosti tímu podľa odbornosti.</p>
+        <p className="text-muted-foreground text-sm font-medium">Prehľad vyťaženosti a správa požiadaviek.</p>
       </div>
+
+      {/* INBOX ŽIADOSTÍ (Len pre manažérov) */}
+      {isManager && <TrafficRequestsInbox />}
 
       {Object.entries(groups).map(([groupName, members]) => (
         <div key={groupName} className="space-y-4">
