@@ -3,7 +3,7 @@ import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { TrafficWorkloadManager } from '@/components/traffic-workload-manager'
 import { TrafficRequestsInbox } from '@/components/traffic-requests-inbox'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card' // Pre istotu
+import { Card, CardHeader, CardTitle } from '@/components/ui/card' // Pre istotu import
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,6 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   if (!session) redirect('/login')
 
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
-  
   if (!agency) return notFound()
 
   // 1. NAČÍTANIE VŠETKÝCH DÁT
@@ -22,31 +21,40 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     include: {
       assignments: {
         where: { job: { status: { not: 'DONE' }, archivedAt: null } },
-        include: { job: { include: { campaign: { include: { client: true } } } } }
+        include: { 
+            job: { 
+                include: { 
+                    campaign: { include: { client: true } } 
+                } 
+            } 
+        }
       }
     }
   })
 
-  // 2. EXTRÉMNE BEZPEČNÁ SERIALIZÁCIA (ZABRÁNI PÁDU)
-  const sanitizedUsers = rawUsers.map(user => ({
-    id: user.id,
-    email: user.email,
-    name: user.name || user.email.split('@')[0],
-    position: user.position || "Bez pozície",
-    role: user.role,
-    assignments: (user.assignments || []).map(a => ({
-      id: a.id,
-      userId: a.userId,
-      roleOnJob: a.roleOnJob || "Člen tímu",
-      job: {
-        id: a.job?.id || "unknown",
-        title: a.job?.title || "Nepomenovaná úloha",
-        deadline: a.job?.deadline ? a.job.deadline.toISOString() : new Date().toISOString(),
-        clientName: a.job?.campaign?.client?.name || "Interný projekt",
-        campaignName: a.job?.campaign?.name || "N/A"
-      }
-    }))
-  }))
+  // 2. EXTRÉMNE BEZPEČNÁ SERIALIZÁCIA (FINÁLNA OPRAVA)
+  const sanitizedUsers = rawUsers.map(user => {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name || user.email.split('@')[0],
+      position: user.position || "Bez pozície",
+      role: user.role,
+      assignments: (user.assignments || []).map(a => ({
+        id: a.id,
+        userId: a.userId,
+        roleOnJob: a.roleOnJob || "Člen tímu",
+        job: {
+          id: a.job?.id || "unknown",
+          title: a.job?.title || "Nepomenovaná úloha",
+          // KRITICKÝ BODOVÝ FIX: Prevedieme Date objekt na String
+          deadline: a.job?.deadline ? a.job.deadline.toISOString() : new Date().toISOString(), 
+          clientName: a.job?.campaign?.client?.name || "Interný projekt",
+          campaignName: a.job?.campaign?.name || "N/A"
+        }
+      }))
+    }
+  })
 
   // 3. ZOSKUPOVANIE
   const groups: Record<string, any[]> = {}
@@ -80,7 +88,7 @@ export default async function TrafficPage({ params }: { params: { slug: string }
                 
                 <TrafficWorkloadManager 
                     initialUsers={members}
-                    allUsersList={sanitizedUsers.map(u => ({ id: u.id, name: u.name, email: u.email }))} // <--- FINAL FIX: Posielame len zjednodušené pole pre dropdown
+                    allUsersList={sanitizedUsers.map(u => ({ id: u.id, name: u.name, email: u.email }))}
                     role={session.role} 
                     currentUserId={session.userId}
                     slug={params.slug}
