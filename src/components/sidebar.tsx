@@ -18,6 +18,7 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
     { label: 'Timesheety', icon: Clock, href: `/${slug}/timesheets`, color: 'text-pink-700' },
   ]
 
+  // ADMIN VIEW: ADMIN, ACCOUNT, TRAFFIC a SUPERADMIN vidia viac možností
   if (role !== 'CREATIVE') {
     routes.push({ label: 'Tendre & Pitching', icon: Trophy, href: `/${slug}/tenders`, color: 'text-yellow-400' })
     routes.push({ label: 'Administrácia', icon: Users, href: `/${slug}/agency`, color: 'text-slate-400' })
@@ -33,7 +34,7 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {
-            const isActive = pathname === route.href || pathname?.startsWith(route.href + '/')
+            const isActive = pathname === route.href || pathname.startsWith(route.href + '/');
 
             return (
               <Link
@@ -54,14 +55,11 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </div>
       </div>
       <div className="px-3 py-4 border-t border-white/10">
-        <Button 
-            variant="ghost" 
-            className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
+        <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
             onClick={() => {
                 document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
                 window.location.href = "/login"
-            }}
-        >
+            }}>
             <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
         </Button>
       </div>
