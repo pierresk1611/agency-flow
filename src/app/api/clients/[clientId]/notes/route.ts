@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
-export async function POST(request: Request, { params }: { params: { clientId: string } }) {
+export async function POST(
+  request: Request,
+  { params }: { params: { clientId: string } }
+) {
   try {
     const session = getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -10,18 +13,20 @@ export async function POST(request: Request, { params }: { params: { clientId: s
     const body = await request.json()
     const { text, isPinned } = body
 
+    if (!text) return NextResponse.json({ error: 'Text je povinný' }, { status: 400 })
+
     const note = await prisma.clientNote.create({
       data: {
-        clientId: params.clientId,
-        userId: session.userId,
         text,
-        isPinned: isPinned || false
+        isPinned: isPinned || false,
+        clientId: params.clientId,
+        userId: session.userId
       },
       include: { user: true }
     })
 
     return NextResponse.json(note)
   } catch (error) {
-    return NextResponse.json({ error: 'Error' }, { status: 500 })
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
   }
 }

@@ -10,6 +10,7 @@ import { ContactPersonDialog } from '@/components/contact-person-dialog'
 import { ClientFileDialog } from '@/components/client-file-dialog'
 import { AddCampaignDialog } from '@/components/add-campaign-dialog'
 import { AddJobDialog } from '@/components/add-job-dialog'
+import { ClientNewsfeed } from '@/components/client-newsfeed' // <--- IMPORT
 import { format } from 'date-fns'
 import { getSession } from '@/lib/session'
 
@@ -22,6 +23,10 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
     include: {
       contacts: true,
       files: { orderBy: { createdAt: 'desc' } },
+      
+      // NOVÉ: Načítame notes
+      notes: { include: { user: true }, orderBy: { createdAt: 'desc' } },
+      
       campaigns: {
         include: { 
             jobs: { where: { archivedAt: null }, orderBy: { deadline: 'asc' } },
@@ -35,7 +40,7 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
 
   return (
     <div className="space-y-6 pb-10">
-      {/* HLAVIČKA */}
+      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
             <Link href={`/${params.slug}/clients`}>
@@ -53,15 +58,20 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
         
-        {/* LEFT: KAMPANE A KONTAKTY */}
+        {/* LEFT COLUMN */}
         <div className="lg:col-span-2 space-y-6">
             
-            {/* SEKICA KAMPANE */}
+            {/* 1. NEWSFEED / POZNÁMKY (Tu je to nové) */}
+            <div className="min-h-[400px]">
+                <ClientNewsfeed clientId={client.id} initialNotes={client.notes} />
+            </div>
+
+            {/* 2. KAMPANE */}
             <Card className="shadow-sm border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-slate-50/30">
-                    <CardTitle className="text-lg">Kampane a aktívne Joby</CardTitle>
+                    <CardTitle className="text-lg">Kampane a Joby</CardTitle>
                     <AddCampaignDialog clientId={client.id} />
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
@@ -83,14 +93,9 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                                     ) : (
                                         campaign.jobs.map(job => (
                                             <div key={job.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`h-2 w-2 rounded-full ${job.status === 'DONE' ? 'bg-green-500' : 'bg-blue-500'}`} />
-                                                    <span className="text-sm font-medium text-slate-700">{job.title}</span>
-                                                </div>
+                                                <span className="text-sm font-medium text-slate-700">{job.title}</span>
                                                 <div className="flex items-center gap-6">
-                                                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
-                                                        {format(new Date(job.deadline), 'dd.MM.yyyy')}
-                                                    </div>
+                                                    <span className="text-xs text-slate-500 font-mono">{format(new Date(job.deadline), 'dd.MM.yyyy')}</span>
                                                     <Badge variant="secondary" className="text-[10px] font-mono">{job.budget?.toFixed(0)} €</Badge>
                                                     <Link href={`/${params.slug}/jobs/${job.id}`}>
                                                         <Button variant="ghost" size="sm" className="text-blue-600 h-7 text-xs">Detail</Button>
@@ -105,15 +110,17 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                     )}
                 </CardContent>
             </Card>
+        </div>
 
-            {/* SEKICA KONTAKTY */}
+        {/* RIGHT COLUMN */}
+        <div className="space-y-6">
             <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-slate-50/30">
                     <CardTitle className="text-lg">Kontaktné osoby</CardTitle>
                     <ContactPersonDialog clientId={client.id} />
                 </CardHeader>
                 <CardContent className="pt-6">
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid gap-4">
                         {client.contacts.map(contact => (
                             <div key={contact.id} className="p-4 border rounded-xl bg-white shadow-sm hover:shadow-md transition">
                                 <p className="font-bold text-slate-800 text-sm">{contact.name}</p>
@@ -124,12 +131,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                                 </div>
                             </div>
                         ))}
+                        {client.contacts.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne kontakty.</p>}
                     </div>
                 </CardContent>
             </Card>
-        </div>
 
-        <div className="space-y-6">
             <Card className="shadow-sm border-blue-100">
                 <CardHeader className="flex flex-row items-center justify-between border-b bg-blue-50/30 py-3">
                     <CardTitle className="text-lg text-blue-900">Tendre & Dokumenty</CardTitle>
@@ -145,25 +151,8 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Download className="h-4 w-4" /></Button>
                         </div>
                     ))}
-                    {client.files.length === 0 && <p className="text-xs text-center text-slate-400 py-4 italic">Žiadne dokumenty.</p>}
+                    {client.files.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne dokumenty.</p>}
                 </CardContent>
-            </Card>
-
-            <Card className="bg-slate-900 text-white shadow-xl overflow-hidden">
-                <div className="p-6 relative">
-                    <Building2 className="absolute -right-4 -bottom-4 h-24 w-24 text-white/5" />
-                    <h4 className="text-sm font-medium text-slate-400 mb-4 uppercase tracking-widest">Rýchly prehľad</h4>
-                    <div className="space-y-4">
-                        <div className="flex justify-between border-b border-white/10 pb-2">
-                            <span className="text-xs text-slate-400 font-bold">Dátum akvizície</span>
-                            <span className="text-xs font-mono">{format(new Date(client.createdAt), 'dd.MM.yyyy')}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-white/10 pb-2">
-                            <span className="text-xs text-slate-400 font-bold">Aktívnych kampaní</span>
-                            <span className="text-xs font-mono">{client.campaigns.length}</span>
-                        </div>
-                    </div>
-                </div>
             </Card>
         </div>
       </div>
