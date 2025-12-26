@@ -4,61 +4,58 @@ import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
+// Toto API stiahne iba nevyhnutné informácie pre traffic managera a je robustné
 export async function GET() {
-  const session = getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
-    const requests = await prisma.reassignmentRequest.findMany({
-      where: {
-        status: 'PENDING',
-        assignment: { job: { campaign: { client: { agencyId: session.agencyId } } } }
+    const session = getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    
+    // Nájdenie Jobov, kde je človek v tíme (všetky joby, ak je admin/traffic)
+    const userJobFilter = session.role === 'CREATIVE' ? { 
+        assignments: { some: { userId: session.userId } }
+    } : {}
+
+    const rawUsers = await prisma.user.findMany({
+      where: { 
+          agencyId: session.agencyId,
+          active: true 
       },
-      include: {
-        requestByUser: true,
-        targetUser: true,
-        assignment: { include: { job: { include: { campaign: { include: { client: true } } } } } }
-      },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { position: 'asc' },
+      select: {
+          id: true, email: true, name: true, position: true, role: true,
+          assignments: {
+              where: { job: { status: { not: 'DONE' }, archivedAt: null, ...userJobFilter } },
+              include: { 
+                  job: { 
+                      select: {
+                          id: true, title: true, deadline: true,
+                          campaign: { select: { name: true, client: { select: { name: true } } } }
+                      } 
+                  }
+              }
+          }
+      }
     })
-    return NextResponse.json(requests)
-  } catch (error) {
-    console.error("FETCH_REQUESTS_ERROR:", error)
-    return NextResponse.json([], { status: 500 })
-  }
-}
 
-export async function PATCH(request: Request) {
-  const session = getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // SERIALIZÁCIA - PREVOD VŠETKÝCH DÁTUMOV NA STRING (FINÁLNE RIEŠENIE 500)
+    const serializedUsers = JSON.parse(JSON.stringify(rawUsers))
 
-  try {
-    const body = await request.json()
-    const { requestId, status } = body
-
-    const req = await prisma.reassignmentRequest.findUnique({ where: { id: requestId } })
-    if (!req) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-    if (status === 'APPROVED') {
-        await prisma.$transaction([
-            prisma.reassignmentRequest.update({
-                where: { id: requestId },
-                data: { status: 'APPROVED' }
-            }),
-            prisma.jobAssignment.update({
-                where: { id: req.assignmentId },
-                data: { userId: req.targetUserId }
-            })
-        ])
-    } else {
-        await prisma.reassignmentRequest.update({
-            where: { id: requestId },
-            data: { status: 'REJECTED' }
-        })
-    }
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+    // Zoskupenie pre frontend
+    const usersByPosition: Record<string, any[]> = {}
+    serializedUsers.forEach((user: any) => {
+        const pos = user.position || "Ostatní"
+        if (!usersByPosition[pos]) usersByPosition[pos] = []
+        usersByPosition[pos].push(user)
+    })
+    
+    return NextResponse.json({ 
+        users: serializedUsers, 
+        usersByPosition: usersByPosition 
+    })
+    
+  } catch (error: any) {
+    console.error("CRITICAL TRAFFIC FETCH ERROR:", error)
+    // Ak spadne server (napr. databáza), pošleme 500
+    return NextResponse.json({ error: 'Chyba servera pri načítaní vyťaženosti: ' + error.message }, { status: 500 })
   }
 }
