@@ -5,7 +5,7 @@ import { getSession } from '@/lib/session'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const session = getSession()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -22,7 +22,7 @@ export async function GET() {
 }
 
 export async function PATCH() {
-  const session = getSession()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -32,6 +32,7 @@ export async function PATCH() {
     })
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error("Notifications PATCH Error:", error)
     return NextResponse.json({ error: 'Server Error' }, { status: 500 })
   }
 }

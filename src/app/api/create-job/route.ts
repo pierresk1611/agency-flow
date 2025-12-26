@@ -4,15 +4,15 @@ import { getSession } from '@/lib/session'
 
 export async function POST(request: Request) {
   try {
-    const session = getSession()
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getSession() // nezabudni await
+    if (!session) 
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await request.json()
-    // Teraz Job API berie campaignId priamo z body
-    const { title, deadline, budget, campaignId } = body 
+    const { title, deadline, budget, campaignId } = await request.json()
 
+    // Overenie povinných polí
     if (!title || !deadline || !campaignId) {
-        return NextResponse.json({ error: 'Názov, termín a kampaň sú povinné' }, { status: 400 })
+      return NextResponse.json({ error: 'Názov, termín a kampaň sú povinné' }, { status: 400 })
     }
 
     const job = await prisma.job.create({
@@ -20,8 +20,9 @@ export async function POST(request: Request) {
         title,
         deadline: new Date(deadline),
         budget: parseFloat(budget || '0'),
-        campaignId: campaignId, 
-        status: 'TODO'
+        campaignId,
+        status: 'TODO',
+        createdById: session.userId // odporúčam logovať kto job vytvoril
       }
     })
 
@@ -29,6 +30,6 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("CREATE JOB ERROR:", error)
-    return NextResponse.json({ error: 'Chyba servera pri vytváraní jobu.' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Chyba servera pri vytváraní jobu.' }, { status: 500 })
   }
 }

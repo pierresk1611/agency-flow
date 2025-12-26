@@ -7,22 +7,30 @@ export async function POST(
   { params }: { params: { tenderId: string } }
 ) {
   try {
-    const session = getSession()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const { fileUrl, fileType } = body
 
-    if (!fileUrl) {
-        return NextResponse.json({ error: 'Chýba odkaz na súbor' }, { status: 400 })
+    if (!fileUrl || !fileUrl.trim()) {
+      return NextResponse.json({ error: 'Chýba odkaz na súbor' }, { status: 400 })
     }
 
-    // Uložíme súbor priradený k Tendru
+    // Overíme, či tender existuje
+    const tenderExists = await prisma.tender.findUnique({
+      where: { id: params.tenderId }
+    })
+    if (!tenderExists) {
+      return NextResponse.json({ error: 'Tender nenájdený' }, { status: 404 })
+    }
+
+    // Vytvorenie záznamu súboru priradeného k tendru
     const file = await prisma.file.create({
       data: {
         tenderId: params.tenderId,
         fileUrl: fileUrl.trim(),
-        fileType: fileType || 'LINK',
+        fileType: fileType?.toUpperCase() || 'LINK',
         uploadedBy: session.userId
       }
     })

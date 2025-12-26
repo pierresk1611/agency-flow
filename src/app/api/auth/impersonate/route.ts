@@ -7,13 +7,13 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
 export async function POST(request: Request) {
   // 1. Overenie Superadmina
-  const session = getSession()
+  const session = await getSession() // ✅ must await
   if (!session || session.role !== 'SUPERADMIN') {
       return NextResponse.json({ error: 'Prístup zamietnutý' }, { status: 403 })
   }
 
   try {
-    const body = await request.json()
+    const body: { agencyId?: string } = await request.json()
     const { agencyId } = body
 
     if (!agencyId) return NextResponse.json({ error: 'Chýba ID agentúry' }, { status: 400 })
@@ -26,25 +26,24 @@ export async function POST(request: Request) {
     if (!targetAgency) return NextResponse.json({ error: 'Agentúra neexistuje' }, { status: 404 })
 
     // 3. Vygenerujeme GOD MODE Token
-    // V tokene zmeníme agencyId na ID cieľovej agentúry
     const token = jwt.sign(
       {
         userId: session.userId,
         role: 'SUPERADMIN',
-        agencyId: targetAgency.id // Odteraz sa Prisma bude pýtať na túto agentúru
+        agencyId: targetAgency.id
       },
       JWT_SECRET,
       { expiresIn: '2h' }
     )
 
-    // 4. VRÁTIME TOKEN AJ SLUG
+    // 4. Vrátime token a slug
     return NextResponse.json({ 
         token, 
-        slug: targetAgency.slug // <--- TOTO JE KĽÚČOVÉ PRE REDIRECT
+        slug: targetAgency.slug
     })
 
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  } catch (error: any) {
+    console.error("SUPERADMIN GODMODE ERROR:", error)
+    return NextResponse.json({ error: 'Server Error: ' + error.message }, { status: 500 })
   }
 }

@@ -4,8 +4,8 @@ import { getSession } from '@/lib/session'
 
 export async function PATCH(request: Request) {
   try {
-    const session = getSession()
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'TRAFFIC' && session.role !== 'SUPERADMIN')) {
+    const session = await getSession()
+    if (!session || !['ADMIN', 'TRAFFIC', 'SUPERADMIN'].includes(session.role)) {
       return NextResponse.json({ error: 'Prístup zamietnutý' }, { status: 403 })
     }
 
@@ -13,18 +13,27 @@ export async function PATCH(request: Request) {
     const { assignmentId, newUserId } = body
 
     if (!assignmentId || !newUserId) {
-        return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
+      return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
     }
 
-    // Aktualizujeme priradenie na nového užívateľa
+    // Overenie, či priradenie existuje
+    const existingAssignment = await prisma.jobAssignment.findUnique({
+      where: { id: assignmentId }
+    })
+    if (!existingAssignment) {
+      return NextResponse.json({ error: 'Priradenie neexistuje' }, { status: 404 })
+    }
+
+    // Aktualizácia priradenia
     const updated = await prisma.jobAssignment.update({
       where: { id: assignmentId },
-      data: { userId: newUserId }
+      data: { userId: newUserId, reassignedBy: session.userId } // pridáme kto zmenil
     })
 
     return NextResponse.json(updated)
-  } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Chyba pri prehadzovaní jobu' }, { status: 500 })
+    
+  } catch (error: any) {
+    console.error("REASSIGN JOB ERROR:", error)
+    return NextResponse.json({ error: error.message || 'Chyba pri prehadzovaní jobu' }, { status: 500 })
   }
 }
