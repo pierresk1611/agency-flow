@@ -33,9 +33,8 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </Link>
         <div className="space-y-1">
           {routes.map((route) => {
-            // ZJEDNODUŠENÁ LOGIKA AKTIVÁCIE: IBA PRESNÁ ZHODA
-            const isActive = pathname === route.href;
-            
+            const isActive = pathname === route.href || pathname?.startsWith(route.href + '/')
+
             return (
               <Link
                 key={route.href}
@@ -55,11 +54,14 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         </div>
       </div>
       <div className="px-3 py-4 border-t border-white/10">
-        <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
+        <Button 
+            variant="ghost" 
+            className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
             onClick={() => {
                 document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
                 window.location.href = "/login"
-            }}>
+            }}
+        >
             <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
         </Button>
       </div>
