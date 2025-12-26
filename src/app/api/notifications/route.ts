@@ -1,43 +1,37 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"; // Uprav cestu podľa tvojej auth konfigurácie
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
 
-// GET: Načítanie notifikácií pre prihláseného usera
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return new NextResponse("Unauthorized", { status: 401 });
+  const session = getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const notifications = await prisma.notification.findMany({
-    where: {
-      userId: session.user.id,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 20, // Načítame posledných 20
-  });
-
-  return NextResponse.json(notifications);
+  try {
+    const notes = await prisma.notification.findMany({
+      where: { userId: session.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20
+    })
+    return NextResponse.json(notes || [])
+  } catch (error) {
+    console.error("Notifications GET Error:", error)
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  }
 }
 
-// PATCH: Označenie notifikácie ako prečítanej
-export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return new NextResponse("Unauthorized", { status: 401 });
+export async function PATCH() {
+  const session = getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json();
-  const { id } = body;
-
-  await prisma.notification.update({
-    where: {
-      id: id,
-      userId: session.user.id, // Bezpečnostná kontrola: user môže updatnuť len svoje
-    },
-    data: {
-      isRead: true,
-    },
-  });
-
-  return NextResponse.json({ success: true });
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: session.userId, isRead: false },
+      data: { isRead: true }
+    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Server Error' }, { status: 500 })
+  }
 }
