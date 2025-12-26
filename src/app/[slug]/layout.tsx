@@ -1,6 +1,7 @@
+// src/app/[slug]/layout.tsx
 import { Sidebar } from '@/components/sidebar'
 import { MobileNav } from '@/components/mobile-nav'
-import { getSession } from '@/lib/session'
+import { getSession } from '@/lib/session' // <--- AKTUALIZOVANÝ IMPORT
 import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 
@@ -11,7 +12,8 @@ export default async function AgencyLayout({
   children: React.ReactNode
   params: { slug: string }
 }) {
-  const session = getSession()
+  // !!! AWAIT NA GETSESSION !!!
+  const session = await getSession() 
   if (!session) redirect('/login')
 
   const agency = await prisma.agency.findUnique({
@@ -20,11 +22,7 @@ export default async function AgencyLayout({
 
   if (!agency) return notFound()
 
-  // OCHRANA: Kreatívec nesmie na Agency, ale na /timesheets môže
-  if (session.role === 'CREATIVE' && !['/', '/jobs', '/timesheets'].some(path => window.location.pathname.includes(path))) {
-      // Toto je ťažké ošetriť na serveri, ale skúsme to ošetriť v sidebare/frontend
-  }
-  
+  // OCHRANA ROLÍ: Creative môže vidieť len svoj priestor, inak ho vyhoď.
   if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
     const myAgency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (myAgency) redirect(`/${myAgency.slug}`)

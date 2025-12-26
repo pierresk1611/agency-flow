@@ -1,18 +1,15 @@
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { format, addDays, differenceInDays } from 'date-fns'
-import { 
-  AlertCircle, Clock, TrendingUp, Users, Euro, 
-  CheckCircle2, ListChecks, Download, PieChart as PieIcon, BarChart3, Calendar
-} from "lucide-react"
+import { format, addDays } from 'date-fns'
+import { AlertCircle, Clock, TrendingUp, Users, Euro, CheckCircle2, ListChecks, Download, PieChart as PieIcon, BarChart3 } from "lucide-react"
 import Link from 'next/link'
 
-// Importy grafov (Uisti sa, že sú v package.json!)
+// Importy grafov
 import { BudgetChart } from "@/components/charts/budget-chart"
 import { WorkloadChart } from "@/components/charts/workload-chart"
 import { TimesheetStatusChart } from "@/components/charts/timesheet-status-chart"
@@ -22,35 +19,37 @@ import { PersonalTimeChart } from "@/components/charts/personal-time-chart"
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage({ params }: { params: { slug: string } }) {
-  const session = getSession()
+  // !!! AWAIT NA GETSESSION !!!
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
-  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) redirect('/login')
+
+  // OCHRANA: Creative musí patriť do agency. Ak nie, redirect.
+  if (session.role === 'CREATIVE' && session.agencyId !== agency.id) {
+      redirect('/login')
+  }
 
   const isCreative = session.role === 'CREATIVE'
   const now = new Date()
   const criticalThreshold = addDays(now, 7)
 
-  // 1. NAČÍTANIE JOBOV (Null-safe query)
+  // 1. NAČÍTANIE JOBOV (Filtrovanie cez klienta a archív)
   const jobs = await prisma.job.findMany({
     where: { 
       archivedAt: null,
       campaign: { client: { agencyId: agency.id } },
       assignments: isCreative ? { some: { userId: session.userId } } : undefined
     },
-    include: { 
-      budgets: true, 
-      campaign: { include: { client: true } } 
-    }
+    include: { budgets: true, campaign: { include: { client: true } }, assignments: { include: { user: true } } }
   }) || []
 
   // 2. ANALYTIKA: TIMING
   const overdue = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline < now)
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline >= now && j.deadline <= criticalThreshold)
 
-  // 3. BUDGET DÁTA PRE GRAF (Safe Mapping)
+  // 3. BUDGET DÁTA PRE GRAF (Bezpečné mapovanie)
   const budgetData = jobs.filter(j => (j.budget || 0) > 0).slice(0, 5).map(j => ({
       id: j.id,
       name: j.title.substring(0, 10),
@@ -69,10 +68,10 @@ export default async function DashboardPage({ params }: { params: { slug: string
   }
 
   // 5. STATUSY JOBOV
-  const statusCounts = {
-      TODO: jobs.filter(j => j.status === 'TODO').length,
-      IN_PROGRESS: jobs.filter(j => j.status === 'IN_PROGRESS').length,
-      DONE: jobs.filter(j => j.status === 'DONE').length
+  const statusCounts = { 
+    TODO: jobs.filter(j => j.status === 'TODO').length, 
+    IN_PROGRESS: jobs.filter(j => j.status === 'IN_PROGRESS').length, 
+    DONE: jobs.filter(j => j.status === 'DONE').length 
   }
   const jobStatusData = [{ name: 'TODO', value: statusCounts.TODO }, { name: 'IN_PROGRESS', value: statusCounts.IN_PROGRESS }, { name: 'DONE', value: statusCounts.DONE }]
 
@@ -126,6 +125,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
         )}
       </div>
 
+      {/* KPI KARTY */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href={`/${params.slug}/jobs`} className="block transform transition hover:scale-105">
             <Card className="bg-slate-900 text-white h-full shadow-lg border-none"><CardContent className="pt-4"><p className="text-[10px] font-bold uppercase opacity-50">Aktívne Joby</p><div className="text-2xl font-black">{jobs.filter(j => j.status !== 'DONE').length}</div></CardContent></Card>
@@ -175,7 +175,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
         </Card>
 
         {/* DRUHÝ RAD GRAFOV (ADMIN) */}
-        {!isCreative && (
+        {!isCreative && ( 
             <>
                 <Card className="lg:col-span-6 shadow-xl border-none ring-1 ring-slate-200">
                     <CardHeader className="border-b bg-slate-50/50 py-3"><CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500"><Users className="h-3 w-3" /> Vyťaženosť tímu</CardTitle></CardHeader>
@@ -188,6 +188,42 @@ export default async function DashboardPage({ params }: { params: { slug: string
                 </Card>
             </>
         )}
+
+        {/* URGENTNÉ KARTY */}
+        <Card className="lg:col-span-12 border-2 border-red-100 shadow-2xl overflow-hidden">
+            <CardHeader className="bg-red-600 text-white py-3"><CardTitle className="font-black uppercase text-xs italic tracking-wider flex items-center gap-2"><AlertCircle className="h-4 w-4" /> Urgentné úlohy</CardTitle></CardHeader>
+            <CardContent className="pt-6 bg-red-50/30">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {overdue.map(j => (
+                        <Link key={j.id} href={`/${params.slug}/jobs/${j.id}`} className="block transform transition hover:scale-[1.02]">
+                            <div className="p-4 bg-white border-2 border-red-500 rounded-xl shadow-md">
+                                <p className="text-[9px] font-black uppercase text-red-600 mb-1">{j.campaign?.client?.name || 'Interný Job'}</p>
+                                <h4 className="font-bold text-slate-900 truncate">{j.title}</h4>
+                                <div className="mt-3 flex justify-between items-center">
+                                    <Badge variant="destructive" className="font-black text-[9px] uppercase px-2">Mešká</Badge>
+                                    <span className="text-[10px] font-bold text-red-600">{format(new Date(j.deadline), 'dd.MM.yyyy')}</span>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                    {warning.map(j => (
+                        <Link key={j.id} href={`/${params.slug}/jobs/${j.id}`} className="block transform transition hover:scale-[1.02]">
+                            <div className="p-4 bg-white border-2 border-amber-400 rounded-xl shadow-md">
+                                <p className="text-[9px] font-black uppercase text-amber-600 mb-1">{j.campaign?.client?.name || 'Interný Job'}</p>
+                                <h4 className="font-bold text-slate-900 truncate">{j.title}</h4>
+                                <div className="mt-3 flex justify-between items-center">
+                                    <Badge variant="outline" className="border-amber-500 text-amber-600 font-black text-[9px] uppercase px-2">HORÍ</Badge>
+                                    <span className="text-[10px] font-bold text-amber-600">{format(new Date(j.deadline), 'dd.MM.yyyy')}</span>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                    {overdue.length === 0 && warning.length === 0 && (
+                        <div className="col-span-full py-12 text-center bg-white rounded-xl border border-dashed border-emerald-200 text-emerald-600 font-black italic uppercase text-sm tracking-widest">Všetko je v poriadku! 🥂</div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
       </div>
     </div>
   )
