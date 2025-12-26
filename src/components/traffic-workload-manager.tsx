@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Loader2, ArrowRightLeft, MessageSquareShare } from 'lucide-react'
+import { Loader2, ArrowRightLeft, Calendar, MessageSquareShare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
 
 export function TrafficWorkloadManager({ 
     initialUsers, 
@@ -20,7 +21,7 @@ export function TrafficWorkloadManager({
     slug
 }: { 
     initialUsers: any[], 
-    allUsersList: any[], 
+    allUsersList: { id: string; name: string | null; email: string }[], 
     role: string, 
     currentUserId: string,
     slug: string
@@ -91,14 +92,14 @@ export function TrafficWorkloadManager({
                 </CardTitle>
               </div>
               <Badge variant="secondary" className="ml-auto text-[9px] font-bold uppercase">
-                {(user.assignments || []).length} Úlohy
+                {(user.assignments || []).length} ÚLOHY
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
               {(!user.assignments || user.assignments.length === 0) ? (
-                  <div className="p-6 text-center text-[10px] text-slate-400 italic">
+                  <div className="p-6 text-center text-[10px] text-slate-400 italic uppercase tracking-widest">
                       Bez aktívnych priradení.
                   </div>
               ) : (
@@ -150,7 +151,7 @@ export function TrafficWorkloadManager({
       ))}
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent>
               <DialogHeader>
                   <DialogTitle className="text-lg font-bold uppercase italic tracking-tight">Žiadosť o presun práce</DialogTitle>
                   <DialogDescription className="text-xs">Uveďte dôvod a navrhnite kolegu.</DialogDescription>
