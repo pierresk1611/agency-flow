@@ -3,12 +3,11 @@ import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { AddPlannerEntryDialog } from '@/components/add-planner-entry-dialog'
 import { PlannerDisplay } from '@/components/planner-display'
-import { SubmitPlannerButton } from '@/components/submit-planner-button'
+import { SubmitPlannerButton } from '@/components/planner-button'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PlannerPage({ params }: { params: { slug: string } }) {
-  // ✅ MUSÍ BYŤ await
   const session = await getSession()
   if (!session) redirect('/login')
 
@@ -19,44 +18,20 @@ export default async function PlannerPage({ params }: { params: { slug: string }
 
   const isCreative = session.role === 'CREATIVE'
 
-  /**
-   * 1️⃣ Joby, na ktorých JE kreatívec priradený
-   */
   const jobs = await prisma.job.findMany({
     where: {
       archivedAt: null,
-      campaign: {
-        client: {
-          agencyId: agency.id
-        }
-      },
-      assignments: {
-        some: { userId: session.userId }
-      }
+      campaign: { client: { agencyId: agency.id } },
+      assignments: { some: { userId: session.userId } }
     },
     include: {
-      campaign: {
-        include: { client: true }
-      }
+      campaign: { include: { client: true } }
     }
   })
 
-  /**
-   * 2️⃣ Planner entries kreatívca
-   */
   const entries = await prisma.plannerEntry.findMany({
-    where: {
-      userId: session.userId
-    },
-    include: {
-      job: {
-        include: {
-          campaign: {
-            include: { client: true }
-          }
-        }
-      }
-    },
+    where: { userId: session.userId },
+    include: { job: { include: { campaign: { include: { client: true } } } } },
     orderBy: { date: 'asc' }
   })
 
@@ -67,7 +42,6 @@ export default async function PlannerPage({ params }: { params: { slug: string }
           Môj Týždeň
         </h2>
 
-        {/* ✅ CLIENT COMPONENT – server action */}
         {isCreative && <SubmitPlannerButton />}
 
         <AddPlannerEntryDialog allJobs={jobs} />
