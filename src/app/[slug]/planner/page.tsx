@@ -3,7 +3,7 @@ import { getSession } from '@/lib/session'
 import { redirect, notFound } from 'next/navigation'
 import { AddPlannerEntryDialog } from '@/components/add-planner-entry-dialog'
 import { PlannerDisplay } from '@/components/planner-display'
-import { SubmitPlannerButton } from '@/components/planner-button'
+import { SubmitPlannerButton } from '@/components/ui/planner-button'
 
 export const dynamic = 'force-dynamic'
 
