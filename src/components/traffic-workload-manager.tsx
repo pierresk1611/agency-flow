@@ -9,20 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Loader2, ArrowRightLeft, Calendar, MessageSquareShare } from 'lucide-react'
-import { format } from 'date-fns'
+import { Loader2, ArrowRightLeft, MessageSquareShare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function TrafficWorkloadManager({ 
     initialUsers, 
-    allUsersList, 
+    allUsersList = [], 
     role, 
-    currentUserId 
+    currentUserId,
+    slug
 }: { 
     initialUsers: any[], 
     allUsersList: any[], 
     role: string, 
-    currentUserId: string 
+    currentUserId: string,
+    slug: string
 }) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
@@ -90,13 +91,13 @@ export function TrafficWorkloadManager({
                 </CardTitle>
               </div>
               <Badge variant="secondary" className="ml-auto text-[9px] font-bold uppercase">
-                {user.assignments.length} Úlohy
+                {(user.assignments || []).length} Úlohy
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
-              {user.assignments.length === 0 ? (
+              {(!user.assignments || user.assignments.length === 0) ? (
                   <div className="p-6 text-center text-[10px] text-slate-400 italic">
                       Bez aktívnych priradení.
                   </div>
@@ -105,7 +106,7 @@ export function TrafficWorkloadManager({
                     <div key={assign.id} className="p-3 flex justify-between items-center group hover:bg-slate-50/50 transition-colors">
                       <div className="min-w-0 pr-2">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                            {assign.job?.clientName || 'Projekt'}
+                            {assign.job?.clientName}
                         </p>
                         <h4 className="text-xs font-bold text-slate-800 truncate">
                             {assign.job?.title}
@@ -148,7 +149,6 @@ export function TrafficWorkloadManager({
         </Card>
       ))}
 
-      {/* DIALÓG PRE ŽIADOSŤ O PRESUN */}
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
           <DialogContent className="max-w-md">
               <DialogHeader>

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 
 export const dynamic = 'force-dynamic'
 
-export default function AgencyPage({ params }: { params: { slug: string } }) {
+export default function AgencyPage() {
   const session = getSession()
   
   if (!session) {
@@ -14,23 +14,23 @@ export default function AgencyPage({ params }: { params: { slug: string } }) {
   }
 
   if (session.role === 'CREATIVE') {
-    redirect(`/${params.slug}`)
+    redirect('/')
   }
 
   return (
     <div className="space-y-6 pb-10">
-      <div>
+      <div className="flex flex-col gap-1">
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">Administrácia</h2>
-        <p className="text-muted-foreground text-sm font-medium">Správa tímu a firemných nastavení.</p>
+        <p className="text-muted-foreground text-sm font-medium">Správa tímu a nastavení agentúry.</p>
       </div>
 
       <Tabs defaultValue="team" className="space-y-6">
         <div className="border-b">
             <TabsList className="bg-transparent h-auto p-0 gap-6">
-                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
+                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
                     Tím / Užívatelia
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest">
+                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
                     Nastavenia Agentúry
                 </TabsTrigger>
             </TabsList>
