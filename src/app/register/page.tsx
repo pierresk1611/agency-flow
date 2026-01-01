@@ -20,6 +20,21 @@ export default function RegisterPage() {
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+    useEffect(() => {
+        // Check if token exists
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))
+        if (token) {
+            setIsLoggedIn(true)
+        }
+    }, [])
+
+    const handleLogout = () => {
+        document.cookie = 'token=; path=/; max-age=0; SameSite=Strict'
+        setIsLoggedIn(false)
+        router.refresh()
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -82,6 +97,22 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit}>
                     <CardContent className="space-y-4">
+                        {isLoggedIn && (
+                            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 text-sm mb-4 flex flex-col gap-2">
+                                <p className="font-bold">⚠️ Ste prihlásený v inom účte.</p>
+                                <p>Pre registráciu novej agentúry sa odporúča odhlásiť.</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleLogout}
+                                    className="self-start border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+                                >
+                                    Odhlásiť sa a pokračovať
+                                </Button>
+                            </div>
+                        )}
+
                         {error && (
                             <div className="p-3 text-xs font-bold text-red-600 bg-red-50 border border-red-100 rounded-md text-center">
                                 {error}
