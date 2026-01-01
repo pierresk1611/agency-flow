@@ -41,10 +41,20 @@ export async function POST(request: Request) {
 
     // 3. Kontrola priradenia k agentúre
     if (!user.agencyId || !user.agency) {
-      return NextResponse.json({ error: 'Užívateľ nie je priradený k žiadnej agentúre. Kontaktujte podporu.' }, { status: 403 })
+      // SUPERADMIN bypass (nemusí mať agentúru v niektorých prípadoch, ale tu predpokladáme, že má)
+      if (user.role === 'SUPERADMIN') {
+        // OK
+      } else {
+        return NextResponse.json({ error: 'Užívateľ nie je priradený k žiadnej agentúre. Kontaktujte podporu.' }, { status: 403 })
+      }
     }
 
-    // 4. Generovanie JWT tokenu
+    // 4. KONTROLA SUSPENDÁCIE (Nezaplatené demo) - SUPERADMIN má vždy prístup
+    if (user.agency && user.agency.isSuspended && user.role !== 'SUPERADMIN') {
+      return NextResponse.json({ error: 'Váš účet bol pozastavený z dôvodu neúhrady. Kontaktujte podporu.' }, { status: 403 })
+    }
+
+    // 5. Generovanie JWT tokenu
     const token = jwt.sign(
       { userId: user.id, role: user.role, agencyId: user.agencyId },
       JWT_SECRET,

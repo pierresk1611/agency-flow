@@ -101,6 +101,13 @@ async function main() {
       subject: 'Informácia o registrácii',
       body: '<p>Vaša registrácia pre agentúru {{agencyName}} bola zamietnutá.</p>',
       description: 'Premenné: {{agencyName}}'
+    },
+    {
+      slug: 'TRIAL_REMINDER',
+      name: 'Klient - Pripomienka konca skúšobnej verzie',
+      subject: 'Vaša skúšobná verzia končí o 5 dní - AgencyFlow',
+      body: '<p>Ahoj {{contactName}},</p><p>Vaša 14-dňová skúšobná verzia pre agentúru <strong>{{agencyName}}</strong> skončila.</p><p>Máte 5 dní na úhradu licencie, inak bude váš účet zablokovaný.</p><p>Kontaktujte nás pre predĺženie alebo fakturáciu.</p>',
+      description: 'Premenné: {{agencyName}}, {{contactName}}'
     }
   ]
 

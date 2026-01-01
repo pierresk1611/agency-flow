@@ -58,6 +58,11 @@ model Agency {
   positions  AgencyPosition[]
   tenders    Tender[]
   createdAt  DateTime @default(now())
+
+  // Trial & Status
+  trialEndsAt       DateTime?
+  trialReminderSent Boolean  @default(false)
+  isSuspended       Boolean  @default(false)
   
   // Nastavenia schvaľovania
   internalAccountId String?

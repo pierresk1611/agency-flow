@@ -72,6 +72,7 @@ export async function POST(request: Request) {
                     slug: slug,
                     status: 'PENDING',
                     contactName: adminName,
+                    trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 dní trial
                 }
             })
 

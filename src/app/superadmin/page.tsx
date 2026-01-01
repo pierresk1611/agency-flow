@@ -93,6 +93,15 @@ export default function SuperAdminPage() {
 
           <Button
             variant="outline"
+            className="h-11 font-bold border-slate-300"
+            onClick={() => router.push('/superadmin/agencies')}
+          >
+            <Building className="h-4 w-4 mr-2" />
+            Správa Agentúr
+          </Button>
+
+          <Button
+            variant="outline"
             className="h-11 font-bold border-slate-300 relative"
             onClick={() => router.push('/superadmin/requests')}
           >
