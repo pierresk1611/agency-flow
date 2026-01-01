@@ -108,6 +108,13 @@ async function main() {
       subject: 'Vaša skúšobná verzia končí o 5 dní - AgencyFlow',
       body: '<p>Ahoj {{contactName}},</p><p>Vaša 14-dňová skúšobná verzia pre agentúru <strong>{{agencyName}}</strong> skončila.</p><p>Máte 5 dní na úhradu licencie, inak bude váš účet zablokovaný.</p><p>Kontaktujte nás pre predĺženie alebo fakturáciu.</p>',
       description: 'Premenné: {{agencyName}}, {{contactName}}'
+    },
+    {
+      slug: 'SUBSCRIPTION_PAYMENT',
+      name: 'Klient - Platba za členstvo',
+      subject: 'Vaše plné členstvo v AgencyFlow bolo schválené!',
+      body: '<p>Gratulujeme! Vaše členstvo bolo schválené.</p><p>Pre aktiváciu plnej verzie prosím uhradte predplatné na tomto odkaze:</p><p><a href="{{paymentLink}}">{{paymentLink}}</a></p><p>Tím AgencyFlow</p>',
+      description: 'Premenné: {{paymentLink}}'
     }
   ]
 

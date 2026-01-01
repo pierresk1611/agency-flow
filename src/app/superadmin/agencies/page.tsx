@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import Link from 'next/link'
 import { ArrowLeft, Lock, Unlock, AlertTriangle } from 'lucide-react'
 import { revalidatePath } from 'next/cache'
+import { AgencyActions } from './agency-actions'
 
 export default async function AgenciesPage() {
     // Fetch all agencies
@@ -78,30 +79,27 @@ export default async function AgenciesPage() {
                                             )}
                                         </td>
                                         <td className="p-4">
-                                            <form action={async () => {
-                                                'use server'
-                                                await prisma.agency.update({
-                                                    where: { id: agency.id },
-                                                    data: { isSuspended: !agency.isSuspended }
-                                                })
-                                                revalidatePath('/superadmin/agencies')
-                                            }}>
-                                                <Button
-                                                    size="sm"
-                                                    variant={agency.isSuspended ? "default" : "destructive"}
-                                                    className="gap-2"
-                                                >
-                                                    {agency.isSuspended ? (
-                                                        <>
-                                                            <Unlock className="h-4 w-4" /> Odblokovať
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Lock className="h-4 w-4" /> Blokovať
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </form>
+                                            <div className="flex items-center gap-2">
+                                                <form action={async () => {
+                                                    'use server'
+                                                    await prisma.agency.update({
+                                                        where: { id: agency.id },
+                                                        data: { isSuspended: !agency.isSuspended }
+                                                    })
+                                                    revalidatePath('/superadmin/agencies')
+                                                }}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant={agency.isSuspended ? "default" : "secondary"}
+                                                        className="h-8 w-8 p-0"
+                                                        title={agency.isSuspended ? "Odblokovať" : "Blokovať"}
+                                                    >
+                                                        {agency.isSuspended ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                                                    </Button>
+                                                </form>
+
+                                                <AgencyActions agency={agency} />
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
