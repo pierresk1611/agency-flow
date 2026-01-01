@@ -55,4 +55,27 @@ export async function PATCH(
       )
     }
 
-    if (status && !Object.values(JobStatus).i
+    if (status && !Object.values(JobStatus).includes(status as JobStatus)) {
+      return NextResponse.json(
+        { error: 'Invalid status' },
+        { status: 400 }
+      )
+    }
+
+    /* 6️⃣ UPDATE */
+    const updatedJob = await prisma.job.update({
+      where: { id: params.jobId },
+      data: {
+        title,
+        description,
+        budget: parsedBudget,
+        status: status as JobStatus,
+      },
+    })
+
+    return NextResponse.json(updatedJob)
+  } catch (error: any) {
+    console.error('JOB UPDATE ERROR:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+}
