@@ -3,14 +3,14 @@ import { getSession } from '@/lib/session'
 import { NextResponse } from 'next/server'
 import { sendDynamicEmail } from '@/lib/email'
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { agencyId: string } }) {
     const session = await getSession()
     if (!session || session.role !== 'SUPERADMIN') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
-        const agency = await prisma.agency.findUnique({ where: { id: params.id } })
+        const agency = await prisma.agency.findUnique({ where: { id: params.agencyId } })
         if (!agency || !agency.contactName) {
             // Need contact info
             return NextResponse.json({ error: 'Agency missing contact info' }, { status: 404 })

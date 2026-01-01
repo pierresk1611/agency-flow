@@ -3,7 +3,7 @@ import { getSession } from '@/lib/session'
 import { NextResponse } from 'next/server'
 import { addDays } from 'date-fns'
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: { agencyId: string } }) {
     const session = await getSession()
     if (!session || session.role !== 'SUPERADMIN') {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -17,7 +17,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
             return NextResponse.json({ error: 'Invalid days' }, { status: 400 })
         }
 
-        const agency = await prisma.agency.findUnique({ where: { id: params.id } })
+        const agency = await prisma.agency.findUnique({ where: { id: params.agencyId } })
         if (!agency) {
             return NextResponse.json({ error: 'Agency not found' }, { status: 404 })
         }
@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         const newTrialEndsAt = addDays(baseDate, daysToAdd)
 
         await prisma.agency.update({
-            where: { id: params.id },
+            where: { id: params.agencyId },
             data: {
                 trialEndsAt: newTrialEndsAt,
                 isSuspended: false,      // Unsuspend if suspended
