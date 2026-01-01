@@ -1,3 +1,11 @@
+import { NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { cookies } from 'next/headers'
+import * as jwt from 'jsonwebtoken'
+import { createNotification } from '@/lib/notifications'
+
+const JWT_SECRET = process.env.JWT_SECRET || 'secret'
+
 export async function POST(request: Request) {
   try {
     const cookieStore = cookies()
@@ -8,7 +16,7 @@ export async function POST(request: Request) {
     const currentUserId = decoded.userId
 
     const { timesheetId, status } = await request.json()
-    if (!timesheetId || !['APPROVED','REJECTED'].includes(status)) 
+    if (!timesheetId || !['APPROVED', 'REJECTED'].includes(status))
       return NextResponse.json({ error: 'Neplatné údaje' }, { status: 400 })
 
     const timesheet = await prisma.timesheet.findUnique({
@@ -17,7 +25,7 @@ export async function POST(request: Request) {
     })
     if (!timesheet) return NextResponse.json({ error: 'Timesheet nenájdený' }, { status: 404 })
 
-    if (timesheet.status === status) 
+    if (timesheet.status === status)
       return NextResponse.json({ success: true, message: 'Already set' })
 
     if (status === 'APPROVED') {
@@ -41,6 +49,23 @@ export async function POST(request: Request) {
         where: { id: timesheetId },
         data: { status: 'REJECTED', approvedBy: currentUserId, approvedAt: new Date() }
       })
+
+      // NOTIFIKÁCIA: Timesheet Reject
+      // NOTIFIKÁCIA: Timesheet Reject
+      const tsDetails = await prisma.timesheet.findUnique({
+        where: { id: timesheetId },
+        include: { jobAssignment: { include: { job: { include: { campaign: { include: { client: { include: { agency: true } } } } } } } } }
+      })
+
+      if (tsDetails) {
+        const slug = tsDetails.jobAssignment.job.campaign.client.agency.slug
+        await createNotification(
+          tsDetails.jobAssignment.userId,
+          "Výkaz vrátený na opravu",
+          `Váš čas na jobe "${tsDetails.jobAssignment.job.title}" bol zamietnutý. Prosím, upravte ho.`,
+          `/${slug}/timesheets`
+        )
+      }
     }
 
     return NextResponse.json({ success: true })

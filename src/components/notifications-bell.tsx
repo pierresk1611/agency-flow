@@ -1,16 +1,13 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
-} from "@/components/ui/dialog"
-import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 export function NotificationsBell() {
+  const router = useRouter()
   const [notes, setNotes] = useState<any[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+
   const unreadCount = notes.filter(n => !n.isRead).length
+
+  // ... fetch logic exists ...
 
   const fetchNotes = () => {
     fetch('/api/notifications').then(r => r.json()).then(setNotes)
@@ -18,17 +15,20 @@ export function NotificationsBell() {
 
   useEffect(() => {
     fetchNotes()
-    const interval = setInterval(fetchNotes, 30000) // Kontrola každých 30s
+    const interval = setInterval(fetchNotes, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  const markAsRead = async () => {
+  const markAllAsRead = async () => {
     await fetch('/api/notifications', { method: 'PATCH' })
     fetchNotes()
   }
 
   return (
-    <Dialog onOpenChange={(open) => open && markAsRead()}>
+    <Dialog open={isOpen} onOpenChange={(val) => {
+      setIsOpen(val)
+      if (val) markAllAsRead()
+    }}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5 text-slate-600" />
@@ -46,7 +46,17 @@ export function NotificationsBell() {
             <p className="text-center py-10 text-sm text-slate-400">Žiadne nové správy.</p>
           ) : (
             notes.map(n => (
-              <div key={n.id} className={`p-3 rounded-lg border ${n.isRead ? 'bg-white' : 'bg-blue-50 border-blue-100'}`}>
+              <div
+                key={n.id}
+                onClick={() => {
+                  if (n.link) {
+                    setIsOpen(false)
+                    router.push(n.link)
+                  }
+                }}
+                className={`p-3 rounded-lg border transition-colors ${n.isRead ? 'bg-white' : 'bg-blue-50 border-blue-100'
+                  } ${n.link ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+              >
                 <p className="text-xs font-bold">{n.title}</p>
                 <p className="text-xs text-slate-600 mt-1">{n.message}</p>
                 <p className="text-[9px] text-slate-400 mt-2">{format(new Date(n.createdAt), 'dd.MM HH:mm')}</p>

@@ -58,9 +58,12 @@ model Agency {
   positions  AgencyPosition[]
   tenders    Tender[]
   createdAt  DateTime @default(now())
+  
+  // Nastavenia schvaľovania
+  internalAccountId String?
+  internalAccount   User?   @relation("InternalAccount", fields: [internalAccountId], references: [id])
 }
 
-// Učiaci sa zoznam rozsahov (Digital, ATL...)
 model AgencyScope {
   id        String   @id @default(uuid())
   agencyId  String
@@ -69,7 +72,6 @@ model AgencyScope {
   @@unique([agencyId, name])
 }
 
-// Učiaci sa zoznam pozícií (Art Director, Copywriter...)
 model AgencyPosition {
   id        String   @id @default(uuid())
   agencyId  String
@@ -105,6 +107,9 @@ model User {
   // Traffic žiadosti
   requestsSent     ReassignmentRequest[] @relation("RequestBy")
   requestsReceived ReassignmentRequest[] @relation("TargetUser")
+
+  // Agency Management
+  managedAgency    Agency[]              @relation("InternalAccount")
 }
 
 model Client {
@@ -332,4 +337,14 @@ model TenderAssignment {
 
     jobAssignmentId String? 
     jobAssignment   JobAssignment? @relation(fields: [jobAssignmentId], references: [id])
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  subject     String
+  body        String
+  description String?
+  updatedAt   DateTime @updatedAt
 }

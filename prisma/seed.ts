@@ -77,6 +77,41 @@ async function main() {
     }
   }
 
+
+  // 4. Seed Email Templates
+  console.log('Seeding Email Templates...')
+  const templates = [
+    {
+      slug: 'ADMIN_NEW_REGISTRATION',
+      name: 'Notifikácia Superadminovi (Nová registrácia)',
+      subject: 'Nová registrácia: {{agencyName}}',
+      body: '<p>Nová registrácia: <strong>{{agencyName}}</strong>.</p><p>Skontrolujte dashboard v Superadmin zóne.</p>',
+      description: 'Premenné: {{agencyName}}'
+    },
+    {
+      slug: 'CLIENT_WELCOME_APPROVED',
+      name: 'Klient - Schválenie registrácie',
+      subject: 'Vaša agentúra {{agencyName}} bola schválená!',
+      body: '<p>Vaša agentúra <strong>{{agencyName}}</strong> bola schválená!</p><p>Prihláste sa tu: <a href="{{link}}">{{link}}</a></p>',
+      description: 'Premenné: {{agencyName}}, {{link}}'
+    },
+    {
+      slug: 'CLIENT_REJECTED',
+      name: 'Klient - Zamietnutie registrácie',
+      subject: 'Informácia o registrácii',
+      body: '<p>Vaša registrácia pre agentúru {{agencyName}} bola zamietnutá.</p>',
+      description: 'Premenné: {{agencyName}}'
+    }
+  ]
+
+  for (const t of templates) {
+    await prisma.emailTemplate.upsert({
+      where: { slug: t.slug },
+      update: {},
+      create: t
+    })
+  }
+
   console.log('--- HOTOVO ---')
 }
 

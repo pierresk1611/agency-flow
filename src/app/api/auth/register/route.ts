@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { sendDynamicEmail } from '@/lib/email'
 
 // FORCE LOCAL CONNECTION
 const prisma = new PrismaClient({
@@ -87,6 +88,16 @@ export async function POST(request: Request) {
             })
 
             return { agency, user }
+        })
+
+        // 6. Odoslanie notifikácie Superadminovi
+        const recipientEmail = 'super@agencyflow.com'
+
+        await sendDynamicEmail('ADMIN_NEW_REGISTRATION', recipientEmail, {
+            agencyName: result.agency.name,
+            adminName: result.user.name || '',
+            email: result.user.email,
+            link: 'https://agency-flow.vercel.app/superadmin/requests'
         })
 
         return NextResponse.json({

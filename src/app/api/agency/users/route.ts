@@ -14,28 +14,33 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const includeJobs = searchParams.get('includeJobs') === 'true'
 
+    // Support filtering by role
+    const roleParam = searchParams.get('role')
+    const roleFilter = roleParam ? { role: roleParam as any } : {}
+
     const users = await prisma.user.findMany({
-      where: { 
+      where: {
         agencyId: session.agencyId,
-        active: true 
+        active: true,
+        ...roleFilter
       },
       orderBy: { email: 'asc' },
       include: {
         assignments: includeJobs ? {
-          where: { 
-            job: { 
-              status: { not: 'DONE' }, 
-              archivedAt: null 
-            } 
+          where: {
+            job: {
+              status: { not: 'DONE' },
+              archivedAt: null
+            }
           },
-          include: { 
-            job: { 
-              include: { 
-                campaign: { 
-                  include: { client: true } 
-                } 
-              } 
-            } 
+          include: {
+            job: {
+              include: {
+                campaign: {
+                  include: { client: true }
+                }
+              }
+            }
           }
         } : false
       }
@@ -57,21 +62,21 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { email, name, password, role, position, hourlyRate, costRate } = body
 
-    if (!email || !password || !role) 
+    if (!email || !password || !role)
       return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) 
+    if (existing)
       return NextResponse.json({ error: 'Užívateľ s týmto emailom už existuje' }, { status: 400 })
 
     const passwordHash = await bcrypt.hash(password, 10)
-    
+
     const newUser = await prisma.user.create({
       data: {
-        email, 
-        name, 
-        position, 
-        role, 
+        email,
+        name,
+        position,
+        role,
         passwordHash,
         hourlyRate: parseFloat(hourlyRate || '0'),
         costRate: parseFloat(costRate || '0'),

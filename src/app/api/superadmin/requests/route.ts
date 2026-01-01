@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import * as jwt from 'jsonwebtoken'
 import { headers } from 'next/headers'
+import { sendDynamicEmail } from '@/lib/email'
 
 // FORCE LOCAL CONNECTION
 const prisma = new PrismaClient({
@@ -105,18 +106,42 @@ export async function PATCH(request: Request) {
                 })
             ])
 
+            // Email notifikácia
+            const adminUser = await prisma.user.findFirst({
+                where: { agencyId: agencyId, role: 'ADMIN' }
+            })
+
+            // Fetch agency name for email
+            const agency = await prisma.agency.findUnique({ where: { id: agencyId } })
+
+            if (adminUser && agency) {
+                await sendDynamicEmail('CLIENT_WELCOME_APPROVED', adminUser.email, {
+                    agencyName: agency.name,
+                    link: 'https://agency-flow.vercel.app/login'
+                })
+            }
+
             return NextResponse.json({ success: true, message: 'Agentúra schválená' })
 
         } else {
             // REJECT
-            await prisma.agency.update({
+            const agency = await prisma.agency.update({
                 where: { id: agencyId },
                 data: { status: 'REJECTED' }
             })
 
+            const adminUser = await prisma.user.findFirst({
+                where: { agencyId: agencyId, role: 'ADMIN' }
+            })
+
+            if (adminUser) {
+                await sendDynamicEmail('CLIENT_REJECTED', adminUser.email, {
+                    agencyName: agency.name
+                })
+            }
+
             return NextResponse.json({ success: true, message: 'Agentúra zamietnutá' })
         }
-
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }

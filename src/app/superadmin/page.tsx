@@ -82,17 +82,28 @@ export default function SuperAdminPage() {
         </div>
 
         <div className="flex gap-3">
-          <Link href="/superadmin/requests">
-            <Button variant="outline" className="h-11 font-bold border-slate-300 relative">
-              <Inbox className="h-4 w-4 mr-2" />
-              Žiadosti
-              {pendingCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
-                  {pendingCount}
-                </span>
-              )}
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            className="h-11 font-bold border-slate-300"
+            onClick={() => router.push('/superadmin/emails')}
+          >
+            <Inbox className="h-4 w-4 mr-2" />
+            Šablóny Emailov
+          </Button>
+
+          <Button
+            variant="outline"
+            className="h-11 font-bold border-slate-300 relative"
+            onClick={() => router.push('/superadmin/requests')}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Žiadosti
+            {pendingCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+                {pendingCount}
+              </span>
+            )}
+          </Button>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>

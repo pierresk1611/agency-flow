@@ -7,7 +7,7 @@ export async function createNotification(
   link?: string
 ) {
   try {
-    const notification = await prisma.notification.create({
+    await prisma.notification.create({
       data: {
         userId,
         title,
@@ -16,7 +16,6 @@ export async function createNotification(
         isRead: false,
       },
     });
-    return notification;
   } catch (error) {
     console.error("Chyba pri vytváraní notifikácie:", error);
   }

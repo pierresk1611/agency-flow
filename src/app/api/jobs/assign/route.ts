@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
+import { createNotification } from '@/lib/notifications'
 
 export async function POST(request: Request) {
   try {
@@ -28,12 +29,23 @@ export async function POST(request: Request) {
         jobId,
         userId,
         roleOnJob: roleOnJob?.trim() || 'Contributor',
-        assignedBy: session.userId // kto priradil
-      }
+      },
+      include: { job: { include: { campaign: { include: { client: { include: { agency: true } } } } } } } // Fetch deeply for notification
     })
 
+    // NOTIFIKÁCIA: Assign Job
+    if ((assignment as any).job) {
+      const agencySlug = (assignment as any).job.campaign.client.agency.slug
+      await createNotification(
+        userId,
+        "Nový Job",
+        `Boli ste priradený na projekt: ${(assignment as any).job.title} (${(assignment as any).job.campaign.client.name})`,
+        `/${agencySlug}/jobs/${jobId}`
+      )
+    }
+
     return NextResponse.json(assignment)
-    
+
   } catch (error: any) {
     console.error("JOB ASSIGNMENT ERROR:", error)
     return NextResponse.json({ error: error.message || 'Server Error' }, { status: 500 })
