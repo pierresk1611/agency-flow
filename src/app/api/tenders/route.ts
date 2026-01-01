@@ -1,45 +1,58 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
+import { JobStatus } from '@prisma/client'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { tenderId: string } }
+  { params }: { params: { jobId: string } }
 ) {
   try {
+    /* 1️⃣ AUTH */
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Povolené role pre úpravu tendra
+    /* 2️⃣ ROLE CHECK */
     const allowedRoles = ['ADMIN', 'TRAFFIC', 'SUPERADMIN', 'ACCOUNT']
     if (!allowedRoles.includes(session.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    /* 3️⃣ BODY */
     const body = await request.json()
-    const { description, title, budget, status } = body
+    const { title, description, budget, status } = body
 
-    // Overenie, že tender existuje
-    const tender = await prisma.tender.findUnique({ where: { id: params.tenderId } })
-    if (!tender) {
-      return NextResponse.json({ error: 'Tender nenájdený' }, { status: 404 })
-    }
-
-    const updated = await prisma.tender.update({
-      where: { id: params.tenderId },
-      data: {
-        description: description ?? tender.description,
-        title: title ?? tender.title,
-        status: status ?? tender.status,
-        budget: budget !== undefined ? parseFloat(budget) : tender.budget
-      }
+    /* 4️⃣ LOAD JOB + TENANT CHECK */
+    const job = await prisma.job.findUnique({
+      where: { id: params.jobId },
+      include: {
+        campaign: {
+          client: {
+            select: { agencyId: true },
+          },
+        },
+      },
     })
 
-    return NextResponse.json(updated)
-  } catch (error: any) {
-    console.error("TENDER PATCH ERROR:", error)
-    return NextResponse.json({ error: 'Server Error', details: error.message }, { status: 500 })
-  }
-}
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+
+    if (job.campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    /* 5️⃣ VALIDATION */
+    const parsedBudget =
+      budget !== undefined ? Number(budget) : undefined
+
+    if (parsedBudget !== undefined && isNaN(parsedBudget)) {
+      return NextResponse.json(
+        { error: 'Invalid budget' },
+        { status: 400 }
+      )
+    }
+
+    if (status && !Object.values(JobStatus).i

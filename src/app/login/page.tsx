@@ -15,6 +15,16 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // register UI state
+  const [showRegister, setShowRegister] = useState(false)
+  const [regAgency, setRegAgency] = useState('')
+  const [regName, setRegName] = useState('')
+  const [regEmail, setRegEmail] = useState('')
+  const [regPassword, setRegPassword] = useState('')
+  const [regLoading, setRegLoading] = useState(false)
+  const [regSuccess, setRegSuccess] = useState<string | null>(null)
+  const [regError, setRegError] = useState<string | null>(null)
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -38,19 +48,56 @@ export default function LoginPage() {
 
       // REDIRECT LOGIKA
       if (data.user.role === 'SUPERADMIN') {
-          router.push('/superadmin')
+        router.push('/superadmin')
       } else if (data.user.agencySlug) {
-          router.push(`/${data.user.agencySlug}`)
+        router.push(`/${data.user.agencySlug}`)
       } else {
-          // Ak by náhodou chýbal slug, skúsime aspoň základ
-          router.push('/')
+        router.push('/')
       }
-      
+
       router.refresh()
     } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Registration submit
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegError(null)
+    setRegSuccess(null)
+
+    // Basic client validation
+    if (!regAgency || !regName || !regEmail || !regPassword) {
+      setRegError('Vyplňte prosím všetky polia.')
+      return
+    }
+
+    setRegLoading(true)
+    try {
+      const res = await fetch('/api/auth/register-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agencyName: regAgency,
+          fullName: regName,
+          email: regEmail,
+          password: regPassword
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Chyba pri odoslaní registrácie')
+      }
+      setRegSuccess('Registrácia odoslaná. Superadmin ťa bude kontaktovať.')
+      setRegAgency(''); setRegName(''); setRegEmail(''); setRegPassword('')
+      setShowRegister(false)
+    } catch (err: any) {
+      setRegError(err.message || 'Nepodarilo sa odoslať')
+    } finally {
+      setRegLoading(false)
     }
   }
 
@@ -61,6 +108,7 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold italic text-slate-900">AgencyFlow</CardTitle>
           <CardDescription>Vstúpte do svojho agentúrneho prostredia</CardDescription>
         </CardHeader>
+
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             {error && (
@@ -81,6 +129,13 @@ export default function LoginPage() {
             <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white h-11" type="submit" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Prihlásiť sa'}
             </Button>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm text-slate-500">Nemáte účet?</span>
+              <Button variant="ghost" className="text-sm" onClick={() => router.push('/register')}>
+                Registrovať sa
+              </Button>
+            </div>
           </CardFooter>
         </form>
       </Card>

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -14,23 +15,68 @@ const STRUCTURED_POSITIONS = [
 ]
 
 async function main() {
-  console.log('--- ŠTART ŠTRUKTÚROVANÉHO SEEDU ---')
-  
+  console.log('--- ŠTART SEEDU ---')
+
+  // 1. Create Default Agency
+  const defaultAgencyName = 'AgencyFlow HQ'
+  const defaultAgencySlug = 'agencyflow-hq'
+
+  let agency = await prisma.agency.findUnique({ where: { slug: defaultAgencySlug } })
+
+  if (!agency) {
+    console.log(`Vytváram default agentúru: ${defaultAgencyName}`)
+    agency = await prisma.agency.create({
+      data: {
+        name: defaultAgencyName,
+        slug: defaultAgencySlug,
+        status: 'ACTIVE',
+        contactName: 'Super Admin'
+      }
+    })
+  } else {
+    console.log(`Agentúra existuje: ${defaultAgencyName}`)
+  }
+
+  // 2. Create Superadmin
+  const superAdminEmail = 'super@agencyflow.com'
+  const superAdminPassword = 'password123'
+
+  const existingUser = await prisma.user.findUnique({ where: { email: superAdminEmail } })
+
+  if (!existingUser) {
+    console.log(`Vytváram Superadmina: ${superAdminEmail}`)
+    const hashedPassword = await bcrypt.hash(superAdminPassword, 10)
+
+    await prisma.user.create({
+      data: {
+        email: superAdminEmail,
+        passwordHash: hashedPassword,
+        name: 'Super Admin',
+        role: 'SUPERADMIN',
+        active: true,
+        agencyId: agency.id
+      }
+    })
+  } else {
+    console.log(`Superadmin existuje: ${superAdminEmail}`)
+  }
+
+  // 3. Populate Positions
   const agencies = await prisma.agency.findMany()
-  
-  for (const agency of agencies) {
-    console.log(`Dopĺňam pozície pre agentúru: ${agency.name}`)
-    
+
+  for (const ag of agencies) {
+    console.log(`Dopĺňam pozície pre agentúru: ${ag.name}`)
     for (const group of STRUCTURED_POSITIONS) {
       for (const roleName of group.roles) {
         await prisma.agencyPosition.upsert({
-          where: { agencyId_name: { agencyId: agency.id, name: roleName } },
+          where: { agencyId_name: { agencyId: ag.id, name: roleName } },
           update: { category: group.category },
-          create: { agencyId: agency.id, name: roleName, category: group.category }
+          create: { agencyId: ag.id, name: roleName, category: group.category }
         })
       }
     }
   }
+
   console.log('--- HOTOVO ---')
 }
 

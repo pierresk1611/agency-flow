@@ -30,12 +30,20 @@ enum TimesheetStatus {
   REJECTED
 }
 
+enum AgencyStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
 // --- MODELS ---
 
 model Agency {
   id         String   @id @default(uuid())
   name       String
   slug       String   @unique 
+  status     AgencyStatus @default(PENDING)
+  contactName String?
   logoUrl    String?
   
   // Fakturačné údaje
