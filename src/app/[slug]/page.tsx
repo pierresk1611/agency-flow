@@ -186,9 +186,18 @@ export default async function DashboardPage({ params }: { params: { slug: string
           <CardContent className="pt-6">
             <JobStatusChart data={jobStatusData} />
             <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
-              <div className="bg-red-50 p-2 rounded-lg text-red-700 font-bold text-xs uppercase truncate">TODO: {statusCounts.TODO}</div>
-              <div className="bg-blue-50 p-2 rounded-lg text-blue-700 font-bold text-xs uppercase truncate">WORK: {statusCounts.IN_PROGRESS}</div>
-              <div className="bg-green-50 p-2 rounded-lg text-green-700 font-bold text-xs uppercase truncate">DONE: {statusCounts.DONE}</div>
+              <div className="bg-red-50 p-2 rounded-lg text-red-700 flex flex-col items-center justify-center">
+                <span className="font-bold text-[10px] uppercase opacity-70">TODO</span>
+                <span className="font-black text-lg">{statusCounts.TODO}</span>
+              </div>
+              <div className="bg-blue-50 p-2 rounded-lg text-blue-700 flex flex-col items-center justify-center">
+                <span className="font-bold text-[10px] uppercase opacity-70">WORK</span>
+                <span className="font-black text-lg">{statusCounts.IN_PROGRESS}</span>
+              </div>
+              <div className="bg-green-50 p-2 rounded-lg text-green-700 flex flex-col items-center justify-center">
+                <span className="font-bold text-[10px] uppercase opacity-70">DONE</span>
+                <span className="font-black text-lg">{statusCounts.DONE}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
