@@ -45,11 +45,11 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline >= now && j.deadline <= criticalThreshold)
 
   // 3️⃣ BUDGET DATA
-  const budgetData = jobs.filter(j => j.budget != null && Number(j.budget) > 0).slice(0,5).map(j => ({
-      id: j.id,
-      name: j.title?.substring(0,10) || 'Untitled',
-      plan: Number(j.budget || 0),
-      real: Number(j.budgets?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0)
+  const budgetData = jobs.filter(j => j.budget != null && Number(j.budget) > 0).slice(0, 5).map(j => ({
+    id: j.id,
+    name: j.title?.substring(0, 10) || 'Untitled',
+    plan: Number(j.budget || 0),
+    real: Number(j.budgets?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0)
   }))
 
   // 4️⃣ TIMESHEETS
@@ -156,7 +156,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
                 <Users className="h-4 w-4" />
               </div>
               <div className="text-2xl font-black mt-1">
-                {isCreative ? creativeTimeData.reduce((s,i) => s + i.minutes, 0) : teamCount}
+                {isCreative ? creativeTimeData.reduce((s, i) => s + i.minutes, 0) : teamCount}
               </div>
             </CardContent>
           </Card>
@@ -186,9 +186,9 @@ export default async function DashboardPage({ params }: { params: { slug: string
           <CardContent className="pt-6">
             <JobStatusChart data={jobStatusData} />
             <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
-              <div className="bg-red-50 p-2 rounded-lg text-red-700 font-black text-xs">{statusCounts.TODO}</div>
-              <div className="bg-blue-50 p-2 rounded-lg text-blue-700 font-black">WORK: {statusCounts.IN_PROGRESS}</div>
-              <div className="bg-green-50 p-2 rounded-lg text-green-700 font-black">DONE: {statusCounts.DONE}</div>
+              <div className="bg-red-50 p-2 rounded-lg text-red-700 font-bold text-xs uppercase truncate">TODO: {statusCounts.TODO}</div>
+              <div className="bg-blue-50 p-2 rounded-lg text-blue-700 font-bold text-xs uppercase truncate">WORK: {statusCounts.IN_PROGRESS}</div>
+              <div className="bg-green-50 p-2 rounded-lg text-green-700 font-bold text-xs uppercase truncate">DONE: {statusCounts.DONE}</div>
             </div>
           </CardContent>
         </Card>

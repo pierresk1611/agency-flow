@@ -24,7 +24,7 @@ type PageProps = {
   }
 }
 
-export default async function JobsPage({ params }: PageProps) {
+export default async function TendersPage({ params }: PageProps) {
   /* 1️⃣ SESSION */
   const session = await getSession()
 
@@ -44,27 +44,23 @@ export default async function JobsPage({ params }: PageProps) {
   /* 3️⃣ ROLE LOGIC */
   const isCreative = session.role === 'CREATIVE'
 
-  /* 4️⃣ FILTER – kreatívec vidí len svoje joby */
-  const jobFilter = isCreative
+  /* 4️⃣ FILTER – kreatívec vidí len svoje tendre */
+  const tenderFilter = isCreative
     ? {
-        assignments: {
-          some: {
-            userId: session.userId,
-          },
-        },
-      }
-    : {}
-
-  /* 5️⃣ FETCH JOBS */
-  const jobs = await prisma.job.findMany({
-    where: {
-      campaign: {
-        client: {
-          agencyId: agency.id,
+      assignments: {
+        some: {
+          userId: session.userId,
         },
       },
-      archivedAt: null,
-      ...jobFilter,
+    }
+    : {}
+
+  /* 5️⃣ FETCH TENDERS */
+  const tenders = await prisma.tender.findMany({
+    where: {
+      agencyId: agency.id, // Tenders are directly linked to Agency, not Client->Campaign
+      isConverted: false, // Show only active tenders
+      ...tenderFilter,
     },
     include: {
       assignments: {
@@ -80,13 +76,6 @@ export default async function JobsPage({ params }: PageProps) {
     },
     orderBy: [
       {
-        campaign: {
-          client: {
-            priority: 'desc',
-          },
-        },
-      },
-      {
         deadline: 'asc',
       },
     ],
@@ -99,17 +88,17 @@ export default async function JobsPage({ params }: PageProps) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 uppercase italic">
-            Job Pipeline
+            Tendre Pipeline
           </h2>
           <p className="text-muted-foreground text-sm font-medium">
-            Prehľad všetkých aktívnych jobov.
+            Prehľad aktívnych tendrov.
           </p>
         </div>
 
         {!isCreative && (
-          <Link href={`/${params.slug}/jobs/new`}>
+          <Link href={`/${params.slug}/tenders/new`}>
             <Button className="bg-purple-700 hover:bg-purple-800 text-white gap-2 shadow-md">
-              <Plus className="h-4 w-4" /> Nový Job
+              <Plus className="h-4 w-4" /> Nový Tender
             </Button>
           </Link>
         )}
@@ -120,7 +109,7 @@ export default async function JobsPage({ params }: PageProps) {
         <CardHeader className="bg-slate-900 text-white py-4">
           <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
             <Trophy className="h-4 w-4 text-yellow-400" />
-            Aktívne joby
+            Aktívne Tendre
           </CardTitle>
         </CardHeader>
 
@@ -145,43 +134,43 @@ export default async function JobsPage({ params }: PageProps) {
               </TableHeader>
 
               <TableBody>
-                {jobs.length === 0 ? (
+                {tenders.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={4}
                       className="text-center py-20 text-slate-400 italic text-sm"
                     >
-                      Žiadne aktívne joby.
+                      Žiadne aktívne tendre.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  jobs.map((job) => (
+                  tenders.map((tender) => (
                     <TableRow
-                      key={job.id}
+                      key={tender.id}
                       className="hover:bg-slate-50/50 transition-colors group"
                     >
                       <TableCell className="pl-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-800">
-                            {job.title}
+                            {tender.title}
                           </span>
                           <span className="text-[9px] text-slate-500">
-                            {job._count.files} príloh
+                            {tender._count.files} príloh
                           </span>
                         </div>
                       </TableCell>
 
                       <TableCell className="text-sm font-medium">
-                        {job.deadline ? (
+                        {tender.deadline ? (
                           <span
                             className={
-                              new Date(job.deadline) < new Date()
+                              new Date(tender.deadline) < new Date()
                                 ? 'text-red-600 font-bold'
                                 : 'text-slate-600'
                             }
                           >
                             {format(
-                              new Date(job.deadline),
+                              new Date(tender.deadline),
                               'dd.MM.yyyy'
                             )}
                           </span>
@@ -193,19 +182,19 @@ export default async function JobsPage({ params }: PageProps) {
                       <TableCell>
                         <Badge
                           className={
-                            job.status === 'TODO'
+                            tender.status === 'TODO'
                               ? 'bg-amber-100 text-amber-700 border-amber-300'
-                              : job.status === 'IN_PROGRESS'
-                              ? 'bg-blue-100 text-blue-700 border-blue-200'
-                              : 'bg-green-100 text-green-700 border-green-200'
+                              : tender.status === 'IN_PROGRESS'
+                                ? 'bg-blue-100 text-blue-700 border-blue-200'
+                                : 'bg-green-100 text-green-700 border-green-200'
                           }
                         >
-                          {job.status}
+                          {tender.status}
                         </Badge>
                       </TableCell>
 
                       <TableCell className="text-right pr-6">
-                        <Link href={`/${params.slug}/jobs/${job.id}`}>
+                        <Link href={`/${params.slug}/tenders/${tender.id}`}>
                           <Button
                             variant="ghost"
                             size="sm"
