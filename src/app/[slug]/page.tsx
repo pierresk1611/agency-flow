@@ -44,13 +44,17 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const overdue = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline < now)
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline >= now && j.deadline <= criticalThreshold)
 
-  // 3️⃣ BUDGET DATA
-  const budgetData = jobs.filter(j => j.budget != null && Number(j.budget) > 0).slice(0, 5).map(j => ({
-    id: j.id,
-    name: j.title?.substring(0, 10) || 'Untitled',
-    plan: Number(j.budget || 0),
-    real: Number(j.budgets?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0)
-  }))
+  // 3️⃣ BUDGET DATA - Top 5 Jobs by Budget desc
+  const budgetData = jobs
+    .filter(j => j.budget != null && Number(j.budget) > 0)
+    .sort((a, b) => Number(b.budget) - Number(a.budget))
+    .slice(0, 5)
+    .map(j => ({
+      id: j.id,
+      name: `${j.campaign?.client?.name?.substring(0, 10) || 'Client'} - ${j.title?.substring(0, 10) || 'Job'}`,
+      plan: Number(j.budget || 0),
+      real: Number(j.budgets?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0)
+    }))
 
   // 4️⃣ TIMESHEETS
   const pendingCount = await prisma.timesheet.count({
@@ -61,17 +65,28 @@ export default async function DashboardPage({ params }: { params: { slug: string
   })
   const tsData = [{ name: 'Výkazy', approved: approvedCount, pending: pendingCount }]
 
-  // 5️⃣ WORKLOAD (ADMIN only)
+  // 5️⃣ WORKLOAD (ADMIN only) - Planned Hours for next 7 days
   let workloadData: { name: string, value: number }[] = []
   if (!isCreative) {
+    const next7Days = addDays(new Date(), 7)
     const users = await prisma.user.findMany({
       where: { agencyId: agency.id, active: true },
-      include: { _count: { select: { assignments: { where: { job: { status: { not: 'DONE' }, archivedAt: null } } } } } }
+      include: {
+        plannerEntries: {
+          where: {
+            date: {
+              gte: new Date(),
+              lte: next7Days
+            }
+          }
+        }
+      }
     })
+
     workloadData = users.map(u => ({
       name: u.name || u.email.split('@')[0],
-      value: u._count?.assignments || 0
-    })).filter(v => v.value > 0)
+      value: Math.round((u.plannerEntries.reduce((sum, entry) => sum + entry.minutes, 0) / 60) * 10) / 10 // Convert to hours, 1 decimal
+    })).filter(v => v.value > 0).sort((a, b) => b.value - a.value)
   }
 
   // 6️⃣ JOB STATUS
@@ -165,67 +180,69 @@ export default async function DashboardPage({ params }: { params: { slug: string
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
         {!isCreative && (
-          <Card className="lg:col-span-8 shadow-xl border-none ring-1 ring-slate-200">
+          <Card className="lg:col-span-12 shadow-xl border-none ring-1 ring-slate-200 order-1">
             <CardHeader className="border-b bg-slate-50/50 py-3">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                <Euro className="h-3 w-3" /> Finančný stav projektov
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+                <Euro className="h-4 w-4" /> Finančný stav projektov (Top 5)
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-6">
               <BudgetChart data={budgetData} slug={params.slug} />
             </CardContent>
           </Card>
         )}
 
-        <Card className={`lg:col-span-4 shadow-xl border-none ring-1 ring-slate-200 ${isCreative ? 'lg:col-span-12' : ''}`}>
-          <CardHeader className="border-b bg-slate-50/50 py-3">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-              <ListChecks className="h-3 w-3" /> Stav úloh
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <JobStatusChart data={jobStatusData} />
-            <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
-              <div className="bg-red-50 p-2 rounded-lg text-red-700 flex flex-col items-center justify-center">
-                <span className="font-bold text-[10px] uppercase opacity-70">TODO</span>
-                <span className="font-black text-lg">{statusCounts.TODO}</span>
+        <div className={`lg:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6 order-2`}>
+          <Card className="shadow-xl border-none ring-1 ring-slate-200">
+            <CardHeader className="border-b bg-slate-50/50 py-3">
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+                <ListChecks className="h-4 w-4" /> Stav úloh
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <JobStatusChart data={jobStatusData} />
+              <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
+                <div className="bg-red-50 p-2 rounded-lg text-red-700 flex flex-col items-center justify-center">
+                  <span className="font-bold text-[10px] uppercase opacity-70">TODO</span>
+                  <span className="font-black text-lg">{statusCounts.TODO}</span>
+                </div>
+                <div className="bg-blue-50 p-2 rounded-lg text-blue-700 flex flex-col items-center justify-center">
+                  <span className="font-bold text-[10px] uppercase opacity-70">WORK</span>
+                  <span className="font-black text-lg">{statusCounts.IN_PROGRESS}</span>
+                </div>
+                <div className="bg-green-50 p-2 rounded-lg text-green-700 flex flex-col items-center justify-center">
+                  <span className="font-bold text-[10px] uppercase opacity-70">DONE</span>
+                  <span className="font-black text-lg">{statusCounts.DONE}</span>
+                </div>
               </div>
-              <div className="bg-blue-50 p-2 rounded-lg text-blue-700 flex flex-col items-center justify-center">
-                <span className="font-bold text-[10px] uppercase opacity-70">WORK</span>
-                <span className="font-black text-lg">{statusCounts.IN_PROGRESS}</span>
-              </div>
-              <div className="bg-green-50 p-2 rounded-lg text-green-700 flex flex-col items-center justify-center">
-                <span className="font-bold text-[10px] uppercase opacity-70">DONE</span>
-                <span className="font-black text-lg">{statusCounts.DONE}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {!isCreative && (
-          <>
-            <Card className="lg:col-span-6 shadow-xl border-none ring-1 ring-slate-200">
+          {!isCreative && (
+            <Card className="shadow-xl border-none ring-1 ring-slate-200">
               <CardHeader className="border-b bg-slate-50/50 py-3">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                  <Users className="h-3 w-3" /> Vyťaženosť tímu
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <WorkloadChart data={workloadData} slug={params.slug} />
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-6 shadow-xl border-none ring-1 ring-slate-200">
-              <CardHeader className="border-b bg-slate-50/50 py-3">
-                <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                  <CheckCircle2 className="h-3 w-3" /> Schvaľovanie výkazov
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+                  <CheckCircle2 className="h-4 w-4" /> Schvaľovanie výkazov
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
                 <TimesheetStatusChart data={tsData} />
               </CardContent>
             </Card>
-          </>
+          )}
+        </div>
+
+        {!isCreative && (
+          <Card className="lg:col-span-12 shadow-xl border-none ring-1 ring-slate-200 order-3">
+            <CardHeader className="border-b bg-slate-50/50 py-3">
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+                <Users className="h-4 w-4" /> Vyťaženosť tímu (Naplánované hodiny - 7 dní)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <WorkloadChart data={workloadData} slug={params.slug} />
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
