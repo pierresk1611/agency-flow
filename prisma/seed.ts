@@ -137,11 +137,11 @@ async function seedSampleData(prisma: PrismaClient, agencyId: string) {
   // --- A. Agency Team ---
   console.log('  -> Creating Agency Team...')
   const teamRoles = [
-    { email: 'account@agencyflow.com', name: 'Adam Account', role: 'ACCOUNT', position: 'Account Manager' },
-    { email: 'creative@agencyflow.com', name: 'Cyril Creative', role: 'CREATIVE', position: 'Art Director' },
-    { email: 'traffic@agencyflow.com', name: 'Tana Traffic', role: 'TRAFFIC', position: 'Traffic Manager' },
-    { email: 'finance@agencyflow.com', name: 'Fero Finance', role: 'ADMIN', position: 'CFO' },
-    { email: 'copy@agencyflow.com', name: 'Katka Copy', role: 'CREATIVE', position: 'Copywriter' },
+    { email: 'account@agencyflow.com', name: 'Adam Account', role: 'ACCOUNT', position: 'Account Manager', hourlyRate: 60, costRate: 30 },
+    { email: 'creative@agencyflow.com', name: 'Cyril Creative', role: 'CREATIVE', position: 'Art Director', hourlyRate: 80, costRate: 40 },
+    { email: 'traffic@agencyflow.com', name: 'Tana Traffic', role: 'TRAFFIC', position: 'Traffic Manager', hourlyRate: 50, costRate: 25 },
+    { email: 'finance@agencyflow.com', name: 'Fero Finance', role: 'ADMIN', position: 'CFO', hourlyRate: 100, costRate: 50 },
+    { email: 'copy@agencyflow.com', name: 'Katka Copy', role: 'CREATIVE', position: 'Copywriter', hourlyRate: 70, costRate: 35 },
   ] as const
 
   const teamUsers = []
@@ -157,7 +157,9 @@ async function seedSampleData(prisma: PrismaClient, agencyId: string) {
           position: user.position,
           passwordHash: pwd,
           agencyId: agencyId,
-          active: true
+          active: true,
+          hourlyRate: user.hourlyRate,
+          costRate: user.costRate
         }
       })
       teamUsers.push(newUser)
@@ -392,7 +394,7 @@ async function seedSampleData(prisma: PrismaClient, agencyId: string) {
     const endTime = new Date(startTime)
     endTime.setMinutes(startTime.getMinutes() + duration)
 
-    await prisma.timesheet.create({
+    const ts = await prisma.timesheet.create({
       data: {
         jobAssignmentId: assign.id,
         startTime,
@@ -404,6 +406,18 @@ async function seedSampleData(prisma: PrismaClient, agencyId: string) {
         approvedAt: i % 2 === 0 ? new Date() : undefined
       }
     })
+
+    if (i % 2 === 0) {
+      await prisma.budgetItem.create({
+        data: {
+          jobId: job.id,
+          timesheetId: ts.id,
+          hours: duration / 60,
+          rate: user.hourlyRate || 50,
+          amount: (duration / 60) * (user.hourlyRate || 50)
+        }
+      })
+    }
   }
 
   // --- G. Planner Entries ---
