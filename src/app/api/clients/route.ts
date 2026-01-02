@@ -56,46 +56,46 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
+}
 
-
-  export async function POST(request: Request) {
-    try {
-      const session = await getSession()
-      if (!session) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-
-      const body = await request.json()
-      const { name, priority, scope } = body
-
-      if (!name) {
-        return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-      }
-
-      // Check availability
-      const existing = await prisma.client.findFirst({
-        where: { agencyId: session.agencyId, name }
-      })
-
-      if (existing) {
-        return NextResponse.json({ error: 'Client already exists' }, { status: 409 })
-      }
-
-      const client = await prisma.client.create({
-        data: {
-          agencyId: session.agencyId,
-          name,
-          priority: parseInt(priority) || 3,
-          scope: Array.isArray(scope) ? scope.join(', ') : scope
-        }
-      })
-
-      return NextResponse.json(client)
-    } catch (error) {
-      console.error('CLIENTS_POST_ERROR:', error)
-      return NextResponse.json(
-        { error: 'Error creating client' },
-        { status: 500 }
-      )
+export async function POST(request: Request) {
+  try {
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const body = await request.json()
+    const { name, priority, scope } = body
+
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
+
+    // Check availability
+    const existing = await prisma.client.findFirst({
+      where: { agencyId: session.agencyId, name }
+    })
+
+    if (existing) {
+      return NextResponse.json({ error: 'Client already exists' }, { status: 409 })
+    }
+
+    const client = await prisma.client.create({
+      data: {
+        agencyId: session.agencyId,
+        name,
+        priority: parseInt(priority) || 3,
+        scope: Array.isArray(scope) ? scope.join(', ') : scope
+      }
+    })
+
+    return NextResponse.json(client)
+  } catch (error) {
+    console.error('CLIENTS_POST_ERROR:', error)
+    return NextResponse.json(
+      { error: 'Error creating client' },
+      { status: 500 }
+    )
   }
+}
