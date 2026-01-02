@@ -126,7 +126,18 @@ async function main() {
     })
   }
 
-  // 5. Seed Sample Data (Clients, Team, Campaigns, Jobs)
+  // 5. Seed Scopes
+  console.log('Seeding Scopes...')
+  const scopes = ['Full Service', 'Design', 'Development', 'Social Media', 'PPC', 'SEO', 'Consulting', 'Branding', 'Video Production', 'Copywriting']
+  for (const name of scopes) {
+    await prisma.agencyScope.upsert({
+      where: { agencyId_name: { agencyId: agency.id, name } },
+      update: {},
+      create: { agencyId: agency.id, name }
+    })
+  }
+
+  // 6. Seed Sample Data (Clients, Team, Campaigns, Jobs)
   console.log('Seeding Sample Data (Clients, Team, Campaigns, Jobs)...')
   await seedSampleData(prisma, agency.id)
 
