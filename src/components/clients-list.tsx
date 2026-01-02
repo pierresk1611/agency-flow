@@ -39,6 +39,7 @@ export function ClientsList() {
     const [isOtherSelected, setIsOtherSelected] = useState(false)
     const [customScope, setCustomScope] = useState('')
     const [submitting, setSubmitting] = useState(false)
+    const [error, setError] = useState('')
 
     const refreshData = async () => {
         setLoading(true)
@@ -159,6 +160,7 @@ export function ClientsList() {
                     <DialogHeader>
                         <DialogTitle>{editingClient ? 'Upraviť Klienta' : 'Nový Klient'}</DialogTitle>
                         <DialogDescription>Zadajte údaje o klientovi.</DialogDescription>
+                        {error && <div className="text-red-500 text-sm font-medium mt-2 p-2 bg-red-50 rounded-md">{error}</div>}
                     </DialogHeader>
                     <div className="grid gap-5 py-4">
                         <div className="grid gap-2"><Label>Názov</Label><Input value={newName} onChange={e => setNewName(e.target.value)} /></div>
