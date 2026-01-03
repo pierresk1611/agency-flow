@@ -31,10 +31,11 @@ export async function PATCH(request: Request) {
     })
 
     // Ak existovali pending requesty pre tento assignment, označíme ich ako APPROVED
-    await prisma.reassignmentRequest.updateMany({
+    const updateResult = await prisma.reassignmentRequest.updateMany({
       where: { assignmentId, status: 'PENDING' },
       data: { status: 'APPROVED' }
     })
+    console.log(`REASSIGN SUCCESS: Assign ${assignmentId} moved to ${newUserId}. Requests approved: ${updateResult.count}`)
 
     return NextResponse.json(updated)
 

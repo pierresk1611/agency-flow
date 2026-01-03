@@ -206,6 +206,22 @@ function TrafficActionColumn({
       const targetUser = allUsersList.find((u: any) => u.id === pendingReq.targetUserId)
       const targetName = targetUser ? (targetUser.name || targetUser.email || 'Neznámy').split(' ')[0] : '?'
 
+      const handleReject = async () => {
+        if (!confirm('Naozaj chcete zamietnuť túto žiadosť?')) return
+        try {
+          await fetch('/api/jobs/reassign/reject', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assignmentId: assign.id, targetUserId: pendingReq.targetUserId })
+          })
+          // Force reload
+          window.location.reload()
+        } catch (e) {
+          console.error(e)
+          alert('Chyba pri zamietaní')
+        }
+      }
+
       return (
         <div className="flex items-center gap-1">
           <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-700 bg-amber-50 border-amber-200 mr-1 flex flex-col items-start leading-none py-0.5 px-2">
@@ -223,13 +239,12 @@ function TrafficActionColumn({
             >
               <Check className="h-3 w-3" />
             </Button>
-            {/* Reject Logic to be implemented if needed */}
             <Button
               size="sm"
               variant="destructive"
               className="h-7 w-7 p-0 rounded-lg shadow-sm"
-              title="Zamietnuť (TODO)"
-              onClick={() => alert("Zamietnutie zatiaľ nie je implementované.")}
+              title="Zamietnuť"
+              onClick={handleReject}
             >
               <X className="h-3 w-3" />
             </Button>
