@@ -26,7 +26,10 @@ export async function POST(request: Request) {
 
         let assignment = await prisma.jobAssignment.findFirst({
             where: { jobId, userId },
-            include: { job: { include: { campaign: { include: { client: true } } } }, user: true }
+            include: {
+                job: { include: { campaign: { include: { client: { include: { agency: true } } } } } },
+                user: true
+            }
         })
 
         if (!assignment) {
@@ -37,9 +40,32 @@ export async function POST(request: Request) {
             // Fetch full Structure
             assignment = await prisma.jobAssignment.findUnique({
                 where: { id: newAssignment.id },
-                include: { job: { include: { campaign: { include: { client: true } } } }, user: true }
+                include: {
+                    job: { include: { campaign: { include: { client: { include: { agency: true } } } } } },
+                    user: true
+                }
             })
         }
+
+        // Safety check (should not happen if creation worked)
+        if (!assignment) return NextResponse.json({ error: 'Assignment error' }, { status: 500 })
+
+        const runningTimer = await prisma.timesheet.findFirst({
+            where: { jobAssignmentId: assignment.id, endTime: null }
+        })
+
+        // ... (PAUSE LOGIC OMITTED - Unchanged) ...
+
+        // --- LOGIKA: LOGIC START / STOP ---
+        if (action === 'TOGGLE_PAUSE' && runningTimer) {
+            // ... existing pause logic ...
+            // Re-implementing strictly what was there or ensuring I don't break it. 
+            // Actually, I can just target the assignment fetch and the notification block separately to avoid replacing the big pause block.
+            // But the tool needs contiguous block. 
+            // I will modify the initial Fetch and the Notification block separately or try to minimize context.
+        }
+
+        // Let's retry with smaller chunks.
 
         // Safety check (should not happen if creation worked)
         if (!assignment) return NextResponse.json({ error: 'Assignment error' }, { status: 500 })
@@ -106,9 +132,8 @@ export async function POST(request: Request) {
             })
 
             // NOTIFIKÁCIA: Timesheet Submit (Pre Traffic & Account)
-            // 1. Zistiť kto má dostať notifikáciu (v danej agentúre)
-            // Predpokladáme, že Client má agentúru, Job má Campaign má Client...
             const agencyId = assignment.job.campaign.client.agencyId
+            const slug = assignment.job.campaign.client.agency.slug
 
             const managers = await prisma.user.findMany({
                 where: {
@@ -128,7 +153,7 @@ export async function POST(request: Request) {
                         userId: m.id,
                         title: 'Nový výkaz',
                         message: `${userName} pridal nový výkaz na "${jobTitle}".`,
-                        link: `/timesheets/check` // Link na kontrolu výkazov (predpoklad)
+                        link: `/${slug}/timesheets` // Link na kontrolu výkazov
                     }))
                 })
             }
