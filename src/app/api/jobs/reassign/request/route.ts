@@ -29,6 +29,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nemáte oprávnenie podať žiadosť' }, { status: 403 })
     }
 
+    // Check for existing pending request
+    const existing = await prisma.reassignmentRequest.findFirst({
+      where: {
+        assignmentId,
+        status: 'PENDING'
+      }
+    })
+
+    if (existing) {
+      return NextResponse.json({ message: 'Request already exists', id: existing.id }, { status: 200 })
+    }
+
     const newRequest = await prisma.reassignmentRequest.create({
       data: {
         assignmentId,
