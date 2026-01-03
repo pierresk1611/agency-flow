@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ConvertTenderButton } from '@/components/convert-tender-button'
 import { EditTenderDescription } from '@/components/edit-tender-description'
 import { AddTenderFileDialog } from '@/components/add-tender-file-dialog'
+import { ManageTenderTeamDialog } from '@/components/manage-tender-team-dialog'
 
 export default async function TenderDetailPage({ params }: { params: { slug: string, tenderId: string } }) {
   // 1. Session
@@ -26,6 +27,15 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
       assignments: { include: { user: true } },
       agency: true
     }
+  })
+
+  // 3. Načítanie userov pre manage dialog
+  const agencyUsers = await prisma.user.findMany({
+    where: {
+      agency: { slug: params.slug },
+      active: true
+    },
+    select: { id: true, name: true, email: true }
   })
 
   if (!tender || tender.agency.slug !== params.slug) return notFound()
@@ -45,12 +55,12 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">{tender.title}</h2>
-              {tender.isConverted 
-                ? <Badge className="bg-green-600 text-white border-none px-3 font-bold uppercase">Vyhrané</Badge> 
+              {tender.isConverted
+                ? <Badge className="bg-green-600 text-white border-none px-3 font-bold uppercase">Vyhrané</Badge>
                 : <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50 font-bold italic px-3">PITCH</Badge>
               }
             </div>
-            <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase">ID: {tender.id.substring(0,8)}</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase">ID: {tender.id.substring(0, 8)}</p>
           </div>
         </div>
         {!tender.isConverted && canEdit && <ConvertTenderButton tenderId={tender.id} slug={params.slug} />}
@@ -106,8 +116,9 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
           {/* TEAM */}
           <Card className="shadow-xl border-none ring-1 ring-slate-200">
             <CardHeader className="bg-purple-900 text-white py-4 rounded-t-xl">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                <Users className="h-4 w-4" /> Pitch Team
+              <CardTitle className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 justify-between w-full">
+                <span className="flex items-center gap-2"><Users className="h-4 w-4" /> Pitch Team</span>
+                {canEdit && <ManageTenderTeamDialog tenderId={tender.id} initialAssignments={tender.assignments} agencyUsers={agencyUsers} />}
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4 px-6">
