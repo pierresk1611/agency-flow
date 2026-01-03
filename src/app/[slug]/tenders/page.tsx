@@ -15,6 +15,7 @@ import { Trophy, Plus, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { TenderTabs } from '@/components/tender-tabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,10 +57,12 @@ export default async function TendersPage({ params }: PageProps) {
     : {}
 
   /* 5️⃣ FETCH TENDERS */
-  const tenders = await prisma.tender.findMany({
+  const allTenders = await prisma.tender.findMany({
     where: {
-      agencyId: agency.id, // Tenders are directly linked to Agency, not Client->Campaign
-      isConverted: false, // Show only active tenders
+      agencyId: agency.id,
+      // We fetch ALL tenders now, filtering happens in JS or we could do 2 queries. 
+      // 2 queries is cleaner but finding all and filtering is fine for small datasets.
+      // Let's filter in query for efficiency? No, easier to filter arrays here.
       ...tenderFilter,
     },
     include: {
@@ -81,6 +84,9 @@ export default async function TendersPage({ params }: PageProps) {
     ],
   })
 
+  const activeTenders = allTenders.filter(t => !t.isConverted)
+  const archivedTenders = allTenders.filter(t => t.isConverted)
+
   /* 6️⃣ RENDER */
   return (
     <div className="space-y-6">
@@ -91,7 +97,7 @@ export default async function TendersPage({ params }: PageProps) {
             Tendre Pipeline
           </h2>
           <p className="text-muted-foreground text-sm font-medium">
-            Prehľad aktívnych tendrov.
+            Prehľad súťaží a tendrov.
           </p>
         </div>
 
@@ -104,114 +110,12 @@ export default async function TendersPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* TABLE CARD */}
-      <Card className="shadow-xl border-none ring-1 ring-slate-200 overflow-hidden">
-        <CardHeader className="bg-slate-900 text-white py-4">
-          <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-yellow-400" />
-            Aktívne Tendre
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="overflow-x-auto w-full">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="pl-6 text-[10px] font-black uppercase">
-                    Názov
-                  </TableHead>
-                  <TableHead className="text-[10px] font-black uppercase">
-                    Deadline
-                  </TableHead>
-                  <TableHead className="text-[10px] font-black uppercase">
-                    Status
-                  </TableHead>
-                  <TableHead className="text-right pr-6 text-[10px] font-black uppercase">
-                    Akcia
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {tenders.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="text-center py-20 text-slate-400 italic text-sm"
-                    >
-                      Žiadne aktívne tendre.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  tenders.map((tender) => (
-                    <TableRow
-                      key={tender.id}
-                      className="hover:bg-slate-50/50 transition-colors group"
-                    >
-                      <TableCell className="pl-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">
-                            {tender.title}
-                          </span>
-                          <span className="text-[9px] text-slate-500">
-                            {tender._count.files} príloh
-                          </span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="text-sm font-medium">
-                        {tender.deadline ? (
-                          <span
-                            className={
-                              new Date(tender.deadline) < new Date()
-                                ? 'text-red-600 font-bold'
-                                : 'text-slate-600'
-                            }
-                          >
-                            {format(
-                              new Date(tender.deadline),
-                              'dd.MM.yyyy'
-                            )}
-                          </span>
-                        ) : (
-                          '–'
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge
-                          className={
-                            tender.status === 'TODO'
-                              ? 'bg-amber-100 text-amber-700 border-amber-300'
-                              : tender.status === 'IN_PROGRESS'
-                                ? 'bg-blue-100 text-blue-700 border-blue-200'
-                                : 'bg-green-100 text-green-700 border-green-200'
-                          }
-                        >
-                          {tender.status}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-right pr-6">
-                        <Link href={`/${params.slug}/tenders/${tender.id}`}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 font-bold"
-                          >
-                            Detail <ArrowRight className="ml-1 h-3 w-3" />
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <TenderTabs
+        activeTenders={activeTenders}
+        archivedTenders={archivedTenders}
+        slug={params.slug}
+        isCreative={isCreative}
+      />
     </div>
   )
 }
