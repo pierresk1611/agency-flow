@@ -32,14 +32,11 @@ export default async function TrafficPage({ params }: { params: { slug: string }
           },
           reassignmentRequests: {
             where: { status: 'PENDING' },
-            reassignmentRequests: {
-              where: { status: 'PENDING' },
-              select: {
-                id: true,
-                targetUserId: true,
-                status: true,
-                reason: true
-              }
+            select: {
+              id: true,
+              targetUserId: true,
+              status: true,
+              reason: true
             }
           }
         },
