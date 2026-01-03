@@ -56,7 +56,29 @@ export async function POST(request: Request) {
     revalidatePath(path)
     revalidatePath('/[slug]/traffic', 'page')
 
-    // Create Notification logic handled via hooks or separate call, but ensuring the link is correct
+    // Create Notification manually here to ensure link is correct with hash
+    // We need to fetch the job title to make the notification nice
+    const jobInfo = await prisma.jobAssignment.findUnique({
+      where: { id: assignmentId },
+      include: { job: true }
+    })
+
+    if (jobInfo && jobInfo.job) {
+      // Fetch agency slug reliably from DB
+      const agency = await prisma.agency.findUnique({
+        where: { id: session.agencyId },
+        select: { slug: true }
+      })
+
+      const slug = agency?.slug || 'agency'
+
+      await createNotification(
+        targetUserId,
+        `Žiadosť o presun: ${jobInfo.job.title}`,
+        `Kolega žiada o presun úlohy. Dôvod: ${reason}`,
+        `/${slug}/traffic#user-${session.userId}`
+      )
+    }
     // (Assuming notification logic is elsewhere or we add it here? The user request implies notification exists)
     // Checking where notification is created... it seems missing in this file request logic?
     // Wait, the previous context mentions `reassign/request` creates a request. 
