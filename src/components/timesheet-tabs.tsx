@@ -86,6 +86,12 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                             <TableHead className="w-auto">Projekt</TableHead>
                             <TableHead className="w-[150px]">Trvanie</TableHead>
                             <TableHead className="w-[150px]">Status</TableHead>
+                            {!isCreative && (
+                                <>
+                                    <TableHead className="text-right w-[100px] text-[9px]">Náklad</TableHead>
+                                    <TableHead className="text-right w-[100px] text-[9px]">Fakturácia</TableHead>
+                                </>
+                            )}
                             {!isArchive && <TableHead className="text-right pr-6 w-[100px]">Akcia</TableHead>}
                         </TableRow>
                     </TableHeader>
@@ -126,6 +132,24 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                                             </span>
                                         )}
                                     </TableCell>
+                                    {!isCreative && (
+                                        <>
+                                            <TableCell className="text-right font-mono text-xs text-slate-500">
+                                                {(() => {
+                                                    const hours = (ts.durationMinutes || 0) / 60
+                                                    const cost = hours * (ts.jobAssignment.user?.costRate || 0)
+                                                    return cost > 0 ? `${cost.toFixed(2)} €` : '-'
+                                                })()}
+                                            </TableCell>
+                                            <TableCell className="text-right font-mono text-xs font-bold text-slate-700">
+                                                {(() => {
+                                                    const hours = (ts.durationMinutes || 0) / 60
+                                                    const billable = hours * (ts.jobAssignment.user?.hourlyRate || 0)
+                                                    return billable > 0 ? `${billable.toFixed(2)} €` : '-'
+                                                })()}
+                                            </TableCell>
+                                        </>
+                                    )}
                                     <TableCell>
                                         <div className="flex flex-col gap-1">
                                             {ts.status === 'APPROVED' && (
