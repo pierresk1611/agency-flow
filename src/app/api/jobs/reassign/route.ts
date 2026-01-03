@@ -30,8 +30,14 @@ export async function PATCH(request: Request) {
       data: { userId: newUserId, reassignedBy: session.userId } // pridáme kto zmenil
     })
 
+    // Ak existovali pending requesty pre tento assignment, označíme ich ako APPROVED
+    await prisma.reassignmentRequest.updateMany({
+      where: { assignmentId, status: 'PENDING' },
+      data: { status: 'APPROVED' }
+    })
+
     return NextResponse.json(updated)
-    
+
   } catch (error: any) {
     console.error("REASSIGN JOB ERROR:", error)
     return NextResponse.json({ error: error.message || 'Chyba pri prehadzovaní jobu' }, { status: 500 })
