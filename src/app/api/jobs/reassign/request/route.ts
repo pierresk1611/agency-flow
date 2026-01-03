@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     // Overenie, že assignment patrí k používateľovi alebo že je Creative
-    const assignment = await prisma.assignment.findUnique({ where: { id: assignmentId } })
+    const assignment = await prisma.jobAssignment.findUnique({ where: { id: assignmentId } })
     if (!assignment) {
       return NextResponse.json({ error: 'Neplatný assignment' }, { status: 404 })
     }
