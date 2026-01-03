@@ -21,7 +21,7 @@ export function BudgetChart({ data, slug }: { data: any[], slug: string }) {
       {/* Dynamic width based on item count to ensure readability */}
       <div style={{ width: `${Math.max(100, data.length * 100)}px`, minWidth: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
             <XAxis
               dataKey="name"
@@ -36,14 +36,14 @@ export function BudgetChart({ data, slug }: { data: any[], slug: string }) {
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              width={80}
+              width={90}
               domain={[0, 'auto']}
               tickFormatter={(v) => `${v}€`}
             />
             <Tooltip
               cursor={{ fill: '#f8fafc' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              formatter={(value: any) => [`${Number(value || 0).toFixed(2)}€`, '']}
+              formatter={(value: any, name: any) => [`${Number(value || 0).toFixed(2)}€`, name]}
             />
             <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold' }} />
             <Bar dataKey="plan" name="Plán" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
