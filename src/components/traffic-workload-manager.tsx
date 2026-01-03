@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Loader2, ArrowRightLeft, Calendar, MessageSquareShare } from 'lucide-react'
-import { format } from 'date-fns'
+import { Loader2, MessageSquareShare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function TrafficWorkloadManager({
@@ -28,16 +27,15 @@ export function TrafficWorkloadManager({
 }) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [requestedIds, setRequestedIds] = useState<string[]>([])
 
+  // State pre Reassignment Request
+  const [requestedIds, setRequestedIds] = useState<string[]>([])
   const [requestOpen, setRequestOpen] = useState(false)
   const [activeAssign, setActiveAssign] = useState<any>(null)
   const [reason, setReason] = useState('')
   const [targetUserId, setTargetUserId] = useState('')
 
   const isManager = ['ADMIN', 'TRAFFIC', 'ACCOUNT', 'SUPERADMIN'].includes(role)
-
-  // Na tomto komponente je len UI render (fetches sa presunuli do TrafficPage alebo nad neho)
 
   const handleDirectReassign = async (assignmentId: string, newUserId: string) => {
     setLoadingId(assignmentId)
@@ -66,26 +64,19 @@ export function TrafficWorkloadManager({
         cache: 'no-store'
       })
 
-      // Akceptujeme 200 (existuje) aj 201 (vytvorené) ako úspech pre UI
       if (res.ok) {
-        setRequestedIds(prev => [...prev, activeAssign.id]) // Optimistic update
+        setRequestedIds(prev => [...prev, activeAssign.id])
         setRequestOpen(false)
         setReason('')
         setTargetUserId('')
 
-        // Critical refresh logic
         router.refresh()
-
-        // Fallback: If router.refresh() doesn't update the server component fast enough or fails
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
+        setTimeout(() => window.location.reload(), 500)
       }
     } catch (e) {
       console.error(e)
     } finally {
-      // Keep loading state until reload happens to prevent clicks
-      // setLoadingId(null) 
+      // setLoadingId(null) // Keep lock for reload
     }
   }
 
@@ -128,27 +119,17 @@ export function TrafficWorkloadManager({
                       </h4>
                     </div>
 
-                    {isManager ? (
-                      <Select onValueChange={(val) => handleDirectReassign(assign.id, val)} disabled={loadingId === assign.id}>
-                        <SelectTrigger className="h-7 text-[8px] w-28 font-bold uppercase tracking-tighter bg-white shadow-sm">
-                          <SelectValue placeholder="PREHODIŤ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allUsersList.filter(u => u.id !== user.id).map((other: any) => (
-                            <SelectItem key={other.id} value={other.id} className="text-xs">
-                              {other.name || other.email.split('@')[0]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <ClientOnlyReassignButton
-                        assign={assign}
-                        currentUserId={currentUserId}
-                        isRequested={requestedIds.includes(assign.id)}
-                        onRequestOpen={(as) => { setActiveAssign(as); setRequestOpen(true) }}
-                      />
-                    )}
+                    <TrafficActionColumn
+                      assign={assign}
+                      user={user}
+                      isManager={isManager}
+                      currentUserId={currentUserId}
+                      loadingId={loadingId}
+                      allUsersList={allUsersList}
+                      requestedIds={requestedIds}
+                      onDirectReassign={handleDirectReassign}
+                      onRequestOpen={(a) => { setActiveAssign(a); setRequestOpen(true) }}
+                    />
                   </div>
                 ))
               )}
@@ -178,33 +159,66 @@ export function TrafficWorkloadManager({
   )
 }
 
-function ClientOnlyReassignButton({ assign, currentUserId, isRequested, onRequestOpen }: any) {
+function TrafficActionColumn({
+  assign,
+  user,
+  isManager,
+  currentUserId,
+  loadingId,
+  allUsersList,
+  requestedIds,
+  onDirectReassign,
+  onRequestOpen
+}: any) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  if (!mounted) return null // Prevent hydration mismatch
+  if (!mounted) {
+    // Return empty placeholder with exact height to prevent layout shift if possible, 
+    // but empty is safest for hydration mismatch prevention.
+    return <div className="h-7 w-28" />
+  }
 
-  if (assign.userId !== currentUserId) return null
-
-  const hasPendingRequest = (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) || isRequested
-
-  if (hasPendingRequest) {
+  if (isManager) {
     return (
-      <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
-        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-        Požiadané o presun
-      </Badge>
+      <Select onValueChange={(val) => onDirectReassign(assign.id, val)} disabled={loadingId === assign.id}>
+        <SelectTrigger className="h-7 text-[8px] w-28 font-bold uppercase tracking-tighter bg-white shadow-sm">
+          <SelectValue placeholder="PREHODIŤ" />
+        </SelectTrigger>
+        <SelectContent>
+          {allUsersList.filter((u: any) => u.id !== user.id).map((other: any) => (
+            <SelectItem key={other.id} value={other.id} className="text-xs">
+              {other.name || other.email.split('@')[0]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     )
   }
 
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
-      onClick={() => onRequestOpen(assign)}
-    >
-      <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
-    </Button>
-  )
+  if (assign.userId === currentUserId) {
+    const isRequested = (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) || requestedIds.includes(assign.id)
+
+    if (isRequested) {
+      return (
+        <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          Požiadané o presun
+        </Badge>
+      )
+    }
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
+        onClick={() => onRequestOpen(assign)}
+      >
+        <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
+      </Button>
+    )
+  }
+
+  return null
 }
