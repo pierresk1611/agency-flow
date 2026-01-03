@@ -64,11 +64,15 @@ export function TrafficWorkloadManager({
       if (res.ok) {
         router.refresh()
         setTimeout(() => window.location.reload(), 500)
+      } else {
+        const err = await res.json()
+        alert(`Chyba: ${err.error || 'Nastala chyba pri zmene'}`)
+        setLoadingId(null)
       }
     } catch (e) {
       console.error(e)
-    } finally {
-      // setLoadingId(null) // Keep lock
+      alert("Nepodarilo sa spojiť so serverom.")
+      setLoadingId(null)
     }
   }
 
