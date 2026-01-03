@@ -131,6 +131,7 @@ export default async function PlannerPage({ params }: { params: { slug: string }
       <TeamPlannerDisplay
         groupedPlanners={groupedPlanners}
         allJobs={jobs}
+        currentUserId={session.userId}
       />
     </div>
   )
