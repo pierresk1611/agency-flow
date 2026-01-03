@@ -21,15 +21,26 @@ export async function GET() {
   }
 }
 
-export async function PATCH() {
+export async function PATCH(request: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    await prisma.notification.updateMany({
-      where: { userId: session.userId, isRead: false },
-      data: { isRead: true }
-    })
+    const body = await request.text()
+    const { id } = body ? JSON.parse(body) : { id: null }
+
+    if (id) {
+      await prisma.notification.update({
+        where: { id },
+        data: { isRead: true }
+      })
+    } else {
+      await prisma.notification.updateMany({
+        where: { userId: session.userId, isRead: false },
+        data: { isRead: true }
+      })
+    }
+
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Notifications PATCH Error:", error)
