@@ -90,12 +90,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
               ) : (
                 client.campaigns.map(campaign => (
                   <div key={campaign.id} className="border rounded-xl overflow-hidden shadow-sm bg-white">
-                    <div className="bg-slate-50 p-4 border-b flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Briefcase className="h-4 w-4 text-blue-600" />
                         <h4 className="font-bold text-slate-900">{campaign.name}</h4>
                       </div>
-                      {!isCreative && <AddJobDialog campaignId={campaign.id} />}
+                      {!isCreative && <AddJobDialog campaignId={campaign.id} agencyId={client.agencyId} />}
                     </div>
                     <div className="divide-y">
                       {campaign.jobs.length === 0 ? (
@@ -116,56 +115,56 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                       )}
                     </div>
                   </div>
-                ))
+            ))
               )}
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-slate-50/30">
-              <CardTitle className="text-lg">Kontaktné osoby</CardTitle>
-              {!isCreative && <ContactPersonDialog clientId={client.id} />}
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="grid gap-4">
-                {client.contacts.map(contact => (
-                  <div key={contact.id} className="p-4 border rounded-xl bg-white shadow-sm hover:shadow-md transition">
-                    <p className="font-bold text-slate-800 text-sm">{contact.name}</p>
-                    <p className="text-[10px] text-blue-600 font-bold mb-3 uppercase tracking-tighter">{contact.position || 'Marketing'}</p>
-                    <div className="space-y-1 text-xs text-slate-500 font-medium">
-                      {contact.email && <div className="flex items-center gap-2">{contact.email}</div>}
-                      {contact.phone && <div className="flex items-center gap-2">{contact.phone}</div>}
-                    </div>
+      {/* RIGHT COLUMN */}
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-slate-50/30">
+            <CardTitle className="text-lg">Kontaktné osoby</CardTitle>
+            {!isCreative && <ContactPersonDialog clientId={client.id} />}
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid gap-4">
+              {client.contacts.map(contact => (
+                <div key={contact.id} className="p-4 border rounded-xl bg-white shadow-sm hover:shadow-md transition">
+                  <p className="font-bold text-slate-800 text-sm">{contact.name}</p>
+                  <p className="text-[10px] text-blue-600 font-bold mb-3 uppercase tracking-tighter">{contact.position || 'Marketing'}</p>
+                  <div className="space-y-1 text-xs text-slate-500 font-medium">
+                    {contact.email && <div className="flex items-center gap-2">{contact.email}</div>}
+                    {contact.phone && <div className="flex items-center gap-2">{contact.phone}</div>}
                   </div>
-                ))}
-                {client.contacts.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne kontakty.</p>}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-blue-100">
-            <CardHeader className="flex flex-row items-center justify-between border-b bg-blue-50/30 py-3">
-              <CardTitle className="text-lg text-blue-900">Tendre & Dokumenty</CardTitle>
-              {!isCreative && <ClientFileDialog clientId={client.id} />}
-            </CardHeader>
-            <CardContent className="pt-6 space-y-3">
-              {client.files.map(f => (
-                <div key={f.id} className="flex items-center justify-between p-3 border rounded-lg bg-white hover:border-blue-300 transition-all">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <FileText className="h-4 w-4 text-slate-400" />
-                    <span className="text-xs font-medium truncate text-slate-700">{f.fileUrl}</span>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Download className="h-4 w-4" /></Button>
                 </div>
               ))}
-              {client.files.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne dokumenty.</p>}
-            </CardContent>
-          </Card>
-        </div>
+              {client.contacts.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne kontakty.</p>}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-blue-100">
+          <CardHeader className="flex flex-row items-center justify-between border-b bg-blue-50/30 py-3">
+            <CardTitle className="text-lg text-blue-900">Tendre & Dokumenty</CardTitle>
+            {!isCreative && <ClientFileDialog clientId={client.id} />}
+          </CardHeader>
+          <CardContent className="pt-6 space-y-3">
+            {client.files.map(f => (
+              <div key={f.id} className="flex items-center justify-between p-3 border rounded-lg bg-white hover:border-blue-300 transition-all">
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText className="h-4 w-4 text-slate-400" />
+                  <span className="text-xs font-medium truncate text-slate-700">{f.fileUrl}</span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400"><Download className="h-4 w-4" /></Button>
+              </div>
+            ))}
+            {client.files.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne dokumenty.</p>}
+          </CardContent>
+        </Card>
       </div>
     </div>
+    </div >
   )
 }
