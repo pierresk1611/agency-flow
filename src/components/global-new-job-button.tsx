@@ -40,6 +40,8 @@ export function GlobalNewJobButton({
     // Step 1 & 2 Data
     const [selectedClientId, setSelectedClientId] = useState<string>('')
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>('')
+    const [newCampaignName, setNewCampaignName] = useState('')
+    const [localClients, setLocalClients] = useState<ClientWithCampaigns[]>(clients)
 
     // Step 3 Data (Job)
     const [title, setTitle] = useState('')
@@ -48,18 +50,53 @@ export function GlobalNewJobButton({
     const [externalLink, setExternalLink] = useState('')
     const [selectedCreatives, setSelectedCreatives] = useState<string[]>([])
 
-    const selectedClient = clients.find(c => c.id === selectedClientId)
+    const selectedClient = localClients.find(c => c.id === selectedClientId)
+    const currentClientCampaigns = selectedClient?.campaigns || []
 
     const reset = () => {
         setStep(1)
         setSelectedClientId('')
         setSelectedCampaignId('')
+        setNewCampaignName('')
         setTitle('')
         setDeadline('')
         setBudget('0')
         setExternalLink('')
         setSelectedCreatives([])
         setOpen(false)
+    }
+
+    const handleCreateCampaign = async () => {
+        if (!newCampaignName || !selectedClientId) return
+        setLoading(true)
+        try {
+            const res = await fetch('/api/campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newCampaignName, clientId: selectedClientId })
+            })
+            if (res.ok) {
+                const newCamp = await res.json()
+                // Update local state to show new campaign immediately
+                setLocalClients(prev => prev.map(c => {
+                    if (c.id === selectedClientId) {
+                        return { ...c, campaigns: [...c.campaigns, { id: newCamp.id, name: newCamp.name }] }
+                    }
+                    return c
+                }))
+                setSelectedCampaignId(newCamp.id)
+                setNewCampaignName('')
+                setStep(3) // Auto advance
+            } else {
+                const err = await res.json()
+                alert("Chyba pri vytváraní kampane: " + (err.error || "Neznáma chyba"))
+            }
+        } catch (e) {
+            console.error(e)
+            alert("Nepodarilo sa spojiť so serverom pri vytváraní kampane.")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleNext = () => {
@@ -151,11 +188,29 @@ export function GlobalNewJobButton({
                     {/* STEP 2: CAMPAIGN SELECT */}
                     {step === 2 && (
                         <div className="space-y-4">
-                            <div className="grid gap-2">
-                                {selectedClient?.campaigns.length === 0 ? (
-                                    <p className="text-center text-slate-400 italic py-4">Tento klient nemá žiadne aktívne kampane. <br /> Najprv vytvorte kampaň v sekcii Klienti.</p>
+                            {/* ADD NEW CAMPAIGN UI */}
+                            <div className="flex gap-2 items-center pb-2 border-b">
+                                <Input
+                                    placeholder="Názov nového projektu..."
+                                    value={newCampaignName}
+                                    onChange={(e) => setNewCampaignName(e.target.value)}
+                                    className="h-8 text-sm"
+                                />
+                                <Button
+                                    className="h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs whitespace-nowrap"
+                                    disabled={!newCampaignName || loading}
+                                    onClick={handleCreateCampaign}
+                                >
+                                    {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Plus className="h-3 w-3 mr-1" />}
+                                    Vytvoriť Projekt
+                                </Button>
+                            </div>
+
+                            <div className="grid gap-2 max-h-[250px] overflow-y-auto">
+                                {currentClientCampaigns.length === 0 ? (
+                                    <p className="text-center text-slate-400 italic py-4">Tento klient nemá žiadne aktívne projekty.</p>
                                 ) : (
-                                    selectedClient?.campaigns.map(camp => (
+                                    currentClientCampaigns.map(camp => (
                                         <div
                                             key={camp.id}
                                             onClick={() => { setSelectedCampaignId(camp.id); setStep(3) }}
@@ -163,7 +218,7 @@ export function GlobalNewJobButton({
                                         >
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-slate-700">{camp.name}</span>
-                                                <span className="text-[10px] text-slate-400 uppercase">Kampaň</span>
+                                                <span className="text-[10px] text-slate-400 uppercase">Projekt / Kampaň</span>
                                             </div>
                                             <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-purple-600" />
                                         </div>
