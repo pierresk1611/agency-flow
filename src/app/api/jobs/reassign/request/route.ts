@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
@@ -37,6 +38,10 @@ export async function POST(request: Request) {
         status: 'PENDING'
       }
     })
+
+    const path = request.headers.get('referer') || '/'
+    revalidatePath(path) // Revalidate current page
+    revalidatePath('/[slug]/traffic', 'page')
 
     return NextResponse.json(newRequest)
   } catch (error) {
