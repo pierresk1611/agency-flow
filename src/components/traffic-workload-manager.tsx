@@ -28,6 +28,22 @@ export function TrafficWorkloadManager({
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
+  // Auto-scroll and highlight logic based on URL hash
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const id = window.location.hash.substring(1) // remove #
+      const element = document.getElementById(id)
+      if (element) {
+        // Delay slightly to ensure layout is ready
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          element.setAttribute('data-highlighted', 'true')
+          setTimeout(() => element.removeAttribute('data-highlighted'), 3000)
+        }, 500)
+      }
+    }
+  }, [])
+
   // State pre Reassignment Request
   const [requestedIds, setRequestedIds] = useState<string[]>([])
   const [requestOpen, setRequestOpen] = useState(false)
@@ -83,7 +99,7 @@ export function TrafficWorkloadManager({
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
       {initialUsers.map((user: any) => (
-        <Card key={user.id} className="shadow-sm border-slate-200 overflow-hidden bg-white">
+        <Card key={user.id} id={`user-${user.id}`} className="shadow-sm border-slate-200 overflow-hidden bg-white scroll-mt-20 data-[highlighted=true]:ring-2 data-[highlighted=true]:ring-amber-400 transition-all duration-1000">
           <CardHeader className="bg-slate-50/50 border-b py-3 px-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-8 w-8 border shadow-sm">
