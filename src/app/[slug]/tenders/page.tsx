@@ -84,8 +84,8 @@ export default async function TendersPage({ params }: PageProps) {
     ],
   })
 
-  const activeTenders = allTenders.filter(t => !t.isConverted)
-  const archivedTenders = allTenders.filter(t => t.isConverted)
+  const activeTenders = allTenders.filter(t => !t.isConverted && t.status !== 'DONE')
+  const archivedTenders = allTenders.filter(t => t.isConverted || t.status === 'DONE')
 
   /* 6️⃣ RENDER */
   return (
