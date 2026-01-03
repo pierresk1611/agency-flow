@@ -36,8 +36,8 @@ export function NotificationWidget({ notifications: initialData }: { notificatio
                 ) : (
                     <div className="divide-y">
                         {notifications.map(n => (
-                            <div key={n.id} className="p-3 hover:bg-slate-50 flex items-start justify-between gap-3 group transition">
-                                <Link href={n.link || '#'} className="flex-1 min-w-0">
+                            <div key={n.id} className="flex items-start gap-2 hover:bg-slate-50 transition group">
+                                <Link href={n.link || '#'} className="flex-1 min-w-0 p-3">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{n.title}</span>
                                         <span className="text-[9px] text-slate-400">{format(new Date(n.createdAt), 'dd.MM HH:mm')}</span>
@@ -47,13 +47,14 @@ export function NotificationWidget({ notifications: initialData }: { notificatio
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition"
+                                    className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50 mt-2 mr-2 flex-shrink-0"
                                     onClick={(e) => {
                                         e.preventDefault()
+                                        e.stopPropagation()
                                         handleDismiss(n.id)
                                     }}
                                 >
-                                    <X className="h-3 w-3" />
+                                    <X className="h-4 w-4" />
                                 </Button>
                             </div>
                         ))}
