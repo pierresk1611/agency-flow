@@ -113,6 +113,65 @@ export async function POST(request: Request) {
                 }
             })
 
+            // --- SYNC TO PLANNER (Capacity) ---
+            try {
+                // 1. Calculate TOTAL minutes worked on this job TODAY (including this new one)
+                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
+
+                const dailyStats = await prisma.timesheet.aggregate({
+                    _sum: { durationMinutes: true },
+                    where: {
+                        jobAssignment: {
+                            userId: userId,
+                            jobId: assignment.jobId
+                        },
+                        startTime: {
+                            gte: startOfDay,
+                            lt: endOfDay
+                        }
+                    }
+                })
+
+                const totalMinutesToday = dailyStats._sum.durationMinutes || durationMinutes // Fallback to current if null
+
+                // 2. Check if Planner Entry exists
+                const existingEntry = await prisma.plannerEntry.findFirst({
+                    where: {
+                        userId: userId,
+                        jobId: assignment.jobId,
+                        date: {
+                            gte: startOfDay,
+                            lt: endOfDay
+                        }
+                    }
+                })
+
+                if (existingEntry) {
+                    await prisma.plannerEntry.update({
+                        where: { id: existingEntry.id },
+                        data: {
+                            minutes: totalMinutesToday,
+                            isDone: true
+                        }
+                    })
+                } else {
+                    await prisma.plannerEntry.create({
+                        data: {
+                            userId: userId,
+                            jobId: assignment.jobId,
+                            date: startOfDay,
+                            minutes: totalMinutesToday,
+                            isDone: true,
+                            title: 'Odpracovaný čas (Stopky)'
+                        }
+                    })
+                }
+            } catch (err) {
+                console.error("Failed to sync to planner:", err)
+                // Non-blocking error
+            }
+
             // NOTIFIKÁCIA: Timesheet Submit (Pre Traffic & Account)
             const agencyId = assignment.job.campaign.client.agencyId
             const slug = assignment.job.campaign.client.agency.slug
