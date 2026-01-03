@@ -14,40 +14,39 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   if (!agency) return notFound()
 
   // Načítame užívateľov s ich priradeniami k jobom
-  const users = await prisma.user.findMany({
+  const usersRaw = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     orderBy: { position: 'asc' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      position: true,
-      role: true,
+    include: {
       assignments: {
         where: {
           job: {
-            archivedAt: null  // Len aktívne joby
+            archivedAt: null
           }
         },
         include: {
           job: {
             include: {
-              campaign: {
-                include: {
-                  client: true
-                }
-              }
+              campaign: { include: { client: true } }
             }
           }
         },
         orderBy: {
-          job: {
-            deadline: 'asc'
-          }
+          job: { deadline: 'asc' }
         }
       }
     }
   })
+
+  // Sanitize and shape data
+  const users = usersRaw.map(u => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    position: u.position,
+    role: u.role,
+    assignments: u.assignments
+  }))
 
   // Skupiny podľa pozície
   const groups: Record<string, typeof users> = {}
