@@ -62,15 +62,19 @@ export function TrafficWorkloadManager({
       const res = await fetch('/api/jobs/reassign/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignmentId: activeAssign.id, targetUserId, reason })
+        body: JSON.stringify({ assignmentId: activeAssign.id, targetUserId, reason }),
+        cache: 'no-store'
       })
+
+      // Akceptujeme 200 (existuje) aj 201 (vytvorené) ako úspech pre UI
       if (res.ok) {
         setRequestedIds(prev => [...prev, activeAssign.id]) // Optimistic update
         setRequestOpen(false)
         setReason('')
         setTargetUserId('')
-        // router.refresh() // Temporary removal to test state persistence
-        setTimeout(() => alert("Žiadosť o presun bola vygenerovaná."), 100)
+
+        router.refresh()
+        // alert("Žiadosť o presun bola spracovaná.") 
       }
     } catch (e) {
       console.error(e)
