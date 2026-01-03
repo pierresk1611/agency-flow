@@ -60,7 +60,8 @@ model Agency {
   createdAt  DateTime @default(now())
 
   // Trial & Status
-  trialEndsAt       DateTime?
+  subscriptionPlan String   @default("TRIAL") // 'TRIAL' | 'FULL'
+  trialEndsAt      DateTime?
   trialReminderSent Boolean  @default(false)
   isSuspended       Boolean  @default(false)
   
@@ -173,6 +174,7 @@ model Job {
   title       String
   status      JobStatus @default(TODO)
   deadline    DateTime
+  externalLink String?  // Link na Asana/ClickUp/Freelo
   budget      Float?   @default(0)
   
   assignments JobAssignment[]

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Briefcase, Clock, Users, LogOut, TrendingUp, Trophy, Building2, CalendarDays } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Clock, Users, LogOut, TrendingUp, Trophy, Building2, CalendarDays, CheckSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -13,7 +13,7 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
     { label: 'Dashboard', icon: LayoutDashboard, href: `/${slug}`, color: 'text-sky-500' },
     { label: 'Plánovač', icon: CalendarDays, href: `/${slug}/planner`, color: 'text-emerald-500' },
     { label: 'Klienti', icon: Building2, href: `/${slug}/clients`, color: 'text-blue-500' },
-    { label: 'Joby & Kampane', icon: Briefcase, href: `/${slug}/jobs`, color: 'text-violet-500' },
+    { label: 'Projekty & Tasky', icon: CheckSquare, href: `/${slug}/jobs`, color: 'text-violet-500' },
     { label: 'Traffic / Kapacita', icon: TrendingUp, href: `/${slug}/traffic`, color: 'text-orange-500' },
     { label: 'Timesheety', icon: Clock, href: `/${slug}/timesheets`, color: 'text-pink-700' },
   ]
@@ -56,11 +56,11 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
       </div>
       <div className="px-3 py-4 border-t border-white/10">
         <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
-            onClick={() => {
-                document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-                window.location.href = "/login"
-            }}>
-            <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
+          onClick={() => {
+            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+            window.location.href = "/login"
+          }}>
+          <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
         </Button>
       </div>
     </div>

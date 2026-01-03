@@ -5,10 +5,10 @@ import { getSession } from '@/lib/session'
 export async function POST(request: Request) {
   try {
     const session = await getSession() // nezabudni await
-    if (!session) 
+    if (!session)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { title, deadline, budget, campaignId } = await request.json()
+    const { title, deadline, budget, campaignId, externalLink } = await request.json()
 
     // Overenie povinných polí
     if (!title || !deadline || !campaignId) {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         budget: parseFloat(budget || '0'),
         campaignId,
         status: 'TODO',
-        createdById: session.userId // odporúčam logovať kto job vytvoril
+        externalLink
       }
     })
 

@@ -4,8 +4,9 @@ import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { format, addDays } from 'date-fns'
-import { Euro, Users, ListChecks, CheckCircle2, Download } from "lucide-react"
+import { Euro, Users, ListChecks, CheckCircle2, Download, AlertTriangle, Clock, ArrowRightFromLine } from "lucide-react"
 import Link from 'next/link'
+import { NotificationWidget } from '@/components/dashboard/notification-widget'
 
 // Grafy
 import { BudgetChart } from "@/components/charts/budget-chart"
@@ -123,6 +124,42 @@ export default async function DashboardPage({ params }: { params: { slug: string
     }))
   }
 
+  // 9️⃣ NEW WIDGETS DATA
+  const notifications = await prisma.notification.findMany({
+    where: { userId: session.userId, isRead: false },
+    orderBy: { createdAt: 'desc' },
+    take: 5
+  })
+
+  // Waiting on Approval (Admin/Traffic only)
+  let pendingReassigns: any[] = []
+  let pendingTimesheetsList: any[] = []
+
+  if (!isCreative) {
+    pendingReassigns = await prisma.reassignmentRequest.findMany({
+      where: { status: 'PENDING', assignment: { job: { campaign: { client: { agencyId: agency.id } } } } },
+      include: { requestByUser: true, assignment: { include: { job: true } } },
+      take: 5
+    })
+
+    pendingTimesheetsList = await prisma.timesheet.findMany({
+      where: { status: 'PENDING', endTime: { not: null }, jobAssignment: { job: { campaign: { client: { agencyId: agency.id } } } } },
+      include: { jobAssignment: { include: { user: true, job: true } } },
+      orderBy: { startTime: 'desc' },
+      take: 5
+    })
+  } else {
+    // For Creative: Burning Tasks assigned to me
+    // Already filtered in `jobs` but let's filter specifically for display
+  }
+
+  // Burning Tasks (Active & Deadline < 5 days)
+  const burningTasks = jobs.filter(j => {
+    if (j.status === 'DONE' || !j.deadline) return false
+    const days = (new Date(j.deadline).getTime() - now.getTime()) / (1000 * 3600 * 24)
+    return days < 5
+  }).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()).slice(0, 5)
+
   return (
     <div className="space-y-6 pb-12">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -176,6 +213,76 @@ export default async function DashboardPage({ params }: { params: { slug: string
             </CardContent>
           </Card>
         </Link>
+      </div>
+
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+        {/* Waiting on Approval */}
+        {!isCreative && (
+          <Card className="shadow-xl border-none ring-1 ring-slate-200">
+            <CardHeader className="border-b bg-slate-50/50 py-3">
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+                <Clock className="h-4 w-4" /> Čaká na schválenie
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {pendingReassigns.map(r => (
+                  <Link href={`/${params.slug}/traffic`} key={r.id} className="p-3 hover:bg-slate-50 block transition group">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-bold text-orange-600 uppercase">Presun</span>
+                      <ArrowRightFromLine className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
+                    </div>
+                    <p className="text-xs font-medium text-slate-800">{r.requestByUser.name} žiada o presun:</p>
+                    <p className="text-[10px] text-slate-500 truncate">{r.assignment.job.title}</p>
+                  </Link>
+                ))}
+                {pendingTimesheetsList.map(t => (
+                  <Link href={`/${params.slug}/timesheets`} key={t.id} className="p-3 hover:bg-slate-50 block transition group">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] font-bold text-blue-600 uppercase">Timesheet</span>
+                      <ArrowRightFromLine className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
+                    </div>
+                    <p className="text-xs font-medium text-slate-800">{t.jobAssignment.user.name} ({t.durationMinutes ? (t.durationMinutes / 60).toFixed(1) : '-'}h)</p>
+                    <p className="text-[10px] text-slate-500 truncate">{t.jobAssignment.job.title}</p>
+                  </Link>
+                ))}
+                {pendingReassigns.length === 0 && pendingTimesheetsList.length === 0 && (
+                  <p className="p-6 text-center text-xs text-slate-400 italic">Všetko vybavené.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Burning Tasks */}
+        <Card className="shadow-xl border-none ring-1 ring-slate-200">
+          <CardHeader className="border-b bg-slate-50/50 py-3">
+            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+              <AlertTriangle className="h-4 w-4" /> Burning Tasks ({burningTasks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {burningTasks.map(j => (
+                <Link href={`/${params.slug}/jobs/${j.id}`} key={j.id} className="p-3 hover:bg-slate-50 block transition font-medium">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-800 truncate pr-2">{j.title}</span>
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">
+                      {j.deadline ? format(new Date(j.deadline), 'd.M.') : '!'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{j.campaign?.client?.name}</p>
+                </Link>
+              ))}
+              {burningTasks.length === 0 && (
+                <p className="p-6 text-center text-xs text-slate-400 italic">Všetko stíhame.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <NotificationWidget notifications={notifications} />
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">

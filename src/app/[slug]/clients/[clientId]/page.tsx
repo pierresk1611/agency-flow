@@ -63,6 +63,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
             </div>
           </div>
         </div>
+        <a href={`/api/exports/timesheets?clientId=${client.id}`} target="_blank" rel="noopener noreferrer">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="h-4 w-4" /> Export Klienta
+          </Button>
+        </a>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
