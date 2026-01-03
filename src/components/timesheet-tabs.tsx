@@ -32,9 +32,38 @@ export function TimesheetsTabs({
             </TabsContent>
 
             <TabsContent value="archive">
-                <TimesheetTable timesheets={archivedTimesheets} isCreative={isCreative} isArchive />
+                <ArchivedTimesheetsView timesheets={archivedTimesheets} isCreative={isCreative} />
             </TabsContent>
         </Tabs>
+    )
+}
+
+function ArchivedTimesheetsView({ timesheets, isCreative }: { timesheets: any[], isCreative: boolean }) {
+    if (timesheets.length === 0) {
+        return (
+            <div className="text-center py-10 text-slate-400 italic bg-white border rounded-xl shadow-sm">
+                Žiadne záznamy v archíve.
+            </div>
+        )
+    }
+
+    // Group by Client
+    const grouped = timesheets.reduce((acc, ts) => {
+        const clientName = ts.jobAssignment.job.campaign.client.name || 'Neznámy Klient'
+        if (!acc[clientName]) acc[clientName] = []
+        acc[clientName].push(ts)
+        return acc
+    }, {} as Record<string, typeof timesheets>)
+
+    return (
+        <div className="space-y-8">
+            {Object.entries(grouped).map(([clientName, clientTimesheets]) => (
+                <div key={clientName} className="space-y-3">
+                    <h3 className="text-lg font-bold text-slate-800 ml-2 border-l-4 border-slate-900 pl-3">{clientName}</h3>
+                    <TimesheetTable timesheets={clientTimesheets} isCreative={isCreative} isArchive />
+                </div>
+            ))}
+        </div>
     )
 }
 
