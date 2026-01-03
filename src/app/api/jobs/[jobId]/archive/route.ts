@@ -3,35 +3,32 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
 export async function PATCH(
-  request: Request, 
+  request: Request,
   { params }: { params: { jobId: string } }
 ) {
   try {
     const session = await getSession()
-    if (!session) 
+    if (!session)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await request.json()
-    const { title, budget, status, deadline } = body
-
-    if (!title && !budget && !status && !deadline) {
-      return NextResponse.json({ error: 'Nie sú poskytnuté žiadne údaje na aktualizáciu' }, { status: 400 })
+    // Check if user has permission (Admin, Account, Traffic)
+    if (!['ADMIN', 'ACCOUNT', 'TRAFFIC'].includes(session.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Archive the job by setting archivedAt
     const updated = await prisma.job.update({
       where: { id: params.jobId },
       data: {
-        ...(title !== undefined && { title }),
-        ...(budget !== undefined && { budget: parseFloat(budget) }),
-        ...(status !== undefined && { status }),
-        ...(deadline !== undefined && { deadline: new Date(deadline) })
+        archivedAt: new Date(),
+        status: 'DONE'
       }
     })
 
     return NextResponse.json(updated)
 
   } catch (error: any) {
-    console.error("JOB PATCH ERROR:", error)
-    return NextResponse.json({ error: error.message || 'Update failed' }, { status: 500 })
+    console.error("JOB ARCHIVE ERROR:", error)
+    return NextResponse.json({ error: error.message || 'Archive failed' }, { status: 500 })
   }
 }
