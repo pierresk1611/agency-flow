@@ -47,12 +47,31 @@ export async function POST(request: Request) {
         budget: parseFloat(budget || '0'),
         campaignId,
         status: 'TODO',
-        externalLink,
+        externalLink: externalLink || null, // Explicitly handle null/undefined for optional fields
         assignments: {
           create: assignmentsToCreate
         }
+      },
+      include: {
+        campaign: { include: { client: true } }
       }
     })
+
+    // 4. Pošlime notifikácie všetkým okrem seba
+    const { createNotification } = await import('@/lib/notifications')
+
+    const notificationPromises = assignmentsToCreate
+      .filter(a => a.userId !== session.userId) // Neposielať sebe
+      .map(a => {
+        return createNotification(
+          a.userId,
+          'Nová úloha',
+          `Bola ti pridelená úloha "${title}" v kampani ${job.campaign.name} (${job.campaign.client.name})`,
+          `/jobs/${job.id}`
+        )
+      })
+
+    await Promise.all(notificationPromises)
 
     return NextResponse.json(job)
 
