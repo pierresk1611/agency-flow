@@ -27,17 +27,21 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Login form submitted', { email, password })
     setLoading(true)
     setError('')
 
     try {
+      console.log('Sending request to /api/auth/login')
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
 
+      console.log('Response status:', res.status)
       const data = await res.json()
+      console.log('Response data:', data)
 
       if (!res.ok) {
         throw new Error(data.error || 'Chyba pri prihlásení')
@@ -57,6 +61,7 @@ export default function LoginPage() {
 
       router.refresh()
     } catch (err: any) {
+      console.error('Login error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
