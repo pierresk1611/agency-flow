@@ -216,7 +216,37 @@ export default async function DashboardPage({ params }: { params: { slug: string
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-        {/* Waiting on Approval */}
+        {/* Notifications - LEFT */}
+        <NotificationWidget notifications={notifications} />
+
+        {/* Burning Tasks - CENTER */}
+        <Card className="shadow-xl border-none ring-1 ring-slate-200">
+          <CardHeader className="border-b bg-slate-50/50 py-3">
+            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+              <AlertTriangle className="h-4 w-4" /> Burning Tasks ({burningTasks.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {burningTasks.map(j => (
+                <Link href={`/${params.slug}/jobs/${j.id}`} key={j.id} className="p-3 hover:bg-slate-50 block transition font-medium">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-800 truncate pr-2">{j.title}</span>
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">
+                      {j.deadline ? format(new Date(j.deadline), 'd.M.') : '!'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{j.campaign?.client?.name}</p>
+                </Link>
+              ))}
+              {burningTasks.length === 0 && (
+                <p className="p-6 text-center text-xs text-slate-400 italic">Všetko stíhame.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Waiting on Approval - RIGHT */}
         {!isCreative && (
           <Card className="shadow-xl border-none ring-1 ring-slate-200">
             <CardHeader className="border-b bg-slate-50/50 py-3">
@@ -253,36 +283,6 @@ export default async function DashboardPage({ params }: { params: { slug: string
             </CardContent>
           </Card>
         )}
-
-        {/* Burning Tasks */}
-        <Card className="shadow-xl border-none ring-1 ring-slate-200">
-          <CardHeader className="border-b bg-slate-50/50 py-3">
-            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-              <AlertTriangle className="h-4 w-4" /> Burning Tasks ({burningTasks.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y">
-              {burningTasks.map(j => (
-                <Link href={`/${params.slug}/jobs/${j.id}`} key={j.id} className="p-3 hover:bg-slate-50 block transition font-medium">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-800 truncate pr-2">{j.title}</span>
-                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">
-                      {j.deadline ? format(new Date(j.deadline), 'd.M.') : '!'}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{j.campaign?.client?.name}</p>
-                </Link>
-              ))}
-              {burningTasks.length === 0 && (
-                <p className="p-6 text-center text-xs text-slate-400 italic">Všetko stíhame.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notifications */}
-        <NotificationWidget notifications={notifications} />
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
