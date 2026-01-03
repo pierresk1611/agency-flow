@@ -23,7 +23,7 @@ function getFileIcon(type: string) {
 }
 
 export default async function JobDetailPage({ params }: { params: { slug: string, jobId: string } }) {
-    const session = getSession()
+    const session = await getSession()
     if (!session) redirect('/login')
 
     const job = await prisma.job.findFirst({
