@@ -84,15 +84,15 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                         <TableRow>
                             <TableHead className="pl-6 w-[200px]">Kedy / Kto</TableHead>
                             <TableHead className="w-auto">Projekt</TableHead>
-                            <TableHead className="w-[150px]">Trvanie</TableHead>
-                            <TableHead className="w-[150px]">Status</TableHead>
+                            <TableHead className="w-[100px]">Trvanie</TableHead>
                             {!isCreative && (
                                 <>
-                                    <TableHead className="text-right w-[100px] text-[9px]">Náklad</TableHead>
-                                    <TableHead className="text-right w-[100px] text-[9px]">Fakturácia</TableHead>
+                                    <TableHead className="text-right w-[120px] text-[10px]">Náklad</TableHead>
+                                    <TableHead className="text-right w-[120px] text-[10px]">Fakturácia</TableHead>
                                 </>
                             )}
-                            {!isArchive && <TableHead className="text-right pr-6 w-[100px]">Akcia</TableHead>}
+                            <TableHead className="w-[150px] text-center">Status</TableHead>
+                            {!isArchive && <TableHead className="text-right pr-6 w-[120px]">Akcia</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -151,7 +151,7 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                                         </>
                                     )}
                                     <TableCell>
-                                        <div className="flex flex-col gap-1">
+                                        <div className="flex flex-col gap-1 items-center">
                                             {ts.status === 'APPROVED' && (
                                                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px] font-bold uppercase">
                                                     <CheckCircle2 className="h-3 w-3 mr-1" /> Schválené
