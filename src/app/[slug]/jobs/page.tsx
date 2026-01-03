@@ -68,7 +68,11 @@ export default async function JobsPage({ params }: { params: { slug: string } })
   // 3️⃣ TENDERS (ak existuje model)
   const tenders = await prisma.tender?.findMany
     ? await prisma.tender.findMany({
-      where: { agencyId: agency.id, isConverted: false },
+      where: {
+        agencyId: agency.id,
+        isConverted: false,
+        status: { not: 'DONE' } // Exclude archived/lost tenders
+      },
       orderBy: { deadline: 'asc' }
     })
     : []
