@@ -36,7 +36,7 @@ export function BudgetChart({ data, slug }: { data: any[], slug: string }) {
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              width={90}
+              width={110} // Increased for "6 places minimum" (100,000€+)
               domain={[0, 'auto']}
               tickFormatter={(v) => `${v}€`}
             />
