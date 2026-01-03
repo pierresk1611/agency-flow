@@ -177,3 +177,34 @@ export function TrafficWorkloadManager({
     </div>
   )
 }
+
+function ClientOnlyReassignButton({ assign, currentUserId, isRequested, onRequestOpen }: any) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) return null // Prevent hydration mismatch
+
+  if (assign.userId !== currentUserId) return null
+
+  const hasPendingRequest = (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) || isRequested
+
+  if (hasPendingRequest) {
+    return (
+      <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
+        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        Požiadané o presun
+      </Badge>
+    )
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
+      onClick={() => onRequestOpen(assign)}
+    >
+      <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
+    </Button>
+  )
+}
