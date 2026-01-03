@@ -65,12 +65,12 @@ export function TrafficWorkloadManager({
         body: JSON.stringify({ assignmentId: activeAssign.id, targetUserId, reason })
       })
       if (res.ok) {
-        alert("Žiadosť o presun práce bola odoslaná.")
         setRequestedIds(prev => [...prev, activeAssign.id]) // Optimistic update
         setRequestOpen(false)
         setReason('')
         setTargetUserId('')
-        router.refresh()
+        // router.refresh() // Temporary removal to test state persistence
+        setTimeout(() => alert("Žiadosť o presun bola vygenerovaná."), 100)
       }
     } catch (e) {
       console.error(e)
