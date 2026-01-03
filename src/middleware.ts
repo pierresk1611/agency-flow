@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import * as jwt from 'jsonwebtoken'
-import { prisma } from '@/lib/prisma'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
@@ -11,6 +10,7 @@ export async function middleware(request: NextRequest) {
     // Skip middleware for public routes
     if (
         pathname === '/login' ||
+        pathname === '/register' ||
         pathname === '/subscription-expired' ||
         pathname.startsWith('/api/') ||
         pathname.startsWith('/_next') ||
@@ -26,36 +26,11 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as any
-        const userId = decoded.userId
+        // Just verify token is valid
+        jwt.verify(token, JWT_SECRET)
 
-        // Get user and agency
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { agency: true }
-        })
-
-        if (!user || !user.agency) {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
-
-        // TRIAL EXPIRATION CHECK
-        // Skip for SUPERADMIN
-        if (user.role !== 'SUPERADMIN' && user.agency.subscriptionPlan === 'TRIAL') {
-            if (user.agency.trialEndsAt && new Date(user.agency.trialEndsAt) < new Date()) {
-                // Trial expired
-                if (pathname !== '/subscription-expired') {
-                    return NextResponse.redirect(new URL('/subscription-expired', request.url))
-                }
-            }
-        }
-
-        // Check if suspended
-        if (user.agency.isSuspended && user.role !== 'SUPERADMIN') {
-            if (pathname !== '/subscription-expired') {
-                return NextResponse.redirect(new URL('/subscription-expired', request.url))
-            }
-        }
+        // Trial check will be done in individual pages/layouts
+        // to avoid Edge Runtime limitations with Prisma
 
         return NextResponse.next()
     } catch (error) {
