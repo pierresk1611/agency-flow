@@ -84,7 +84,8 @@ export default async function JobsPage({ params }: { params: { slug: string } })
       client: j.campaign?.client?.name || 'N/A',
       campaign: j.campaign?.name || '',
       deadline: j.deadline,
-      budget: j.budgets?.reduce((acc, b) => acc + b.amount, 0) || 0,
+      plan: j.budget || 0,
+      real: j.budgets?.reduce((acc, b) => acc + b.amount, 0) || 0,
       assignments: j.assignments
     })),
     ...tenders.map(t => ({
@@ -96,7 +97,8 @@ export default async function JobsPage({ params }: { params: { slug: string } })
       client: 'PITCH / TENDER',
       campaign: 'New Business',
       deadline: t.deadline,
-      budget: t.budget || 0,
+      plan: t.budget || 0,
+      real: 0,
       assignments: [] as any[]
     }))
   ].sort((a, b) => {

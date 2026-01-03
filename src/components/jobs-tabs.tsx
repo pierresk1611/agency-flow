@@ -50,7 +50,12 @@ export function JobsTabs({
                                     <TableHead className="text-[10px] font-bold uppercase">Projekt</TableHead>
                                     <TableHead className="text-[10px] font-bold uppercase">Klient</TableHead>
                                     <TableHead className="text-[10px] font-bold uppercase">Termín</TableHead>
-                                    {!isCreative && <TableHead className="text-[10px] font-bold uppercase">Budget</TableHead>}
+                                    {!isCreative && (
+                                        <>
+                                            <TableHead className="text-[10px] font-bold uppercase text-right">Plán</TableHead>
+                                            <TableHead className="text-[10px] font-bold uppercase text-right">Realita</TableHead>
+                                        </>
+                                    )}
                                     <TableHead className="text-right pr-6 text-[10px] font-bold uppercase">Akcia</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -84,7 +89,16 @@ export function JobsTabs({
                                             <TableCell className="text-xs font-medium text-slate-700">
                                                 {format(new Date(proj.deadline), 'dd.MM.yyyy')}
                                             </TableCell>
-                                            {!isCreative && <TableCell className="font-mono text-xs font-bold text-slate-600">{proj.budget ? proj.budget.toFixed(0) : '-'} €</TableCell>}
+                                            {!isCreative && (
+                                                <>
+                                                    <TableCell className="font-mono text-xs font-bold text-right text-slate-500 whitespace-nowrap">
+                                                        {proj.plan?.toLocaleString()} €
+                                                    </TableCell>
+                                                    <TableCell className={`font-mono text-xs font-bold text-right whitespace-nowrap ${proj.real > proj.plan && proj.plan > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                        {proj.real?.toLocaleString() || '0'} €
+                                                    </TableCell>
+                                                </>
+                                            )}
                                             <TableCell className="text-right pr-6">
                                                 <div className="flex justify-end items-center gap-2">
                                                     <Link href={proj.type === 'TENDER' ? `/${slug}/tenders/${proj.id}` : `/${slug}/jobs/${proj.id}`}>
