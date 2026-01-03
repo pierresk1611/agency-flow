@@ -36,7 +36,7 @@ export function BudgetChart({ data, slug }: { data: any[], slug: string }) {
             <Tooltip
               cursor={{ fill: '#f8fafc' }}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-              formatter={(value: number) => [`${value.toFixed(2)}€`, '']}
+              formatter={(value: any) => [`${Number(value || 0).toFixed(2)}€`, '']}
             />
             <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold' }} />
             <Bar dataKey="plan" name="Plán" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
