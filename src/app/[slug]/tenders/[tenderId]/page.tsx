@@ -11,6 +11,7 @@ import { format } from 'date-fns'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ConvertTenderButton } from '@/components/convert-tender-button'
 import { EditTenderDescription } from '@/components/edit-tender-description'
+import { ArchiveTenderButton } from '@/components/archive-tender-button'
 import { AddTenderFileDialog } from '@/components/add-tender-file-dialog'
 import { ManageTenderTeamDialog } from '@/components/manage-tender-team-dialog'
 
@@ -63,7 +64,10 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
             <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase">ID: {tender.id.substring(0, 8)}</p>
           </div>
         </div>
-        {!tender.isConverted && canEdit && <ConvertTenderButton tenderId={tender.id} slug={params.slug} />}
+        <div className="flex gap-2">
+          {!tender.isConverted && canEdit && <ArchiveTenderButton tenderId={tender.id} slug={params.slug} />}
+          {!tender.isConverted && canEdit && <ConvertTenderButton tenderId={tender.id} slug={params.slug} />}
+        </div>
       </div>
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
