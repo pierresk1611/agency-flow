@@ -52,8 +52,7 @@ export function JobsTabs({
                                     <TableHead className="text-[10px] font-bold uppercase">Termín</TableHead>
                                     {!isCreative && (
                                         <>
-                                            <TableHead className="text-[10px] font-bold uppercase text-right">Plán</TableHead>
-                                            <TableHead className="text-[10px] font-bold uppercase text-right">Realita</TableHead>
+                                            <TableHead className="text-[10px] font-bold uppercase text-right">Budget (Plán / Realita)</TableHead>
                                         </>
                                     )}
                                     <TableHead className="text-right pr-6 text-[10px] font-bold uppercase">Akcia</TableHead>
@@ -91,11 +90,35 @@ export function JobsTabs({
                                             </TableCell>
                                             {!isCreative && (
                                                 <>
-                                                    <TableCell className="font-mono text-xs font-bold text-right text-slate-500 whitespace-nowrap">
-                                                        {proj.plan?.toLocaleString()} €
-                                                    </TableCell>
-                                                    <TableCell className={`font-mono text-xs font-bold text-right whitespace-nowrap ${proj.real > proj.plan && proj.plan > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                                        {proj.real?.toLocaleString() || '0'} €
+                                                    <TableCell className="text-right">
+                                                        <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                                                            <div className="flex items-center gap-2 text-xs font-mono">
+                                                                <span className="text-slate-400 font-medium">{proj.plan?.toLocaleString()} €</span>
+                                                                <span className="text-slate-300">/</span>
+                                                                <span className={`font-bold ${proj.real > proj.plan && proj.plan > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                    {proj.real?.toLocaleString() || '0'} €
+                                                                </span>
+                                                            </div>
+                                                            {/* Progress Bar */}
+                                                            {proj.plan > 0 && (() => {
+                                                                const percent = Math.min((proj.real / proj.plan) * 100, 100)
+                                                                const isOver = proj.real > proj.plan
+                                                                const isWarning = !isOver && percent >= 90
+
+                                                                let barColor = 'bg-emerald-500'
+                                                                if (isOver) barColor = 'bg-red-500'
+                                                                else if (isWarning) barColor = 'bg-amber-500'
+
+                                                                return (
+                                                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                        <div
+                                                                            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                                                                            style={{ width: `${percent}%` }}
+                                                                        />
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
                                                     </TableCell>
                                                 </>
                                             )}
