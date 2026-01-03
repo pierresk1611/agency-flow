@@ -208,15 +208,17 @@ export function PlannerDisplay({ initialEntries, allJobs, readOnly = false }: { 
                         {Math.floor(plannedHoursData.reduce((s, i) => s + i.minutes, 0) / 60)}h
                     </Badge>
                 </CardHeader>
-                <CardContent className="pt-4 h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={plannedHoursData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} interval={0} />
-                            <YAxis fontSize={10} axisLine={false} tickLine={false} />
-                            <Tooltip />
-                            <Bar dataKey="hodiny" name="Hodiny" fill="#34d399" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <CardContent className="p-0">
+                    <div className="h-[200px] w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={plannedHoursData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <XAxis dataKey="name" fontSize={9} axisLine={false} tickLine={false} interval={0} />
+                                <YAxis fontSize={10} axisLine={false} tickLine={false} />
+                                <Tooltip />
+                                <Bar dataKey="hodiny" name="Hodiny" fill="#34d399" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </CardContent>
             </Card>
 
