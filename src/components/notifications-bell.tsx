@@ -60,19 +60,28 @@ export function NotificationsBell() {
             notes.map(n => (
               <div
                 key={n.id}
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation()
+
+                  // Optimistic Update
+                  setNotes(prev => prev.map(item => item.id === n.id ? { ...item, isRead: true } : item))
+
                   // Mark as read specifically
                   if (!n.isRead) {
-                    await fetch('/api/notifications', {
-                      method: 'PATCH',
-                      body: JSON.stringify({ id: n.id })
-                    })
-                    fetchNotes() // Refresh list
+                    try {
+                      await fetch('/api/notifications', {
+                        method: 'PATCH',
+                        body: JSON.stringify({ id: n.id })
+                      })
+                    } catch (err) {
+                      console.error("Failed to mark read", err)
+                    }
                   }
 
                   if (n.link) {
                     setIsOpen(false)
                     router.push(n.link)
+                    router.refresh()
                   }
                 }}
                 className={cn(
