@@ -91,9 +91,12 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                 <div className="flex items-center gap-2">
                     <a href={`/api/exports/timesheets?jobId=${job.id}`} target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" size="sm" className="h-9 gap-2">
-                            <Download className="h-4 w-4" /> Export CSV
+                            <Download className="h-4 w-4" /> Stiahnúť timesheety
                         </Button>
                     </a>
+                    {(session.role === 'ADMIN' || session.role === 'ACCOUNT' || session.role === 'TRAFFIC') && !job.archivedAt && (
+                        <JobActions jobId={job.id} isArchived={false} />
+                    )}
                     <TimerButton
                         jobId={job.id}
                         initialStartTime={runningStartTime}

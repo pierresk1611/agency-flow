@@ -1,24 +1,25 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Trash2, Loader2, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Archive, RotateCcw } from 'lucide-react'
 
-export function JobActions({ jobId, isArchived = false }: { jobId: string; isArchived?: boolean }) {
+export function JobActions({ jobId, isArchived }: { jobId: string; isArchived?: boolean }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
   const handleArchive = async () => {
-    if (!confirm('Naozaj chcete archivovať tento job? Zmizne zo zoznamu aktívnych.')) return
+    if (!confirm('Naozaj chcete uzavrieť tento job? Presunie sa do archívu.')) return
 
     setLoading(true)
     try {
       const res = await fetch(`/api/jobs/${jobId}/archive`, { method: 'PATCH' })
       if (res.ok) {
+        router.push(window.location.pathname.replace(/\/jobs\/.*/, '/jobs'))
         router.refresh()
       } else {
-        alert('Chyba pri archivácii')
+        alert('Chyba pri uzatváraní')
       }
     } catch (e) {
       console.error(e)
@@ -28,7 +29,7 @@ export function JobActions({ jobId, isArchived = false }: { jobId: string; isArc
   }
 
   const handleRestore = async () => {
-    if (!confirm('Obnoviť tento job do aktívnych úloh?')) return
+    if (!confirm('Naozaj chcete obnoviť tento job?')) return
 
     setLoading(true)
     try {
@@ -36,7 +37,7 @@ export function JobActions({ jobId, isArchived = false }: { jobId: string; isArc
       if (res.ok) {
         router.refresh()
       } else {
-        alert('Chyba pri obnovení')
+        alert('Chyba pri obnove')
       }
     } catch (e) {
       console.error(e)
@@ -47,29 +48,17 @@ export function JobActions({ jobId, isArchived = false }: { jobId: string; isArc
 
   if (isArchived) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleRestore}
-        disabled={loading}
-        className="text-slate-400 hover:text-green-600 hover:bg-green-50"
-        title="Obnoviť job"
-      >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+      <Button onClick={handleRestore} disabled={loading} variant="outline" size="sm" className="gap-2">
+        <RotateCcw className="h-4 w-4" />
+        Obnoviť Job
       </Button>
     )
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handleArchive}
-      disabled={loading}
-      className="text-slate-400 hover:text-red-600 hover:bg-red-50"
-      title="Archivovať job"
-    >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+    <Button onClick={handleArchive} disabled={loading} variant="outline" size="sm" className="gap-2 text-orange-600 hover:text-orange-700 border-orange-200 hover:bg-orange-50">
+      <Archive className="h-4 w-4" />
+      Uzavrieť Job
     </Button>
   )
 }
