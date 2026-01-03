@@ -82,11 +82,11 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                 <Table className="min-w-[900px]">
                     <TableHeader className="bg-slate-50 text-[10px] font-black uppercase">
                         <TableRow>
-                            <TableHead className="pl-6">Kedy / Kto</TableHead>
-                            <TableHead>Projekt</TableHead>
-                            <TableHead>Trvanie</TableHead>
-                            <TableHead>Status</TableHead>
-                            {!isArchive && <TableHead className="text-right pr-6">Akcia</TableHead>}
+                            <TableHead className="pl-6 w-[200px]">Kedy / Kto</TableHead>
+                            <TableHead className="w-auto">Projekt</TableHead>
+                            <TableHead className="w-[150px]">Trvanie</TableHead>
+                            <TableHead className="w-[150px]">Status</TableHead>
+                            {!isArchive && <TableHead className="text-right pr-6 w-[100px]">Akcia</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
