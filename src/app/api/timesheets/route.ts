@@ -50,25 +50,7 @@ export async function POST(request: Request) {
         // Safety check (should not happen if creation worked)
         if (!assignment) return NextResponse.json({ error: 'Assignment error' }, { status: 500 })
 
-        const runningTimer = await prisma.timesheet.findFirst({
-            where: { jobAssignmentId: assignment.id, endTime: null }
-        })
 
-        // ... (PAUSE LOGIC OMITTED - Unchanged) ...
-
-        // --- LOGIKA: LOGIC START / STOP ---
-        if (action === 'TOGGLE_PAUSE' && runningTimer) {
-            // ... existing pause logic ...
-            // Re-implementing strictly what was there or ensuring I don't break it. 
-            // Actually, I can just target the assignment fetch and the notification block separately to avoid replacing the big pause block.
-            // But the tool needs contiguous block. 
-            // I will modify the initial Fetch and the Notification block separately or try to minimize context.
-        }
-
-        // Let's retry with smaller chunks.
-
-        // Safety check (should not happen if creation worked)
-        if (!assignment) return NextResponse.json({ error: 'Assignment error' }, { status: 500 })
 
         const runningTimer = await prisma.timesheet.findFirst({
             where: { jobAssignmentId: assignment.id, endTime: null }
