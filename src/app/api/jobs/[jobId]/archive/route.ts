@@ -11,8 +11,8 @@ export async function PATCH(
     if (!session)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Check if user has permission (Admin, Account, Traffic)
-    if (!['ADMIN', 'ACCOUNT', 'TRAFFIC'].includes(session.role)) {
+    // Check if user has permission (Admin, Account, Traffic, Superadmin)
+    if (!['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
