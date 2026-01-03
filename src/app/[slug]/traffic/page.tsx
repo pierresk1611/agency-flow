@@ -29,6 +29,10 @@ export default async function TrafficPage({ params }: { params: { slug: string }
             include: {
               campaign: { include: { client: true } }
             }
+          },
+          reassignmentRequests: {
+            where: { status: 'PENDING' },
+            select: { id: true }
           }
         },
         orderBy: {
