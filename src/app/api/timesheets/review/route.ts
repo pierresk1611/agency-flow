@@ -44,6 +44,23 @@ export async function POST(request: Request) {
           create: { jobId: timesheet.jobAssignment.jobId, timesheetId, hours, rate, amount }
         })
       })
+
+      // NOTIFIKÁCIA: Timesheet Approved
+      const tsDetails = await prisma.timesheet.findUnique({
+        where: { id: timesheetId },
+        include: { jobAssignment: { include: { job: { include: { campaign: { include: { client: { include: { agency: true } } } } } } } } }
+      })
+
+      if (tsDetails) {
+        const slug = tsDetails.jobAssignment.job.campaign.client.agency.slug
+        await createNotification(
+          tsDetails.jobAssignment.userId,
+          "Výkaz schválený",
+          `Váš čas na jobe "${tsDetails.jobAssignment.job.title}" bol schválený.`,
+          `/${slug}/timesheets`
+        )
+      }
+
     } else {
       await prisma.timesheet.update({
         where: { id: timesheetId },
