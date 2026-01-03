@@ -15,6 +15,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Názov, termín a kampaň sú povinné' }, { status: 400 })
     }
 
+    // 1. Nájdi Traffic Managera alebo Admina pre automatické priradenie
+    let trafficUser = await prisma.user.findFirst({
+      where: { agencyId: session.agencyId, role: 'TRAFFIC', active: true }
+    })
+
+    if (!trafficUser) {
+      trafficUser = await prisma.user.findFirst({
+        where: { agencyId: session.agencyId, role: 'ADMIN', active: true }
+      })
+    }
+
+    // 2. Priprav priradenia
+    const assignmentsToCreate = [
+      // Creator je vždy ACCOUNT
+      { userId: session.userId, roleOnJob: 'ACCOUNT' }
+    ]
+
+    // Ak existuje Traffic/Admin a nie je to ten istý človek ako Creator, pridáme ho
+    if (trafficUser && trafficUser.id !== session.userId) {
+      assignmentsToCreate.push({
+        userId: trafficUser.id,
+        roleOnJob: 'TRAFFIC'
+      })
+    }
+
     const job = await prisma.job.create({
       data: {
         title,
@@ -22,7 +47,10 @@ export async function POST(request: Request) {
         budget: parseFloat(budget || '0'),
         campaignId,
         status: 'TODO',
-        externalLink
+        externalLink,
+        assignments: {
+          create: assignmentsToCreate
+        }
       }
     })
 
