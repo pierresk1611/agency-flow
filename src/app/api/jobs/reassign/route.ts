@@ -27,7 +27,8 @@ export async function PATCH(request: Request) {
     // Aktualizácia priradenia
     const updated = await prisma.jobAssignment.update({
       where: { id: assignmentId },
-      data: { userId: newUserId }
+      data: { userId: newUserId },
+      include: { job: true } // Fetch job to get title
     })
 
     // Ak existovali pending requesty pre tento assignment, označíme ich ako APPROVED
@@ -36,6 +37,20 @@ export async function PATCH(request: Request) {
       data: { status: 'APPROVED' }
     })
     console.log(`REASSIGN SUCCESS: Assign ${assignmentId} moved to ${newUserId}. Requests approved: ${updateResult.count}`)
+
+    // CLEANUP: Mark related notifications as READ for everyone
+    // (To prevent stale notifications for other admins/traffic managers)
+    try {
+      await prisma.notification.updateMany({
+        where: {
+          title: `Žiadosť o presun: ${updated.job.title}`,
+          isRead: false
+        },
+        data: { isRead: true }
+      })
+    } catch (err) {
+      console.error("Failed to cleanup notifications:", err)
+    }
 
     return NextResponse.json(updated)
 
