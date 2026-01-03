@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ConvertTenderButton } from '@/components/convert-tender-button'
 import { EditTenderDescription } from '@/components/edit-tender-description'
 import { ArchiveTenderButton } from '@/components/archive-tender-button'
+import { RestoreTenderButton } from '@/components/restore-tender-button'
 import { AddTenderFileDialog } from '@/components/add-tender-file-dialog'
 import { ManageTenderTeamDialog } from '@/components/manage-tender-team-dialog'
 
@@ -65,8 +66,18 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
           </div>
         </div>
         <div className="flex gap-2">
-          {!tender.isConverted && canEdit && <ArchiveTenderButton tenderId={tender.id} slug={params.slug} />}
-          {!tender.isConverted && canEdit && <ConvertTenderButton tenderId={tender.id} slug={params.slug} />}
+          {/* Ak je DONE (vyhraty alebo strateny), ukazeme moznost vratit do aktivnych */}
+          {(tender.status === 'DONE' || tender.isConverted) && canEdit && (
+            <RestoreTenderButton tenderId={tender.id} slug={params.slug} />
+          )}
+
+          {/* Ak je aktivny (nie DONE a nie Converted), ukazeme moznost Archivovat (Lose) alebo Vyhrat */}
+          {tender.status !== 'DONE' && !tender.isConverted && canEdit && (
+            <>
+              <ArchiveTenderButton tenderId={tender.id} slug={params.slug} />
+              <ConvertTenderButton tenderId={tender.id} slug={params.slug} />
+            </>
+          )}
         </div>
       </div>
 
