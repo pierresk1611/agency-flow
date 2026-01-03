@@ -114,6 +114,24 @@ export function PlannerDisplay({ initialEntries, allJobs, readOnly = false }: { 
 
     useEffect(() => {
         setIsMounted(true)
+
+        // Auto-submit check on mount
+        const runAutoSubmit = async () => {
+            try {
+                // Check local storage to avoid spamming API on every refresh
+                const lastCheck = localStorage.getItem('lastAutoSubmitCheck')
+                const now = new Date().toDateString()
+
+                if (lastCheck !== now) {
+                    await fetch('/api/planner/auto-submit', { method: 'POST' })
+                    localStorage.setItem('lastAutoSubmitCheck', now)
+                }
+            } catch (e) {
+                console.error("Auto submit failed", e)
+            }
+        }
+
+        runAutoSubmit()
     }, [])
 
     // 2-WEEK VIEW LOGIC
