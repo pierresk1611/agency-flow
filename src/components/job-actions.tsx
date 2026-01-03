@@ -15,14 +15,18 @@ export function JobActions({ jobId, isArchived }: { jobId: string; isArchived?: 
     setLoading(true)
     try {
       const res = await fetch(`/api/jobs/${jobId}/archive`, { method: 'PATCH' })
+      const data = await res.json()
+
       if (res.ok) {
         router.push(window.location.pathname.replace(/\/jobs\/.*/, '/jobs'))
         router.refresh()
       } else {
-        alert('Chyba pri uzatváraní')
+        alert(`Chyba pri uzatváraní: ${data.error || 'Neznáma chyba'}`)
+        console.error('Archive error:', data)
       }
     } catch (e) {
-      console.error(e)
+      console.error('Archive exception:', e)
+      alert('Chyba pri uzatváraní: ' + (e as Error).message)
     } finally {
       setLoading(false)
     }
