@@ -59,7 +59,7 @@ function ArchivedTimesheetsView({ timesheets, isCreative }: { timesheets: any[],
         <div className="space-y-8">
             {Object.entries(grouped).map(([clientName, clientTimesheets]) => (
                 <div key={clientName} className="space-y-3">
-                    <h3 className="text-lg font-bold text-slate-800 ml-2 border-l-4 border-slate-900 pl-3">{clientName}</h3>
+                    <h3 className="text-lg font-black text-slate-800 uppercase italic tracking-tighter mb-1">{clientName}</h3>
                     <TimesheetTable timesheets={clientTimesheets} isCreative={isCreative} isArchive />
                 </div>
             ))}
