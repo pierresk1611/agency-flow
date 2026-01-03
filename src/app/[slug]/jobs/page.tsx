@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
 import { JobsTabs } from '@/components/jobs-tabs'
+import { GlobalNewJobButton } from '@/components/global-new-job-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +49,20 @@ export default async function JobsPage({ params }: { params: { slug: string } })
   const colleagues = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     select: { id: true, name: true, email: true }
+  })
+
+  // 2.75 FETCH CLIENTS for Global New Job Button
+  const allClients = await prisma.client.findMany({
+    where: { agencyId: agency.id, archivedAt: null },
+    select: {
+      id: true,
+      name: true,
+      campaigns: {
+        select: { id: true, name: true },
+        where: { archivedAt: null }
+      }
+    },
+    orderBy: { name: 'asc' }
   })
 
   // 3️⃣ TENDERS (ak existuje model)
@@ -97,6 +112,9 @@ export default async function JobsPage({ params }: { params: { slug: string } })
             {isCreative ? 'Moje Zadaniá' : 'Projekty & Tasky'}
           </h2>
         </div>
+        {!isCreative && (
+          <GlobalNewJobButton clients={allClients} colleagues={colleagues} agencyId={agency.id} />
+        )}
       </div>
 
       <JobsTabs
