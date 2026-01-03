@@ -73,13 +73,19 @@ export function TrafficWorkloadManager({
         setReason('')
         setTargetUserId('')
 
+        // Critical refresh logic
         router.refresh()
-        // alert("Žiadosť o presun bola spracovaná.") 
+
+        // Fallback: If router.refresh() doesn't update the server component fast enough or fails
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
       }
     } catch (e) {
       console.error(e)
     } finally {
-      setLoadingId(null)
+      // Keep loading state until reload happens to prevent clicks
+      // setLoadingId(null) 
     }
   }
 
