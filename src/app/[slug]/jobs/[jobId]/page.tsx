@@ -13,6 +13,7 @@ import { AddFileDialog } from '@/components/add-file-dialog'
 import { EditCampaignDescription } from '@/components/edit-campaign-description'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getSession } from '@/lib/session'
+import { JobActions } from '@/components/job-actions'
 
 function getFileIcon(type: string) {
     if (type === 'PDF') return <FileText className="h-4 w-4 text-red-500" />
@@ -160,7 +161,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                             {job.externalLink && (
                                 <div className="flex items-center justify-between p-2 border rounded-md bg-blue-50/50 hover:bg-blue-50 transition group border-blue-100">
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <LinkIcon className="h-4 w-4 text-blue-600" />
+                                        <ExternalLink className="h-4 w-4 text-blue-600" />
                                         <span className="text-[11px] font-bold truncate text-slate-800 uppercase tracking-tighter">
                                             EXTERNÝ LINK (ASANA/CLICKUP...)
                                         </span>

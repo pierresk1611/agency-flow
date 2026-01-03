@@ -28,6 +28,7 @@ export function TrafficWorkloadManager({
 }) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [requestedIds, setRequestedIds] = useState<string[]>([])
 
   const [requestOpen, setRequestOpen] = useState(false)
   const [activeAssign, setActiveAssign] = useState<any>(null)
@@ -65,6 +66,7 @@ export function TrafficWorkloadManager({
       })
       if (res.ok) {
         alert("Žiadosť o presun práce bola odoslaná.")
+        setRequestedIds(prev => [...prev, activeAssign.id]) // Optimistic update
         setRequestOpen(false)
         setReason('')
         setTargetUserId('')
@@ -131,7 +133,7 @@ export function TrafficWorkloadManager({
                       </Select>
                     ) : (
                       assign.userId === currentUserId && (
-                        (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) ? (
+                        ((assign.reassignmentRequests && assign.reassignmentRequests.length > 0) || requestedIds.includes(assign.id)) ? (
                           <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                             Požiadané o presun
