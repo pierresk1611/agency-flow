@@ -73,6 +73,7 @@ export function NotificationsBell() {
                         method: 'PATCH',
                         body: JSON.stringify({ id: n.id })
                       })
+                      fetchNotes()
                     } catch (err) {
                       console.error("Failed to mark read", err)
                     }
