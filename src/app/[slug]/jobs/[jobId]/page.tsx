@@ -157,7 +157,25 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                             <AddFileDialog jobId={job.id} />
                         </CardHeader>
                         <CardContent className="pt-4 space-y-2">
-                            {job.files.length === 0 ? (
+                            {job.externalLink && (
+                                <div className="flex items-center justify-between p-2 border rounded-md bg-blue-50/50 hover:bg-blue-50 transition group border-blue-100">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <LinkIcon className="h-4 w-4 text-blue-600" />
+                                        <span className="text-[11px] font-bold truncate text-slate-800 uppercase tracking-tighter">
+                                            EXTERNÝ LINK (ASANA/CLICKUP...)
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <a href={job.externalLink} target="_blank" rel="noopener noreferrer">
+                                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                                                <ExternalLink className="h-3.5 w-3.5 text-blue-600" />
+                                            </Button>
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {job.files.length === 0 && !job.externalLink ? (
                                 <p className="text-xs text-center text-slate-400 py-4 italic">Žiadne prílohy.</p>
                             ) : (
                                 job.files.map(file => (

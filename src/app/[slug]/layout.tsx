@@ -29,6 +29,30 @@ export default async function AgencyLayout({
     else redirect('/login')
   }
 
+  // ✅ KONTROLA TRIALU A SUSPENDÁCIE
+  // Superadmin má výnimku
+  if (session.role !== 'SUPERADMIN') {
+    const now = new Date()
+    // 1. Ak je TRIAL a vypršal
+    if (agency.subscriptionPlan === 'TRIAL' && agency.trialEndsAt && agency.trialEndsAt < now) {
+      redirect('/subscription-expired')
+    }
+
+    // 2. Ak je SUSPENDED (manuálne vypnutá)
+    // Pozn: Property isSuspended musí existovať v Prisma schéme, ak nie, pridáme fallback
+    // @ts-ignore
+    if (agency.isSuspended) {
+      redirect('/subscription-expired')
+    }
+  }
+
+  // Výpočet dní do konca trialu pre banner
+  let trialDaysLeft = null
+  if (agency.subscriptionPlan === 'TRIAL' && agency.trialEndsAt) {
+    const diff = new Date(agency.trialEndsAt).getTime() - new Date().getTime()
+    trialDaysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24))
+  }
+
   return (
     <div className="h-full relative">
       {/* Sidebar pre desktop */}
@@ -39,7 +63,15 @@ export default async function AgencyLayout({
       {/* Hlavný obsah */}
       <main className="md:pl-72 min-h-screen bg-slate-50/50">
         <MobileNav slug={params.slug} />
-        <div className="p-4 md:p-8">
+
+        {/* TRIAL BANNER */}
+        {trialDaysLeft !== null && trialDaysLeft <= 5 && trialDaysLeft > 0 && session.role !== 'SUPERADMIN' && (
+          <div className="bg-orange-600 text-white px-4 py-2 text-center text-xs font-bold uppercase tracking-widest fixed top-0 md:left-72 right-0 z-[40]">
+            Skúšobná verzia končí o {trialDaysLeft} dní. Kontaktujte podporu pre predĺženie.
+          </div>
+        )}
+
+        <div className={`p-4 md:p-8 ${trialDaysLeft !== null && trialDaysLeft <= 5 ? 'mt-8' : ''}`}>
           {children}
         </div>
       </main>
