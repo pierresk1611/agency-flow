@@ -61,11 +61,14 @@ export function TrafficWorkloadManager({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assignmentId, newUserId })
       })
-      if (res.ok) router.refresh()
+      if (res.ok) {
+        router.refresh()
+        setTimeout(() => window.location.reload(), 500)
+      }
     } catch (e) {
       console.error(e)
     } finally {
-      setLoadingId(null)
+      // setLoadingId(null) // Keep lock
     }
   }
 
