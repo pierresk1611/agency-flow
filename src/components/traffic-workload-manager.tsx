@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Loader2, MessageSquareShare } from 'lucide-react'
+import { Loader2, MessageSquareShare, Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function TrafficWorkloadManager({
@@ -174,12 +174,51 @@ function TrafficActionColumn({
   useEffect(() => setMounted(true), [])
 
   if (!mounted) {
-    // Return empty placeholder with exact height to prevent layout shift if possible, 
-    // but empty is safest for hydration mismatch prevention.
     return <div className="h-7 w-28" />
   }
 
+  // MANAGER VIEW
   if (isManager) {
+    // Check if there is a pending request
+    const pendingReq = assign.reassignmentRequests?.find((r: any) => r.status === 'PENDING')
+
+    if (pendingReq) {
+      // Find target user name
+      const targetUser = allUsersList.find((u: any) => u.id === pendingReq.targetUserId)
+      const targetName = targetUser ? (targetUser.name || targetUser.email || 'Neznámy').split(' ')[0] : '?'
+
+      return (
+        <div className="flex items-center gap-1">
+          <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-700 bg-amber-50 border-amber-200 mr-1 flex flex-col items-start leading-none py-0.5 px-2">
+            <span className="text-[7px] text-amber-400 uppercase">Žiada o presun</span>
+            <span>{targetName}</span>
+          </Badge>
+          <div className="flex gap-0.5">
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700 rounded-lg shadow-sm"
+              title="Schváliť presun"
+              onClick={() => onDirectReassign(assign.id, pendingReq.targetUserId)}
+              disabled={!!loadingId}
+            >
+              <Check className="h-3 w-3" />
+            </Button>
+            {/* Reject Logic to be implemented if needed */}
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 w-7 p-0 rounded-lg shadow-sm"
+              title="Zamietnuť (TODO)"
+              onClick={() => alert("Zamietnutie zatiaľ nie je implementované.")}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <Select onValueChange={(val) => onDirectReassign(assign.id, val)} disabled={loadingId === assign.id}>
         <SelectTrigger className="h-7 text-[8px] w-28 font-bold uppercase tracking-tighter bg-white shadow-sm">
@@ -196,6 +235,7 @@ function TrafficActionColumn({
     )
   }
 
+  // CREATIVE/USER VIEW
   if (assign.userId === currentUserId) {
     const isRequested = (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) || requestedIds.includes(assign.id)
 
