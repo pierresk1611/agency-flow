@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
     // Aktualizácia priradenia
     const updated = await prisma.jobAssignment.update({
       where: { id: assignmentId },
-      data: { userId: newUserId, reassignedBy: session.userId } // pridáme kto zmenil
+      data: { userId: newUserId }
     })
 
     // Ak existovali pending requesty pre tento assignment, označíme ich ako APPROVED
