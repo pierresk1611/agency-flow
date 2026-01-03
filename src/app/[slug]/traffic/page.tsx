@@ -13,7 +13,7 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
-  // Načítame základný zoznam užívateľov aktívnych v agentúre
+  // Načítame užívateľov s ich priradeniami k jobom
   const users = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
     orderBy: { position: 'asc' },
@@ -22,7 +22,30 @@ export default async function TrafficPage({ params }: { params: { slug: string }
       name: true,
       email: true,
       position: true,
-      role: true
+      role: true,
+      assignments: {
+        where: {
+          job: {
+            archivedAt: null  // Len aktívne joby
+          }
+        },
+        include: {
+          job: {
+            include: {
+              campaign: {
+                include: {
+                  client: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: {
+          job: {
+            deadline: 'asc'
+          }
+        }
+      }
     }
   })
 
@@ -33,7 +56,7 @@ export default async function TrafficPage({ params }: { params: { slug: string }
     if (!groups[pos]) groups[pos] = []
     groups[pos].push(u)
   })
-  
+
   // Jednoduchý zoznam pre TrafficWorkloadManager (ID, Name, Email)
   const allUsersSimpleList = users.map(u => ({ id: u.id, name: u.name, email: u.email }))
 
