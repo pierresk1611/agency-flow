@@ -49,7 +49,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
   const budgetData = jobs
     .filter(j => j.budget != null && Number(j.budget) > 0)
     .sort((a, b) => Number(b.budget) - Number(a.budget))
-    .slice(0, 5)
+    // .slice(0, 5) // Show ALL active projects with budget
     .map(j => ({
       id: j.id,
       name: `${j.campaign?.client?.name?.substring(0, 10) || 'Client'} - ${j.title?.substring(0, 10) || 'Job'}`,
