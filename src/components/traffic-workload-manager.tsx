@@ -130,25 +130,24 @@ export function TrafficWorkloadManager({
                         </SelectContent>
                       </Select>
                     ) : (
-                    ): (
-                        assign.userId === currentUserId && (
-                            (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) ? (
-                    <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Požiadané o presun
-                    </Badge>
-                    ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
-                      onClick={() => { setActiveAssign(assign); setRequestOpen(true) }}
-                    >
-                      <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
-                    </Button>
-                    )
-                    )
-                      )}
+                      assign.userId === currentUserId && (
+                        (assign.reassignmentRequests && assign.reassignmentRequests.length > 0) ? (
+                          <Badge variant="outline" className="h-7 text-[9px] font-bold text-amber-600 bg-amber-50 uppercase border-amber-200">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Požiadané o presun
+                          </Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[9px] font-black text-blue-600 hover:text-blue-700 uppercase"
+                            onClick={() => { setActiveAssign(assign); setRequestOpen(true) }}
+                          >
+                            <MessageSquareShare className="h-3 w-3 mr-1" /> Žiadať presun
+                          </Button>
+                        )
+                      )
+                    )}
                   </div>
                 ))
               )}
