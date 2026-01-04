@@ -106,8 +106,13 @@ export default async function JobsPage({ params }: { params: { slug: string } })
       assignments: [] as any[]
     }))
   ].sort((a, b) => {
-    if (b.priority !== a.priority) return b.priority - a.priority
-    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+    // 1. DEADLINE (Najskôr tie čo horia)
+    const timeA = new Date(a.deadline).getTime()
+    const timeB = new Date(b.deadline).getTime()
+    if (timeA !== timeB) return timeA - timeB
+
+    // 2. PRIORITY (Ak majú rovnaký deadline, tak podľa priority)
+    return b.priority - a.priority
   })
 
   return (
