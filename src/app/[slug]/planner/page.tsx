@@ -74,7 +74,10 @@ export default async function PlannerPage({ params }: { params: { slug: string }
     where: {
       agencyId: agency.id,
       active: true,
-      role: { not: 'SUPERADMIN' }
+      OR: [
+        { role: { not: 'SUPERADMIN' } },
+        { id: session.userId }
+      ]
     },
     include: {
       plannerEntries: {
