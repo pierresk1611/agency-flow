@@ -23,15 +23,12 @@ interface UserOption { id: string; name: string | null; email: string; role?: st
 export function ClientsList() {
     const router = useRouter()
     const pathname = usePathname()
-    // Vytiahneme slug z URL (napr. /super-creative/clients -> super-creative)
     const slug = pathname.split('/')[1]
 
     const [clients, setClients] = useState<Client[]>([])
     const [scopesList, setScopesList] = useState<ScopeOption[]>([])
-    const [usersList, setUsersList] = useState<UserOption[]>([])
     const [loading, setLoading] = useState(true)
 
-    // Stavy pre Dialog
     const [open, setOpen] = useState(false)
     const [editingClient, setEditingClient] = useState<Client | null>(null)
     const [showArchived, setShowArchived] = useState(false)
@@ -39,7 +36,6 @@ export function ClientsList() {
     const [newName, setNewName] = useState('')
     const [newPriority, setNewPriority] = useState('3')
     const [selectedScope, setSelectedScope] = useState<string[]>([])
-    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
     const [isOtherSelected, setIsOtherSelected] = useState(false)
     const [customScope, setCustomScope] = useState('')
     const [submitting, setSubmitting] = useState(false)
@@ -49,10 +45,9 @@ export function ClientsList() {
         setLoading(true)
         try {
             const query = showArchived ? '?archived=true' : ''
-            const [cRes, sRes, uRes] = await Promise.all([
+            const [cRes, sRes] = await Promise.all([
                 fetch(`/api/clients${query}`),
-                fetch('/api/agency/scopes'),
-                fetch('/api/settings/users')
+                fetch('/api/agency/scopes')
             ])
 
             if (cRes.ok) {
@@ -63,10 +58,6 @@ export function ClientsList() {
                 const sData = await sRes.json()
                 setScopesList(Array.isArray(sData) ? sData : [])
             }
-            if (uRes.ok) {
-                const uData = await uRes.json()
-                setUsersList(Array.isArray(uData) ? uData : [])
-            }
         } catch (e) { console.error(e) }
         finally { setLoading(false) }
     }
@@ -74,7 +65,7 @@ export function ClientsList() {
     useEffect(() => { refreshData() }, [showArchived])
 
     const openNewDialog = () => {
-        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setSelectedUserIds([]); setIsOtherSelected(false); setCustomScope(''); setError(''); setOpen(true)
+        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope(''); setError(''); setOpen(true)
     }
 
     const openEditDialog = (client: Client) => {
@@ -86,7 +77,6 @@ export function ClientsList() {
         const standard = currentScopes.filter(s => standardScopeNames.includes(s))
         const custom = currentScopes.filter(s => !standardScopeNames.includes(s))
         setSelectedScope(standard)
-        setSelectedUserIds(client.defaultAssignees?.map(u => u.id) || [])
         if (custom.length > 0) { setIsOtherSelected(true); setCustomScope(custom.join(', ')) }
         else { setIsOtherSelected(false); setCustomScope('') }
         setOpen(true)
@@ -94,9 +84,6 @@ export function ClientsList() {
 
     const toggleScope = (scopeName: string) => {
         setSelectedScope(prev => prev.includes(scopeName) ? prev.filter(s => s !== scopeName) : [...prev, scopeName])
-    }
-    const toggleUser = (userId: string) => {
-        setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId])
     }
 
     const handleSave = async () => {
@@ -116,7 +103,7 @@ export function ClientsList() {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, priority: newPriority, scope: finalScopeList, defaultAssigneeIds: selectedUserIds })
+                body: JSON.stringify({ name: newName, priority: newPriority, scope: finalScopeList })
             })
 
             if (res.ok) {
@@ -196,42 +183,6 @@ export function ClientsList() {
                             </div>
                             {isOtherSelected && <Input value={customScope} onChange={e => setCustomScope(e.target.value)} className="mt-2 bg-blue-50" placeholder="Zadajte..." />}
                         </div>
-                        <div className="grid gap-2">
-                            <Label>Predvolený tím (Default Assignees)</Label>
-                            {/* Group users by role (or position) */}
-                            {(() => {
-                                // Build a map of role -> users
-                                const grouped: Record<string, UserOption[]> = {};
-                                usersList.forEach((u) => {
-                                    const groupKey = u.role || u.position || 'Other';
-                                    if (!grouped[groupKey]) grouped[groupKey] = [];
-                                    grouped[groupKey].push(u);
-                                });
-                                // Render groups
-                                return Object.entries(grouped).map(([group, users]) => (
-                                    <div key={group} className="mb-2">
-                                        <div className="font-medium text-sm text-slate-600 mb-1">{group}</div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {users.map((u) => (
-                                                <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
-                                                    <Checkbox
-                                                        checked={selectedUserIds.includes(u.id)}
-                                                        onCheckedChange={() => toggleUser(u.id)}
-                                                    />
-                                                    <Label
-                                                        className="text-xs font-normal cursor-pointer"
-                                                        onClick={() => toggleUser(u.id)}
-                                                    >
-                                                        {u.name || u.email}{u.position ? ` (${u.position})` : ''}
-                                                    </Label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ));
-                            })()}
-                        </div>
-                        <p className="text-[10px] text-slate-500">Títo ľudia budú automaticky priradení k novým jobom tohto klienta.</p>
                     </div>
                     <DialogFooter><Button onClick={handleSave} disabled={submitting || !newName} className="bg-slate-900 text-white">{submitting ? <Loader2 className="animate-spin" /> : "Uložiť"}</Button></DialogFooter>
                 </DialogContent>
@@ -239,24 +190,21 @@ export function ClientsList() {
 
             <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-slate-50"><TableRow><TableHead>Klient</TableHead><TableHead>Priorita</TableHead><TableHead>Rozsah</TableHead>                    <TableHead>Tím</TableHead>
-                        <TableHead className="text-right">Akcia</TableHead></TableRow></TableHeader>
+                    <TableHeader className="bg-slate-50"><TableRow><TableHead>Klient</TableHead><TableHead>Priorita</TableHead><TableHead>Rozsah</TableHead><TableHead className="text-right">Akcia</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {loading ? <TableRow><TableCell colSpan={6} className="text-center h-24">Načítavam...</TableCell></TableRow> :
-                            clients.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground">{showArchived ? "Archív je prázdny." : "Žiadni klienti."}</TableCell></TableRow> :
+                        {loading ? <TableRow><TableCell colSpan={4} className="text-center h-24">Načítavam...</TableCell></TableRow> :
+                            clients.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">{showArchived ? "Archív je prázdny." : "Žiadni klienti."}</TableCell></TableRow> :
                                 clients.map(client => (
                                     <TableRow key={client.id} className={showArchived ? "bg-slate-50 opacity-75" : "hover:bg-slate-50/50"}>
                                         <TableCell className="font-semibold text-slate-700 flex gap-2"><Building className="h-4 w-4 text-slate-400" />{client.name}</TableCell>
                                         <TableCell>{getPriorityBadge(client.priority)}</TableCell>
                                         <TableCell><div className="flex flex-wrap gap-1">{client.scope?.split(',').map(s => <span key={s} className="text-[10px] bg-slate-100 px-1 rounded">{s.trim()}</span>)}</div></TableCell>
-                                        <TableCell>{client.defaultAssignees?.map(u => u.name || u.email).join(', ') || '—'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end items-center gap-2">
                                                 {showArchived ? (
                                                     <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50" onClick={() => handleArchive(client.id, true)}><RotateCcw className="h-4 w-4 mr-1" /> Obnoviť</Button>
                                                 ) : (
                                                     <>
-                                                        {/* OPRAVENÝ LINK NA DETAIL */}
                                                         <Link href={`/${slug}/clients/${client.id}`}><Button variant="ghost" size="sm" className="text-blue-600 font-bold text-xs h-7">DETAIL</Button></Link>
                                                         <Button variant="ghost" size="sm" onClick={() => openEditDialog(client)} className="h-7 w-7 p-0"><Pencil className="h-3.5 w-3.5 text-slate-400" /></Button>
                                                         <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 h-7 w-7 p-0" onClick={() => handleArchive(client.id)}><Trash2 className="h-3.5 w-3.5" /></Button>

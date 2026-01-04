@@ -12,6 +12,7 @@ import { AddCampaignDialog } from '@/components/add-campaign-dialog'
 import { AddJobDialog } from '@/components/add-job-dialog'
 import { ClientNewsfeed } from '@/components/client-newsfeed'
 import { format } from 'date-fns'
+import DefaultTeamCard from '@/components/default-team-card'
 
 export default async function ClientDetailPage({ params }: { params: { slug: string, clientId: string } }) {
   const session = getSession()
@@ -19,7 +20,6 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
 
   const isCreative = session.role === 'CREATIVE'
 
-  // Načítať klienta vrátane kampaní, jobov a súborov
   const client = await prisma.client.findUnique({
     where: { id: params.clientId },
     include: {
@@ -165,8 +165,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
               {client.files.length === 0 && <p className="text-xs text-center text-slate-400 italic">Žiadne dokumenty.</p>}
             </CardContent>
           </Card>
+
+          {/* DEFAULT TEAM CARD */}
+          {!isCreative && <DefaultTeamCard clientId={client.id} initialAssigneeIds={client.defaultAssignees.map(u => u.id)} />}
         </div>
       </div>
-    </div >
+    </div>
   )
 }
