@@ -217,6 +217,6 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
           {!isCreative && <DefaultTeamCard clientId={client.id} initialAssigneeIds={client.defaultAssignees.map(u => u.id)} />}
         </div>
       </div>
-    </div >
+    </div>
   )
 }
