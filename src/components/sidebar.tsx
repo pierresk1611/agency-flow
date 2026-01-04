@@ -52,9 +52,7 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
     // Let's keep it but maybe visually distinct or separate?
     // Actually, let's assume 'Nastavenia' is the intended replacement. I'll comment out the old one or just include it if I'm not sure.
     // Better safe: Include it.
-    if (role === 'SUPERADMIN' || role === 'ADMIN') {
-      routes.push({ label: "Administrácia (Staré)", icon: Users, href: `/${slug}/agency`, color: "text-slate-600" });
-    }
+
   }
 
   return (
