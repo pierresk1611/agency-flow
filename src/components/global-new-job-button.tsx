@@ -8,13 +8,12 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Loader2, Briefcase, ArrowRight, User } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from '@/components/ui/badge'
 
 type ClientWithCampaigns = {
     id: string
     name: string
     campaigns: { id: string, name: string }[]
+    defaultAssignees?: { id: string }[]
 }
 
 type UserFn = {
@@ -66,6 +65,13 @@ export function GlobalNewJobButton({
         setOpen(false)
     }
 
+    const handleClientSelect = (clientId: string) => {
+        const client = localClients.find(c => c.id === clientId)
+        setSelectedClientId(clientId)
+        setSelectedCreatives(client?.defaultAssignees?.map(u => u.id) || [])
+        setStep(2)
+    }
+
     const handleCreateCampaign = async () => {
         if (!newCampaignName || !selectedClientId) return
         setLoading(true)
@@ -77,7 +83,6 @@ export function GlobalNewJobButton({
             })
             if (res.ok) {
                 const newCamp = await res.json()
-                // Update local state to show new campaign immediately
                 setLocalClients(prev => prev.map(c => {
                     if (c.id === selectedClientId) {
                         return { ...c, campaigns: [...c.campaigns, { id: newCamp.id, name: newCamp.name }] }
@@ -86,7 +91,7 @@ export function GlobalNewJobButton({
                 }))
                 setSelectedCampaignId(newCamp.id)
                 setNewCampaignName('')
-                setStep(3) // Auto advance
+                setStep(3)
             } else {
                 const err = await res.json()
                 alert("Chyba pri vytváraní kampane: " + (err.error || "Neznáma chyba"))
@@ -97,11 +102,6 @@ export function GlobalNewJobButton({
         } finally {
             setLoading(false)
         }
-    }
-
-    const handleNext = () => {
-        if (step === 1 && selectedClientId) setStep(2)
-        else if (step === 2 && selectedCampaignId) setStep(3)
     }
 
     const handleCreate = async () => {
@@ -166,14 +166,13 @@ export function GlobalNewJobButton({
                 </DialogHeader>
 
                 <div className="py-4">
-                    {/* STEP 1: CLIENT SELECT */}
                     {step === 1 && (
                         <div className="grid gap-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
-                                {clients.map(client => (
+                                {localClients.map(client => (
                                     <div
                                         key={client.id}
-                                        onClick={() => { setSelectedClientId(client.id); setStep(2) }}
+                                        onClick={() => handleClientSelect(client.id)}
                                         className="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-slate-50 hover:border-purple-300 transition-all group"
                                     >
                                         <span className="font-bold text-slate-700">{client.name}</span>
@@ -181,14 +180,12 @@ export function GlobalNewJobButton({
                                     </div>
                                 ))}
                             </div>
-                            {clients.length === 0 && <p className="text-center text-slate-400 italic">Žiadni klienti.</p>}
+                            {localClients.length === 0 && <p className="text-center text-slate-400 italic">Žiadni klienti.</p>}
                         </div>
                     )}
 
-                    {/* STEP 2: CAMPAIGN SELECT */}
                     {step === 2 && (
                         <div className="space-y-4">
-                            {/* ADD NEW CAMPAIGN UI */}
                             <div className="flex gap-2 items-center pb-2 border-b">
                                 <Input
                                     placeholder="Názov nového projektu..."
@@ -233,7 +230,6 @@ export function GlobalNewJobButton({
                         </div>
                     )}
 
-                    {/* STEP 3: JOB FORM */}
                     {step === 3 && (
                         <div className="grid gap-6">
                             <div className="bg-slate-50 p-3 rounded-lg border flex items-center justify-between">

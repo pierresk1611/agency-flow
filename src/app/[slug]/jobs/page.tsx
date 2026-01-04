@@ -60,7 +60,8 @@ export default async function JobsPage({ params }: { params: { slug: string } })
       campaigns: {
         select: { id: true, name: true },
         where: { archivedAt: null }
-      }
+      },
+      defaultAssignees: { select: { id: true } }
     },
     orderBy: { name: 'asc' }
   })
@@ -124,7 +125,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
           </h2>
         </div>
         {!isCreative && (
-          <GlobalNewJobButton clients={allClients} colleagues={colleagues} agencyId={agency.id} />
+          <GlobalNewJobButton clients={allClients as any} colleagues={colleagues} agencyId={agency.id} />
         )}
       </div>
 
