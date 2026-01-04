@@ -1,11 +1,21 @@
-import { getSession } from '@/lib/session'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, XCircle, ArrowRight, BarChart3, Clock, Users, ShieldCheck } from 'lucide-react'
-
-
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import {
+  ArrowRight,
+  BarChart3,
+  Clock,
+  Users,
+  ShieldCheck,
+  CheckCircle2,
+  MessageSquare,
+  AlertTriangle,
+  Eye,
+  Trophy,
+  Layout,
+  Zap
+} from 'lucide-react'
 
 export default async function LandingPage() {
   const session = await getSession()
@@ -20,164 +30,238 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* 1. NAVBAR */}
-      <nav className="border-b py-4 px-6 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-50">
-        <div className="font-black text-xl italic tracking-tighter text-slate-900">
-          Agency<span className="text-blue-600">Flow</span>
-        </div>
-        <div className="flex gap-4">
-          {session ? (
-            <Link href={session.role === 'SUPERADMIN' ? '/superadmin' : `/${agencySlug || session.agencyId}`}>
-              <Button className="bg-slate-900 text-white font-bold">
-                Otvoriť Aplikáciu <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          ) : (
-            <>
-              <Link href="/login">
-                <Button variant="ghost" className="font-bold text-slate-600">Prihlásiť sa</Button>
-              </Link>
-              <Link href="/register">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg">
-                  Vytvoriť Agentúru
+    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100">
+
+      {/* --- NAVBAR --- */}
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="text-2xl font-black italic tracking-tighter">
+            Agency<span className="text-blue-600">Flow</span>
+          </div>
+          <div className="flex items-center gap-4">
+            {session ? (
+              <Link href={session.role === 'SUPERADMIN' ? '/superadmin' : `/${agencySlug || session.agencyId}`}>
+                <Button className="font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-md">
+                  Otvoriť Appku <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-            </>
-          )}
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-bold text-slate-600 hover:text-slate-900 hidden sm:block">
+                  Prihlásenie
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 transition-all hover:scale-105">
+                    Vyskúšať zadarmo
+                  </Button>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
-      {/* 2. HERO SECTION */}
-      <section className="py-20 px-6 text-center max-w-4xl mx-auto space-y-6">
-        <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-tight">
-          Koniec chaosu <br /> v <span className="text-blue-600">Exceloch.</span>
+      {/* --- HERO SECTION --- */}
+      <section className="pt-24 pb-20 px-6 text-center max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-widest mb-8 border border-blue-100 animate-fade-in-up">
+          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+          Operačný systém pre agentúry
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-[1.1] mb-8 text-slate-900">
+          Prestaňte riadiť firmu <br />
+          v <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-violet-600">Exceli.</span>
         </h1>
-        <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-          Kompletný operačný systém pre reklamné agentúry.
-          Timesheety, Traffic, Schvaľovanie a Reporty na jednom mieste.
-          <strong>Registrujte sa na DEMO verziu a otestujte AgencyFlow v plnej verzii.</strong>
+        <p className="text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed mb-10">
+          Kompletný systém pre <strong>menšie aj väčšie agentúry</strong>. Od zadania jobu cez traffic manažment až po schválenie výkazu a fakturáciu.
         </p>
-        <p className="text-sm text-blue-600 font-medium">
-          🎁 Tip: Pre testerov platí špeciálna zľava pri ostrom spustení.
-        </p>
-        <div className="flex justify-center gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Link href="/register">
-            <Button size="lg" className="h-14 px-8 text-lg bg-slate-900 text-white font-bold hover:scale-105 transition-transform">
-              Začať zadarmo
+            <Button size="lg" className="h-14 px-8 text-lg bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto font-bold shadow-xl">
+              Začať 14-dňový Trial
             </Button>
           </Link>
           <Link href="#features">
-            <Button size="lg" variant="outline" className="h-14 px-8 text-lg font-bold">
-              Ako to funguje?
+            <Button size="lg" variant="outline" className="h-14 px-8 text-lg w-full sm:w-auto border-slate-300 font-bold hover:bg-slate-50">
+              Čo všetko dokáže?
             </Button>
           </Link>
         </div>
+        <p className="mt-6 text-xs text-slate-400 font-medium uppercase tracking-wider">
+          Bez kreditnej karty • Okamžitý prístup • 14 dní free
+        </p>
       </section>
 
-      {/* 3. PROBLEM VS SOLUTION (Excel vs App) */}
-      <section className="py-20 bg-slate-50 px-6">
-        <div className="max-w-5xl mx-auto">
+      {/* --- PROBLEM / SOLUTION (ZOZNAM FUNKCIONALÍT) --- */}
+      <section className="py-20 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Prečo prejsť z Excelu?</h2>
-            <p className="text-slate-500 mt-2">Rozdiel je v automatizácii a prehľade.</p>
+            <h2 className="text-3xl font-black text-slate-900 mb-4">Všetko pod jednou strechou</h2>
+            <p className="text-slate-500">Zabudnite na prepínanie medzi 5 rôznymi aplikáciami.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* EXCEL */}
-            <Card className="border-red-100 shadow-sm bg-red-50/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-700">
-                  <XCircle className="h-6 w-6" /> Bežný Excel / Tabuľky
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <li className="flex gap-2 text-slate-700"><span className="text-red-500">✕</span> Manuálne a chybové zadávanie dát</li>
-                <li className="flex gap-2 text-slate-700"><span className="text-red-500">✕</span> Žiadne notifikácie o deadlineoch</li>
-                <li className="flex gap-2 text-slate-700"><span className="text-red-500">✕</span> Ťažké reportovanie ziskovosti</li>
-                <li className="flex gap-2 text-slate-700"><span className="text-red-500">✕</span> Chaos vo verziách súborov</li>
-              </CardContent>
-            </Card>
-
-            {/* AGENCY FLOW */}
-            <Card className="border-green-100 shadow-xl bg-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase">Odporúčané</div>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-700">
-                  <CheckCircle2 className="h-6 w-6" /> AgencyFlow
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <li className="flex gap-2 text-slate-900 font-medium"><span className="text-green-500">✓</span> Traffic manažment vyťaženosti</li>
-                <li className="flex gap-2 text-slate-900 font-medium"><span className="text-green-500">✓</span> Finančné reporty na jeden klik</li>
-                <li className="flex gap-2 text-slate-900 font-medium"><span className="text-green-500">✓</span> Notifikácie a schvaľovanie práce</li>
-                <li className="flex gap-2 text-slate-900 font-medium"><span className="text-green-500">✓</span> Stopky a automatické timesheety</li>
-              </CardContent>
-            </Card>
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="bg-slate-900 text-white p-4 text-center font-bold text-sm uppercase tracking-widest">
+              AgencyFlow Standard
+            </div>
+            <div className="p-8 grid md:grid-cols-2 gap-y-6 gap-x-12">
+              <CheckItem text="Dokonalý prehľad medzi zákazkami a projektami" />
+              <CheckItem text="Prehľad klientov a ich histórie" />
+              <CheckItem text="Traffic manažment a presúvanie jobov" />
+              <CheckItem text="Všetky potrebné reporty na jeden klik" />
+              <CheckItem text="Notifikácie a schvaľovanie výkazov" />
+              <CheckItem text="Stopky a automatické timesheety" />
+              <CheckItem text="Diskusie priamo pri joboch (žiadne maily)" />
+              <CheckItem text="Upozornenia na meškajúce joby" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 4. FEATURES GRID */}
-      <section id="features" className="py-20 px-6 max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Všetko pod jednou strechou</h2>
+      {/* --- FEATURES GRID (DETAILNÉ VYSVETLENIE) --- */}
+      <section className="py-24 px-6 max-w-7xl mx-auto" id="features">
+        <div className="text-center mb-20 max-w-3xl mx-auto">
+          <h2 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">Funkcie, ktoré reálne potrebujete</h2>
+          <p className="text-lg text-slate-500">
+            Navrhnuté ľuďmi z agentúry pre ľudí z agentúry. Žiadny zbytočný balast, len nástroje na zvýšenie efektivity a zisku.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
+
           <FeatureCard
-            icon={ArrowRight}
-            title="Rýchla implementácia"
-            desc="Žiadne zložité nastavovanie. Registrácia Vám zaberie len 5 minút, po schválení môžete začať okamžite."
+            icon={MessageSquare}
+            color="text-blue-600"
+            bg="bg-blue-50"
+            title="Kontextová Komunikácia"
+            desc="Koniec strateným mailom. Komentujte priamo pri zákazke. Všetky podklady, linky a diskusia sú tam, kde majú byť."
           />
+
           <FeatureCard
-            icon={CheckCircle2}
-            title="Job Pipeline"
-            desc="Prehľad všetkých zákaziek od zadania (Brief) až po odovzdanie (Done)."
+            icon={AlertTriangle}
+            color="text-red-600"
+            bg="bg-red-50"
+            title="Strážca Deadlinov"
+            desc="Systém vás upozorní na blížiace sa termíny. Vidíte presne, čo horí (Burning Tasks), skôr než bude neskoro."
           />
-          <FeatureCard
-            icon={ShieldCheck}
-            title="Schvaľovací proces"
-            desc="Account manažér musí schváliť každý odpracovaný čas pred fakturáciou."
-          />
-          <FeatureCard
-            icon={BarChart3}
-            title="Finančné Reporty"
-            desc="Okamžitý prehľad o tom, ktorý klient je ziskový a kde prerábate peniaze."
-          />
-          <FeatureCard
-            icon={Users}
-            title="Traffic Manažment"
-            desc="Vidíte, kto je preťažený a kto má voľno. Presúvajte úlohy jedným klikom."
-          />
+
           <FeatureCard
             icon={Clock}
-            title="Smart Timesheety"
-            desc="Kreatívci môžu využiť presné stopky alebo zadávať čas na zákazkách manuálne."
+            color="text-emerald-600"
+            bg="bg-emerald-50"
+            title="Smart Plánovač"
+            desc="Plánujte kapacity na 2 týždne dopredu. Stopky automaticky premenia prácu na timesheet a porovnajú plán s realitou."
           />
+
+          <FeatureCard
+            icon={Eye}
+            color="text-violet-600"
+            bg="bg-violet-50"
+            title="Čistý Focus"
+            desc="Každý člen tímu vidí len svoje úlohy. Kreatívcov nezaťažujú financie, manažéri majú naopak plný prehľad."
+          />
+
+          <FeatureCard
+            icon={BarChart3}
+            color="text-amber-600"
+            bg="bg-amber-50"
+            title="Okamžité Reporty"
+            desc="Prehľadné grafy ziskovosti a vyťaženosti. Exporty výkazov pre klienta v slovenskom formáte na jeden klik."
+          />
+
+          <FeatureCard
+            icon={Trophy}
+            color="text-pink-600"
+            bg="bg-pink-50"
+            title="Tendre & Archív"
+            desc="Separátny pipeline pre New Business. Vyhraté tendre jedným klikom preklopíte na ostrých klientov, staré sa archivujú."
+          />
+
+          <FeatureCard
+            icon={Users}
+            color="text-indigo-600"
+            bg="bg-indigo-50"
+            title="Traffic & Reassign"
+            desc="Nestíha kolega? Jedným klikom požiadajte o presun jobu. Manažér to schváli a úloha sa presunie aj s históriou."
+          />
+
+          <FeatureCard
+            icon={Layout}
+            color="text-cyan-600"
+            bg="bg-cyan-50"
+            title="Intuitívne Rozhranie"
+            desc="Žiadne zložité školenia. Jednoduché a čisté prostredie, v ktorom sa nový kolega zorientuje za 15 minút."
+          />
+
+          <FeatureCard
+            icon={ShieldCheck}
+            color="text-slate-600"
+            bg="bg-slate-100"
+            title="Schvaľovanie"
+            desc="Dvojstupňová kontrola. Account manažér musí schváliť alebo vrátiť každý výkaz pred tým, než ide do fakturácie."
+          />
+
         </div>
       </section>
 
-      {/* 5. FOOTER */}
-      <footer className="py-10 border-t bg-slate-50 text-center text-slate-500 text-sm">
-        <p>&copy; {new Date().getFullYear()} AgencyFlow. Všetky práva vyhradené.</p>
-        <div className="flex justify-center gap-4 mt-4">
-          <Link href="#" className="hover:text-slate-900">Podmienky používania</Link>
-          <Link href="#" className="hover:text-slate-900">Ochrana súkromia</Link>
+      {/* --- PRICING CTA --- */}
+      <section className="py-20 border-t border-slate-100 bg-slate-50">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-black mb-6">Začnite robiť poriadok ešte dnes</h2>
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+            <p className="text-slate-600 mb-8 font-medium">
+              Vyskúšajte si plnú verziu AgencyFlow na 14 dní zadarmo. <br />
+              Bez záväzkov.
+            </p>
+            <div className="flex justify-center">
+              <Link href="/register">
+                <Button className="w-64 h-14 text-lg bg-slate-900 text-white font-bold shadow-xl hover:scale-105 transition-transform">
+                  Vytvoriť účet zadarmo
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400 mt-6">
+              Schválenie registrácie môže trvať <strong className="text-slate-600">48 hodín</strong>.
+              V prípade otázok píšte na <a href="mailto:agencyflowapp@gmail.com" className="text-blue-600 hover:underline">agencyflowapp@gmail.com</a>.
+            </p>
+          </div>
         </div>
+      </section>
+
+      {/* --- FOOTER --- */}
+      <footer className="py-12 text-center text-slate-400 text-sm bg-white border-t border-slate-100">
+        <p className="mb-4 font-black text-slate-900 text-lg italic">Agency<span className="text-blue-600">Flow</span></p>
+        <div className="flex justify-center gap-6 mb-6">
+          <Link href="#" className="hover:text-slate-600 transition">Kontakt</Link>
+          <Link href="#" className="hover:text-slate-600 transition">Podmienky</Link>
+          <Link href="#" className="hover:text-slate-600 transition">GDPR</Link>
+        </div>
+        <p>&copy; {new Date().getFullYear()} Všetky práva vyhradené.</p>
       </footer>
     </div>
   )
 }
 
-function FeatureCard({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) {
+// --- POMOCNÉ KOMPONENTY ---
+
+function CheckItem({ text }: { text: string }) {
   return (
-    <div className="p-6 border rounded-xl hover:shadow-lg transition-all hover:border-blue-200 group bg-white">
-      <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-        <Icon className="h-6 w-6" />
+    <div className="flex items-start gap-3">
+      <div className="mt-1 bg-green-100 text-green-600 rounded-full p-1">
+        <CheckCircle2 className="h-4 w-4" />
       </div>
-      <h3 className="font-bold text-lg text-slate-900 mb-2">{title}</h3>
-      <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+      <span className="font-bold text-slate-700">{text}</span>
+    </div>
+  )
+}
+
+function FeatureCard({ icon: Icon, title, desc, color, bg }: { icon: any, title: string, desc: string, color: string, bg: string }) {
+  return (
+    <div className="p-8 border rounded-2xl hover:shadow-xl transition-all hover:border-blue-200 group bg-white flex flex-col items-start">
+      <div className={`h-14 w-14 ${bg} ${color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+        <Icon className="h-7 w-7" />
+      </div>
+      <h3 className="font-bold text-xl text-slate-900 mb-3">{title}</h3>
+      <p className="text-slate-500 text-sm leading-relaxed font-medium">{desc}</p>
     </div>
   )
 }
