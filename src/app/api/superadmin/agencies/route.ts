@@ -44,16 +44,27 @@ export async function POST(request: Request) {
     const { name, adminEmail, adminPassword } = body
 
     if (!name || !adminEmail || !adminPassword) {
-      return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
+      return NextResponse.json({ error: 'Chýbajú údaje: Názov, email alebo heslo.' }, { status: 400 })
     }
 
     const slug = generateSlug(name)
+    if (!slug) {
+      return NextResponse.json({ error: 'Názov agentúry je neplatný. Skúste iný názov.' }, { status: 400 })
+    }
+
+    // Skontrolujeme, či už neexistuje agentúra s týmto slugom
+    const agencyExists = await prisma.agency.findUnique({ where: { slug } })
+    if (agencyExists) {
+      return NextResponse.json({ error: `Agentúra s názvom (URL) "${slug}" už existuje.` }, { status: 400 })
+    }
 
     // Skontrolujeme, či už neexistuje používateľ s týmto emailom
     const userExists = await prisma.user.findUnique({ where: { email: adminEmail } })
     if (userExists) {
-      return NextResponse.json({ error: `Email ${adminEmail} už existuje.` }, { status: 400 })
+      return NextResponse.json({ error: `Užívateľ s emailom ${adminEmail} už v systéme existuje.` }, { status: 400 })
     }
+
+    console.log(`[SUPERADMIN] Creating agency: ${name} (${slug}) for ${adminEmail}`)
 
     const newAgency = await prisma.$transaction(async (tx) => {
       const trialEndsAt = new Date()
@@ -67,7 +78,9 @@ export async function POST(request: Request) {
           trialEndsAt
         }
       })
+
       const hash = await bcrypt.hash(adminPassword, 10)
+
       await tx.user.create({
         data: {
           email: adminEmail,
@@ -77,6 +90,7 @@ export async function POST(request: Request) {
           active: true
         }
       })
+
       return agency
     })
 
@@ -84,7 +98,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("AGENCY POST ERROR:", error)
     return NextResponse.json({
-      error: "Server Error",
+      error: "Pri vytváraní agentúry nastala neočakávaná chyba.",
       details: error.message,
       code: error.code || null
     }, { status: 500 })

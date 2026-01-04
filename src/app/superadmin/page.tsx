@@ -67,9 +67,9 @@ export default function SuperAdminPage() {
         await fetchAgencies()
       } else {
         const err = await res.json()
-        alert(err.error || "Chyba")
+        alert(err.error || "Pri vytváraní agentúry nastala chyba.")
       }
-    } catch (e) { alert("Chyba spojenia") }
+    } catch (e) { alert("Chyba spojenia so serverom. Skontrolujte pripojenie.") }
     finally { setSubmitting(false) }
   }
 
