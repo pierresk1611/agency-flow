@@ -66,81 +66,83 @@ export function JobsTabs({
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    activeJobs.map((proj: any) => (
-                                        <TableRow key={proj.id} className={`hover:bg-slate-50/50 transition-colors ${proj.type === 'TENDER' ? 'bg-purple-50/20' : ''}`}>
-                                            <TableCell className="text-center font-bold">
-                                                {proj.type === 'TENDER'
-                                                    ? <Badge className="bg-purple-600 text-[9px]">PITCH</Badge>
-                                                    : <span className={proj.priority >= 4 ? "text-red-600" : "text-slate-400"}>P{proj.priority}</span>}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
-                                                        {proj.type === 'TENDER'
-                                                            ? <Trophy className="h-3 w-3 text-purple-600" />
-                                                            : <ArrowRight className="h-3 w-3 text-blue-500" />}
-                                                        <span className="font-semibold text-slate-800">{proj.title}</span>
-                                                    </div>
-                                                    <span className="text-[10px] text-muted-foreground uppercase">{proj.campaign}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-sm font-medium text-slate-600">{proj.client}</TableCell>
-                                            <TableCell className="text-xs font-medium text-slate-700">
-                                                {format(new Date(proj.deadline), 'dd.MM.yyyy')}
-                                            </TableCell>
-                                            {!isCreative && (
-                                                <>
-                                                    <TableCell className="text-right">
-                                                        <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                                                            <div className="flex items-center gap-2 text-xs font-mono">
-                                                                <span className="text-slate-400 font-medium">{proj.plan?.toLocaleString()} €</span>
-                                                                <span className="text-slate-300">/</span>
-                                                                <span className={`font-bold ${proj.real > proj.plan && proj.plan > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                                                    {proj.real?.toLocaleString() || '0'} €
-                                                                </span>
-                                                            </div>
-                                                            {/* Progress Bar */}
-                                                            {proj.plan > 0 && (() => {
-                                                                const percent = Math.min((proj.real / proj.plan) * 100, 100)
-                                                                const isOver = proj.real > proj.plan
-                                                                const isWarning = !isOver && percent >= 90
-
-                                                                let barColor = 'bg-emerald-500'
-                                                                if (isOver) barColor = 'bg-red-500'
-                                                                else if (isWarning) barColor = 'bg-amber-500'
-
-                                                                return (
-                                                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                        <div
-                                                                            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                                                                            style={{ width: `${percent}%` }}
-                                                                        />
-                                                                    </div>
-                                                                )
-                                                            })()}
+                                    activeJobs.map((proj: any) => {
+                                        const isOverdue = proj.deadline && new Date(proj.deadline) < new Date() && proj.type === 'JOB'
+                                        return (
+                                            <TableRow key={proj.id} className={`hover:bg-slate-50/50 transition-colors ${proj.type === 'TENDER' ? 'bg-purple-50/20' : ''} ${isOverdue ? 'bg-red-50 hover:bg-red-100 border-2 border-red-500' : ''}`}>
+                                                <TableCell className="text-center font-bold">
+                                                    {proj.type === 'TENDER'
+                                                        ? <Badge className="bg-purple-600 text-[9px]">PITCH</Badge>
+                                                        : <span className={proj.priority >= 4 ? "text-red-600" : "text-slate-400"}>P{proj.priority}</span>}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center gap-2">
+                                                            {proj.type === 'TENDER'
+                                                                ? <Trophy className="h-3 w-3 text-purple-600" />
+                                                                : <ArrowRight className="h-3 w-3 text-blue-500" />}
+                                                            <span className="font-semibold text-slate-800">{proj.title}</span>
                                                         </div>
-                                                    </TableCell>
-                                                </>
-                                            )}
-                                            <TableCell className="text-right pr-6">
-                                                <div className="flex justify-end items-center gap-2">
-                                                    <Link href={proj.type === 'TENDER' ? `/${slug}/tenders/${proj.id}` : `/${slug}/jobs/${proj.id}`}>
-                                                        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 h-8">Detail</Button>
-                                                    </Link>
-                                                    {proj.type === 'JOB' && !isCreative && <JobActions jobId={proj.id} />}
+                                                        <span className="text-[10px] text-muted-foreground uppercase">{proj.campaign}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-sm font-medium text-slate-600">{proj.client}</TableCell>
+                                                <TableCell className="text-xs font-medium text-slate-700">
+                                                    {format(new Date(proj.deadline), 'dd.MM.yyyy')}
+                                                </TableCell>
+                                                {!isCreative && (
+                                                    <>
+                                                        <TableCell className="text-right">
+                                                            <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                                                                <div className="flex items-center gap-2 text-xs font-mono">
+                                                                    <span className="text-slate-400 font-medium">{proj.plan?.toLocaleString()} €</span>
+                                                                    <span className="text-slate-300">/</span>
+                                                                    <span className={`font-bold ${proj.real > proj.plan && proj.plan > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                                        {proj.real?.toLocaleString() || '0'} €
+                                                                    </span>
+                                                                </div>
+                                                                {/* Progress Bar */}
+                                                                {proj.plan > 0 && (() => {
+                                                                    const percent = Math.min((proj.real / proj.plan) * 100, 100)
+                                                                    const isOver = proj.real > proj.plan
+                                                                    const isWarning = !isOver && percent >= 90
 
-                                                    {/* Reassignment Button */}
-                                                    {proj.type === 'JOB' && (() => {
-                                                        const myAssignment = proj.assignments?.find((a: any) => a.userId === session.userId)
-                                                        if (myAssignment) {
-                                                            return <ReassignmentDialog assignmentId={myAssignment.id} currentUserId={session.userId} colleagues={colleagues} />
-                                                        }
-                                                        return null
-                                                    })()}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                                    let barColor = 'bg-emerald-500'
+                                                                    if (isOver) barColor = 'bg-red-500'
+                                                                    else if (isWarning) barColor = 'bg-amber-500'
+
+                                                                    return (
+                                                                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                            <div
+                                                                                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                                                                                style={{ width: `${percent}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    )
+                                                                })()}
+                                                            </div>
+                                                        </TableCell>
+                                                    </>
+                                                )}
+                                                <TableCell className="text-right pr-6">
+                                                    <div className="flex justify-end items-center gap-2">
+                                                        <Link href={proj.type === 'TENDER' ? `/${slug}/tenders/${proj.id}` : `/${slug}/jobs/${proj.id}`}>
+                                                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 h-8">Detail</Button>
+                                                        </Link>
+                                                        {proj.type === 'JOB' && !isCreative && <JobActions jobId={proj.id} />}
+
+                                                        {/* Reassignment Button */}
+                                                        {proj.type === 'JOB' && (() => {
+                                                            const myAssignment = proj.assignments?.find((a: any) => a.userId === session.userId)
+                                                            if (myAssignment) {
+                                                                return <ReassignmentDialog assignmentId={myAssignment.id} currentUserId={session.userId} colleagues={colleagues} />
+                                                            }
+                                                            return null
+                                                        })()}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
                                 )}
                             </TableBody>
                         </Table>
