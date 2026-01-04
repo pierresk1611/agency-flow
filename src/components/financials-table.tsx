@@ -85,30 +85,30 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
                 <Card className="bg-slate-900 text-white border-0 shadow-lg">
                     <CardContent className="p-6">
                         <p className="text-xs font-medium uppercase tracking-wider opacity-70">Celkový Plán</p>
-                        <h3 className="text-3xl font-bold mt-2">{totalBudget.toLocaleString()} €</h3>
+                        <h3 className="text-2xl font-bold mt-2">{totalBudget.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
                     </CardContent>
                 </Card>
                 <Card className="bg-blue-600 text-white border-0 shadow-lg">
                     <CardContent className="p-6">
                         <p className="text-xs font-medium uppercase tracking-wider opacity-70">Skutočnosť</p>
-                        <h3 className="text-3xl font-bold mt-2">{totalActual.toLocaleString()} €</h3>
+                        <h3 className="text-2xl font-bold mt-2">{totalActual.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
                     </CardContent>
                 </Card>
                 <Card className={`${totalDiff >= 0 ? "bg-emerald-500" : "bg-red-500"} text-white border-0 shadow-lg`}>
                     <CardContent className="p-6">
                         <p className="text-xs font-medium uppercase tracking-wider opacity-70">Rozdiel</p>
-                        <h3 className="text-3xl font-bold mt-2 flex items-center gap-2">
+                        <h3 className="text-2xl font-bold mt-2 flex items-center gap-2">
                             {totalDiff >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
-                            {totalDiff.toLocaleString()} €
+                            {totalDiff.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €
                         </h3>
                     </CardContent>
                 </Card>
                 <Card className="bg-orange-500 text-white border-0 shadow-lg">
                     <CardContent className="p-6">
                         <p className="text-xs font-medium uppercase tracking-wider opacity-70">Celkové Hodiny</p>
-                        <h3 className="text-3xl font-bold mt-2 flex items-center gap-2">
+                        <h3 className="text-2xl font-bold mt-2 flex items-center gap-2">
                             <Clock className="h-6 w-6" />
-                            {totalHours.toFixed(1)} h
+                            {totalHours.toLocaleString('sk-SK', { maximumFractionDigits: 1 })} h
                         </h3>
                     </CardContent>
                 </Card>
