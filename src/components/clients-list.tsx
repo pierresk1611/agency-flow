@@ -52,9 +52,8 @@ export function ClientsList() {
             const query = showArchived ? '?archived=true' : ''
             const [cRes, sRes, uRes] = await Promise.all([
                 fetch(`/api/clients${query}`),
-                fetch(`/api/clients${query}`),
                 fetch('/api/agency/scopes'),
-                fetch('/api/settings/users') // Assuming this endpoint returns all agency users
+                fetch('/api/settings/users')
             ])
 
             if (cRes.ok) {
