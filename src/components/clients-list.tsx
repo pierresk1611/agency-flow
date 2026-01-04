@@ -200,27 +200,23 @@ export function ClientsList() {
                         </div>
                         <div className="grid gap-2">
                             <Label>Predvolený tím (Default Assignees)</Label>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="justify-between font-normal">
-                                        {selectedUserIds.length === 0 ? "Vyberte členov tímu..." : `${selectedUserIds.length} vybraných`}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-[300px] max-h-[300px] overflow-y-auto">
-                                    <DropdownMenuLabel>Členovia agentúry</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {usersList.map(u => (
-                                        <DropdownMenuCheckboxItem
-                                            key={u.id}
-                                            checked={selectedUserIds.includes(u.id)}
-                                            onCheckedChange={() => toggleUser(u.id)}
-                                        >
-                                            {u.name || u.email}
-                                        </DropdownMenuCheckboxItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[180px] overflow-y-auto bg-slate-50/50">
+                                {usersList.length === 0 ? (
+                                    <p className="text-xs text-slate-400 col-span-2 text-center italic">Žiadni používatelia v agentúre.</p>
+                                ) : (
+                                    usersList.map(u => (
+                                        <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
+                                            <Checkbox
+                                                checked={selectedUserIds.includes(u.id)}
+                                                onCheckedChange={() => toggleUser(u.id)}
+                                            />
+                                            <Label className="text-xs font-normal cursor-pointer" onClick={() => toggleUser(u.id)}>
+                                                {u.name || u.email}
+                                            </Label>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                             <p className="text-[10px] text-slate-500">Títo ľudia budú automaticky priradení k novým jobom tohto klienta.</p>
                         </div>
                     </div>
