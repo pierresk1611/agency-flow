@@ -13,6 +13,7 @@ import { AddJobDialog } from '@/components/add-job-dialog'
 import { ClientNewsfeed } from '@/components/client-newsfeed'
 import { format } from 'date-fns'
 import DefaultTeamCard from '@/components/default-team-card'
+import { Prisma } from '@prisma/client'
 
 export default async function ClientDetailPage({ params }: { params: { slug: string, clientId: string } }) {
   const session = getSession()
@@ -40,7 +41,7 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
       },
       defaultAssignees: { select: { id: true } }
     }
-  })
+  }) as any // Cast to any to resolve property access errors on relations in this view
 
   if (!client) return notFound()
 
