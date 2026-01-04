@@ -56,7 +56,17 @@ export async function POST(request: Request) {
     }
 
     const newAgency = await prisma.$transaction(async (tx) => {
-      const agency = await tx.agency.create({ data: { name, slug } })
+      const trialEndsAt = new Date()
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+
+      const agency = await tx.agency.create({
+        data: {
+          name,
+          slug,
+          status: 'ACTIVE',
+          trialEndsAt
+        }
+      })
       const hash = await bcrypt.hash(adminPassword, 10)
       await tx.user.create({
         data: {

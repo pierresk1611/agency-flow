@@ -93,12 +93,18 @@ export async function PATCH(request: Request) {
         }
 
         if (action === 'APPROVE') {
-            // 1. Aktivuj agentúru
+            const trialEndsAt = new Date()
+            trialEndsAt.setDate(trialEndsAt.getDate() + 14)
+
+            // 1. Aktivuj agentúru a nastav trial
             // 2. Aktivuj všetkých používateľov tejto agentúry (zatiaľ len admina)
             await prisma.$transaction([
                 prisma.agency.update({
                     where: { id: agencyId },
-                    data: { status: 'ACTIVE' }
+                    data: {
+                        status: 'ACTIVE',
+                        trialEndsAt
+                    }
                 }),
                 prisma.user.updateMany({
                     where: { agencyId: agencyId },

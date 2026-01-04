@@ -18,6 +18,8 @@ interface Agency {
   slug: string
   createdAt: string
   status?: 'PENDING' | 'ACTIVE' | 'REJECTED'
+  subscriptionPlan: 'TRIAL' | 'FULL'
+  trialEndsAt: string | null
   _count: { users: number, clients: number }
 }
 
@@ -146,6 +148,7 @@ export default function SuperAdminPage() {
             <TableRow className="hover:bg-slate-50">
               <TableHead className="pl-6 font-bold uppercase text-[10px] tracking-widest text-slate-500">Agentúra</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center text-slate-500">Status</TableHead>
+              <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center text-slate-500">Licencia</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center text-slate-500">Tím</TableHead>
               <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center text-slate-500">Klienti</TableHead>
               <TableHead className="text-right pr-6 font-bold uppercase text-[10px] tracking-widest text-slate-500">Akcia</TableHead>
@@ -169,6 +172,23 @@ export default function SuperAdminPage() {
                         <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-none">Zamietnuté</Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-800 hover:bg-green-200 border-none">Aktívna</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {a.subscriptionPlan === 'FULL' ? (
+                        <Badge className="bg-blue-600 text-white border-none font-bold">FULL</Badge>
+                      ) : (
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-slate-300">Trial</Badge>
+                          {a.trialEndsAt && (
+                            <span className={`text-[10px] font-bold ${new Date(a.trialEndsAt).getTime() - new Date().getTime() < 3 * 24 * 60 * 60 * 1000
+                                ? 'text-red-500 animate-pulse'
+                                : 'text-slate-400'
+                              }`}>
+                              {new Date(a.trialEndsAt).toLocaleDateString('sk-SK')}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="text-center"><Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none"><Users className="h-3 w-3 mr-1.5" /> {a._count.users}</Badge></TableCell>
