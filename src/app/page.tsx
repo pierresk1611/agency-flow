@@ -4,8 +4,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle2, XCircle, ArrowRight, BarChart3, Clock, Users, ShieldCheck } from 'lucide-react'
 
+
+import { prisma } from '@/lib/prisma'
+
 export default async function LandingPage() {
   const session = await getSession()
+  let agencySlug = ''
+
+  if (session?.agencyId) {
+    const agency = await prisma.agency.findUnique({
+      where: { id: session.agencyId },
+      select: { slug: true }
+    })
+    if (agency) agencySlug = agency.slug
+  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -16,7 +28,7 @@ export default async function LandingPage() {
         </div>
         <div className="flex gap-4">
           {session ? (
-            <Link href={session.role === 'SUPERADMIN' ? '/superadmin' : `/${session.agencyId}`}>
+            <Link href={session.role === 'SUPERADMIN' ? '/superadmin' : `/${agencySlug || session.agencyId}`}>
               <Button className="bg-slate-900 text-white font-bold">
                 Otvoriť Aplikáciu <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
