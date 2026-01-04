@@ -24,17 +24,18 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
   // Načítanie kreatívcov pri otvorení
   useEffect(() => {
     if (open && agencyId) {
-      fetch(`/api/agency/users?agencyId=${agencyId}&role=CREATIVE`)
+      // Fetch all users of the agency (not only creatives)
+      fetch(`/api/settings/users`)
         .then(res => res.json())
         .then(data => setCreatives(data))
-        .catch(err => console.error(err))
+        .catch(err => console.error(err));
 
       // Reset to default when opening, if empty (or always?)
       // Better: if opening specifically new, usually we want to reset.
       // But if we want to PERSIST user selection if they close and reopen?
       // Let's just set it if it's empty.
       if (selectedCreatives.length === 0 && defaultAssigneeIds.length > 0) {
-        setSelectedCreatives(defaultAssigneeIds)
+        setSelectedCreatives(defaultAssigneeIds);
       }
     }
   }, [open, agencyId])
@@ -121,7 +122,7 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
             <Label>Priradiť kreatívcov</Label>
             <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-40 overflow-y-auto bg-slate-50">
               {creatives.length === 0 ? (
-                <p className="text-xs text-slate-400 col-span-2 text-center italic">Žiadni kreatívci v agentúre.</p>
+                <p className="text-xs text-slate-400 col-span-2 text-center italic">Žiadni používatelia v agentúre.</p>
               ) : (
                 creatives.map(user => (
                   <div key={user.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
@@ -131,7 +132,7 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
                       onCheckedChange={() => toggleCreative(user.id)}
                     />
                     <Label htmlFor={user.id} className="text-xs cursor-pointer font-medium text-slate-700">
-                      {user.name || user.email}
+                      {user.name || user.email} {user.role ? `(${user.role})` : ''} {user.position ? `- ${user.position}` : ''}
                     </Label>
                   </div>
                 ))

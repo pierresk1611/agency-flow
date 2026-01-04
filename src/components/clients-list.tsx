@@ -12,14 +12,13 @@ import { Badge } from '@/components/ui/badge'
 import { Building, Plus, Loader2, ArrowRight, Trash2, RotateCcw, Pencil } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation' // <--- IMPORT usePathname
 import Link from 'next/link'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronsUpDown } from 'lucide-react'
+
 
 interface Client {
     id: string; name: string; priority: number; scope: string | null; _count: { campaigns: number }; defaultAssignees?: { id: string, name: string | null, email: string }[]
 }
 interface ScopeOption { id: string; name: string }
-interface UserOption { id: string; name: string | null; email: string }
+interface UserOption { id: string; name: string | null; email: string; role?: string; position?: string }
 
 export function ClientsList() {
     const router = useRouter()
@@ -199,25 +198,40 @@ export function ClientsList() {
                         </div>
                         <div className="grid gap-2">
                             <Label>Predvolený tím (Default Assignees)</Label>
-                            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-[180px] overflow-y-auto bg-slate-50/50">
-                                {usersList.length === 0 ? (
-                                    <p className="text-xs text-slate-400 col-span-2 text-center italic">Žiadni používatelia v agentúre.</p>
-                                ) : (
-                                    usersList.map(u => (
-                                        <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
-                                            <Checkbox
-                                                checked={selectedUserIds.includes(u.id)}
-                                                onCheckedChange={() => toggleUser(u.id)}
-                                            />
-                                            <Label className="text-xs font-normal cursor-pointer" onClick={() => toggleUser(u.id)}>
-                                                {u.name || u.email}
-                                            </Label>
+                            {/* Group users by role (or position) */}
+                            {(() => {
+                                // Build a map of role -> users
+                                const grouped: Record<string, UserOption[]> = {};
+                                usersList.forEach((u) => {
+                                    const groupKey = u.role || u.position || 'Other';
+                                    if (!grouped[groupKey]) grouped[groupKey] = [];
+                                    grouped[groupKey].push(u);
+                                });
+                                // Render groups
+                                return Object.entries(grouped).map(([group, users]) => (
+                                    <div key={group} className="mb-2">
+                                        <div className="font-medium text-sm text-slate-600 mb-1">{group}</div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {users.map((u) => (
+                                                <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
+                                                    <Checkbox
+                                                        checked={selectedUserIds.includes(u.id)}
+                                                        onCheckedChange={() => toggleUser(u.id)}
+                                                    />
+                                                    <Label
+                                                        className="text-xs font-normal cursor-pointer"
+                                                        onClick={() => toggleUser(u.id)}
+                                                    >
+                                                        {u.name || u.email}{u.position ? ` (${u.position})` : ''}
+                                                    </Label>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                            <p className="text-[10px] text-slate-500">Títo ľudia budú automaticky priradení k novým jobom tohto klienta.</p>
+                                    </div>
+                                ));
+                            })()}
                         </div>
+                        <p className="text-[10px] text-slate-500">Títo ľudia budú automaticky priradení k novým jobom tohto klienta.</p>
                     </div>
                     <DialogFooter><Button onClick={handleSave} disabled={submitting || !newName} className="bg-slate-900 text-white">{submitting ? <Loader2 className="animate-spin" /> : "Uložiť"}</Button></DialogFooter>
                 </DialogContent>
