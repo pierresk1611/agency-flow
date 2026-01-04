@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest) {
         vatId,
         address,
         email,
-        internalAccountId,
+        internalApproverIds,
         trialEndsAt,
         isSuspended,
     } = await req.json();
@@ -51,7 +51,10 @@ export async function PATCH(req: NextRequest) {
                 vatId,
                 address,
                 email,
-                internalAccountId: internalAccountId || null,
+                internalApprovers: {
+                    set: [], // Clear existing relations
+                    connect: internalApproverIds?.map((id: string) => ({ id })) || [],
+                },
                 // Only Superadmin can change trial/suspension status usually, but we'll allow it generally for now based on requirements or if passed
                 ...(session.role === "SUPERADMIN" && {
                     trialEndsAt: trialEndsAt ? new Date(trialEndsAt) : undefined,

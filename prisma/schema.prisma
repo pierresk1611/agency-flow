@@ -66,8 +66,8 @@ model Agency {
   isSuspended       Boolean  @default(false)
   
   // Nastavenia schvaľovania (vzťah na Usera)
-  internalAccountId String?
-  internalAccount   User?   @relation("InternalAccount", fields: [internalAccountId], references: [id])
+  // Nastavenia schvaľovania (vzťah na Usera) - M:N
+  internalApprovers User[] @relation("AgencyInternalApprovers")
 }
 
 model AgencyScope {
@@ -115,7 +115,7 @@ model User {
   requestsReceived ReassignmentRequest[] @relation("TargetUser")
 
   // Agency Management
-  managedAgency    Agency[]              @relation("InternalAccount")
+  approverForAgencies Agency[]           @relation("AgencyInternalApprovers")
   createdCampaigns Campaign[]            @relation("CreatedCampaigns")
 }
 
