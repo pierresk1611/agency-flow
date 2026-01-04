@@ -21,10 +21,16 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
   const [budget, setBudget] = useState('0')
   const [externalLink, setExternalLink] = useState('')
 
+  // Sync selection with defaults when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedCreatives(defaultAssigneeIds)
+    }
+  }, [open, defaultAssigneeIds])
+
   // Načítanie kreatívcov pri otvorení
   useEffect(() => {
     if (open && agencyId) {
-      // Fetch all users of the agency (not only creatives)
       fetch(`/api/agency/users`)
         .then(res => res.json())
         .then(data => {
@@ -33,14 +39,6 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
           }
         })
         .catch(err => console.error(err));
-
-      // Reset to default when opening, if empty (or always?)
-      // Better: if opening specifically new, usually we want to reset.
-      // But if we want to PERSIST user selection if they close and reopen?
-      // Let's just set it if it's empty.
-      if (selectedCreatives.length === 0 && defaultAssigneeIds.length > 0) {
-        setSelectedCreatives(defaultAssigneeIds);
-      }
     }
   }, [open, agencyId])
 

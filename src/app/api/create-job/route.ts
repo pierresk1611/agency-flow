@@ -8,7 +8,8 @@ export async function POST(request: Request) {
     if (!session)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { title, deadline, budget, campaignId, externalLink } = await request.json()
+    const body = await request.json()
+    const { title, deadline, budget, campaignId, externalLink, creativeIds } = body
 
     // Overenie povinných polí
     if (!title || !deadline || !campaignId) {
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Priprav priradenia
-    const assignmentsToCreate = [
+    const assignmentsToCreate: any[] = [
       // Creator je vždy ACCOUNT
       { userId: session.userId, roleOnJob: 'ACCOUNT' }
     ]
@@ -43,6 +44,19 @@ export async function POST(request: Request) {
       assignmentsToCreate.push({
         userId: trafficUser.id,
         roleOnJob: 'TRAFFIC'
+      })
+    }
+
+    // 3. Pridaj kreatívcov (ak sú poslaní a ešte nie sú v zozname)
+    if (Array.isArray(creativeIds)) {
+      creativeIds.forEach(cId => {
+        const isAlreadyAdded = assignmentsToCreate.some(a => a.userId === cId)
+        if (!isAlreadyAdded) {
+          assignmentsToCreate.push({
+            userId: cId,
+            roleOnJob: 'CREATIVE'
+          })
+        }
       })
     }
 
