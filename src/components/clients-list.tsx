@@ -12,11 +12,14 @@ import { Badge } from '@/components/ui/badge'
 import { Building, Plus, Loader2, ArrowRight, Trash2, RotateCcw, Pencil } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation' // <--- IMPORT usePathname
 import Link from 'next/link'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronsUpDown } from 'lucide-react'
 
 interface Client {
-    id: string; name: string; priority: number; scope: string | null; _count: { campaigns: number }
+    id: string; name: string; priority: number; scope: string | null; _count: { campaigns: number }; defaultAssignees?: { id: string, name: string | null, email: string }[]
 }
 interface ScopeOption { id: string; name: string }
+interface UserOption { id: string; name: string | null; email: string }
 
 export function ClientsList() {
     const router = useRouter()
@@ -26,6 +29,7 @@ export function ClientsList() {
 
     const [clients, setClients] = useState<Client[]>([])
     const [scopesList, setScopesList] = useState<ScopeOption[]>([])
+    const [usersList, setUsersList] = useState<UserOption[]>([])
     const [loading, setLoading] = useState(true)
 
     // Stavy pre Dialog
@@ -36,6 +40,7 @@ export function ClientsList() {
     const [newName, setNewName] = useState('')
     const [newPriority, setNewPriority] = useState('3')
     const [selectedScope, setSelectedScope] = useState<string[]>([])
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
     const [isOtherSelected, setIsOtherSelected] = useState(false)
     const [customScope, setCustomScope] = useState('')
     const [submitting, setSubmitting] = useState(false)
@@ -45,9 +50,11 @@ export function ClientsList() {
         setLoading(true)
         try {
             const query = showArchived ? '?archived=true' : ''
-            const [cRes, sRes] = await Promise.all([
+            const [cRes, sRes, uRes] = await Promise.all([
                 fetch(`/api/clients${query}`),
-                fetch('/api/agency/scopes')
+                fetch(`/api/clients${query}`),
+                fetch('/api/agency/scopes'),
+                fetch('/api/settings/users') // Assuming this endpoint returns all agency users
             ])
 
             if (cRes.ok) {
@@ -58,6 +65,10 @@ export function ClientsList() {
                 const sData = await sRes.json()
                 setScopesList(Array.isArray(sData) ? sData : [])
             }
+            if (uRes.ok) {
+                const uData = await uRes.json()
+                setUsersList(Array.isArray(uData) ? uData : [])
+            }
         } catch (e) { console.error(e) }
         finally { setLoading(false) }
     }
@@ -65,7 +76,7 @@ export function ClientsList() {
     useEffect(() => { refreshData() }, [showArchived])
 
     const openNewDialog = () => {
-        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope(''); setError(''); setOpen(true)
+        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setSelectedUserIds([]); setIsOtherSelected(false); setCustomScope(''); setError(''); setOpen(true)
     }
 
     const openEditDialog = (client: Client) => {
@@ -77,6 +88,7 @@ export function ClientsList() {
         const standard = currentScopes.filter(s => standardScopeNames.includes(s))
         const custom = currentScopes.filter(s => !standardScopeNames.includes(s))
         setSelectedScope(standard)
+        setSelectedUserIds(client.defaultAssignees?.map(u => u.id) || [])
         if (custom.length > 0) { setIsOtherSelected(true); setCustomScope(custom.join(', ')) }
         else { setIsOtherSelected(false); setCustomScope('') }
         setOpen(true)
@@ -84,6 +96,9 @@ export function ClientsList() {
 
     const toggleScope = (scopeName: string) => {
         setSelectedScope(prev => prev.includes(scopeName) ? prev.filter(s => s !== scopeName) : [...prev, scopeName])
+    }
+    const toggleUser = (userId: string) => {
+        setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId])
     }
 
     const handleSave = async () => {
@@ -103,7 +118,7 @@ export function ClientsList() {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, priority: newPriority, scope: finalScopeList })
+                body: JSON.stringify({ name: newName, priority: newPriority, scope: finalScopeList, defaultAssigneeIds: selectedUserIds })
             })
 
             if (res.ok) {
@@ -182,6 +197,31 @@ export function ClientsList() {
                                 <div className="col-span-2 pt-2 border-t"><Checkbox checked={isOtherSelected} onCheckedChange={(c) => setIsOtherSelected(!!c)} /><label className="ml-2 text-xs font-bold text-blue-700">+ Iné</label></div>
                             </div>
                             {isOtherSelected && <Input value={customScope} onChange={e => setCustomScope(e.target.value)} className="mt-2 bg-blue-50" placeholder="Zadajte..." />}
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Predvolený tím (Default Assignees)</Label>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="justify-between font-normal">
+                                        {selectedUserIds.length === 0 ? "Vyberte členov tímu..." : `${selectedUserIds.length} vybraných`}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-[300px] max-h-[300px] overflow-y-auto">
+                                    <DropdownMenuLabel>Členovia agentúry</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {usersList.map(u => (
+                                        <DropdownMenuCheckboxItem
+                                            key={u.id}
+                                            checked={selectedUserIds.includes(u.id)}
+                                            onCheckedChange={() => toggleUser(u.id)}
+                                        >
+                                            {u.name || u.email}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <p className="text-[10px] text-slate-500">Títo ľudia budú automaticky priradení k novým jobom tohto klienta.</p>
                         </div>
                     </div>
                     <DialogFooter><Button onClick={handleSave} disabled={submitting || !newName} className="bg-slate-900 text-white">{submitting ? <Loader2 className="animate-spin" /> : "Uložiť"}</Button></DialogFooter>

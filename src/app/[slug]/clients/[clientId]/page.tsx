@@ -37,7 +37,8 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
           },
           _count: { select: { jobs: true } }
         }
-      }
+      },
+      defaultAssignees: { select: { id: true } }
     }
   })
 
@@ -95,7 +96,7 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                         <Briefcase className="h-4 w-4 text-blue-600" />
                         <h4 className="font-bold text-slate-900">{campaign.name}</h4>
                       </div>
-                      {!isCreative && <AddJobDialog campaignId={campaign.id} agencyId={client.agencyId} />}
+                      {!isCreative && <AddJobDialog campaignId={campaign.id} agencyId={client.agencyId} defaultAssigneeIds={client.defaultAssignees.map(u => u.id)} />}
                     </div>
                     <div className="divide-y">
                       {campaign.jobs.length === 0 ? (

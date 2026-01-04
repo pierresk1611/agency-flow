@@ -9,12 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox" // Pridanie Checkboxu
 import { Plus, Loader2 } from 'lucide-react'
 
-export function AddJobDialog({ campaignId, agencyId }: { campaignId: string, agencyId?: string }) {
+export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: { campaignId: string, agencyId?: string, defaultAssigneeIds?: string[] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [creatives, setCreatives] = useState<any[]>([]) // Načítaní kreatívci
-  const [selectedCreatives, setSelectedCreatives] = useState<string[]>([]) // Vybrané IDčka
+  const [selectedCreatives, setSelectedCreatives] = useState<string[]>(defaultAssigneeIds) // Vybrané IDčka
 
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
@@ -28,6 +28,14 @@ export function AddJobDialog({ campaignId, agencyId }: { campaignId: string, age
         .then(res => res.json())
         .then(data => setCreatives(data))
         .catch(err => console.error(err))
+
+      // Reset to default when opening, if empty (or always?)
+      // Better: if opening specifically new, usually we want to reset.
+      // But if we want to PERSIST user selection if they close and reopen?
+      // Let's just set it if it's empty.
+      if (selectedCreatives.length === 0 && defaultAssigneeIds.length > 0) {
+        setSelectedCreatives(defaultAssigneeIds)
+      }
     }
   }, [open, agencyId])
 
@@ -61,7 +69,9 @@ export function AddJobDialog({ campaignId, agencyId }: { campaignId: string, age
         setDeadline('')
         setBudget('0')
         setExternalLink('')
-        setSelectedCreatives([])
+        setBudget('0')
+        setExternalLink('')
+        setSelectedCreatives(defaultAssigneeIds) // Reset to default
         router.refresh()
       } else {
         const err = await res.json()

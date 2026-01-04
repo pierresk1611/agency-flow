@@ -44,6 +44,9 @@ export async function GET(request: Request) {
       include: {
         _count: {
           select: { campaigns: true }
+        },
+        defaultAssignees: {
+          select: { id: true, name: true, email: true }
         }
       }
     })
@@ -66,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, priority, scope } = body
+    const { name, priority, scope, defaultAssigneeIds } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -86,7 +89,11 @@ export async function POST(request: Request) {
         agencyId: session.agencyId,
         name,
         priority: parseInt(priority) || 3,
-        scope: Array.isArray(scope) ? scope.join(', ') : scope
+        priority: parseInt(priority) || 3,
+        scope: Array.isArray(scope) ? scope.join(', ') : scope,
+        defaultAssignees: {
+          connect: defaultAssigneeIds?.map((id: string) => ({ id })) || []
+        }
       }
     })
 
