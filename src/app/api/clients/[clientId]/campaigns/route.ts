@@ -24,7 +24,10 @@ export async function POST(
     const client = await prisma.client.findUnique({
       where: { id: params.clientId }
     })
-    if (!client || client.agencyId !== session.agencyId) {
+
+    const isSuperAdmin = session.role === 'SUPERADMIN';
+
+    if (!client || (!isSuperAdmin && client.agencyId !== session.agencyId)) {
       return NextResponse.json({ error: 'Klient nenájdený alebo mimo agentúry' }, { status: 404 })
     }
 

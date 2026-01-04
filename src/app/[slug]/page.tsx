@@ -11,7 +11,6 @@ import { NotificationWidget } from '@/components/dashboard/notification-widget'
 // Grafy
 import { BudgetChart } from "@/components/charts/budget-chart"
 import { WorkloadChart } from "@/components/charts/workload-chart"
-import { TimesheetStatusChart } from "@/components/charts/timesheet-status-chart"
 import { JobStatusChart } from "@/components/charts/job-status-chart"
 
 export const dynamic = 'force-dynamic'
@@ -290,7 +289,7 @@ export default async function DashboardPage({ params }: { params: { slug: string
           <Card className="lg:col-span-12 shadow-xl border-none ring-1 ring-slate-200 order-1">
             <CardHeader className="border-b bg-slate-50/50 py-3">
               <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                <Euro className="h-4 w-4" /> Finančný stav projektov (Top 5)
+                <Euro className="h-4 w-4" /> Finančný stav projektov
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
@@ -299,45 +298,55 @@ export default async function DashboardPage({ params }: { params: { slug: string
           </Card>
         )}
 
-        <div className={`lg:col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6 order-2`}>
-          <Card className="shadow-xl border-none ring-1 ring-slate-200">
-            <CardHeader className="border-b bg-slate-50/50 py-3">
-              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                <ListChecks className="h-4 w-4" /> Stav úloh
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <JobStatusChart data={jobStatusData} />
-              <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
-                <div className="bg-red-50 p-2 rounded-lg text-red-700 flex flex-col items-center justify-center">
-                  <span className="font-bold text-[10px] uppercase opacity-70">TODO</span>
-                  <span className="font-black text-lg">{statusCounts.TODO}</span>
-                </div>
-                <div className="bg-blue-50 p-2 rounded-lg text-blue-700 flex flex-col items-center justify-center">
-                  <span className="font-bold text-[10px] uppercase opacity-70">WORK</span>
-                  <span className="font-black text-lg">{statusCounts.IN_PROGRESS}</span>
-                </div>
-                <div className="bg-green-50 p-2 rounded-lg text-green-700 flex flex-col items-center justify-center">
-                  <span className="font-bold text-[10px] uppercase opacity-70">DONE</span>
-                  <span className="font-black text-lg">{statusCounts.DONE}</span>
+        <Card className="lg:col-span-12 shadow-xl border-none ring-1 ring-slate-200 order-2">
+          <CardHeader className="border-b bg-slate-50/50 py-3">
+            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
+              <ListChecks className="h-4 w-4" /> Stav úloh
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <JobStatusChart data={jobStatusData} />
+                <div className="grid grid-cols-3 gap-2 w-full text-center mt-6">
+                  <div className="bg-red-50 p-2 rounded-lg text-red-700 flex flex-col items-center justify-center">
+                    <span className="font-bold text-[10px] uppercase opacity-70">TODO</span>
+                    <span className="font-black text-lg">{statusCounts.TODO}</span>
+                  </div>
+                  <div className="bg-blue-50 p-2 rounded-lg text-blue-700 flex flex-col items-center justify-center">
+                    <span className="font-bold text-[10px] uppercase opacity-70">WORK</span>
+                    <span className="font-black text-lg">{statusCounts.IN_PROGRESS}</span>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded-lg text-green-700 flex flex-col items-center justify-center">
+                    <span className="font-bold text-[10px] uppercase opacity-70">DONE</span>
+                    <span className="font-black text-lg">{statusCounts.DONE}</span>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {!isCreative && (
-            <Card className="shadow-xl border-none ring-1 ring-slate-200">
-              <CardHeader className="border-b bg-slate-50/50 py-3">
-                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500">
-                  <CheckCircle2 className="h-4 w-4" /> Schvaľovanie výkazov
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <TimesheetStatusChart data={tsData} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Projekty po Deadline ({overdue.length})</h3>
+                <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                  {overdue.map(j => (
+                    <Link href={`/${params.slug}/jobs/${j.id}`} key={j.id} className="block p-3 bg-red-50 hover:bg-red-100 rounded-lg transition border border-red-200">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-red-900 truncate">{j.title}</p>
+                          <p className="text-[10px] text-red-600 truncate mt-0.5">{j.campaign?.client?.name}</p>
+                        </div>
+                        <span className="text-[10px] font-bold text-red-700 bg-red-200 px-2 py-1 rounded whitespace-nowrap">
+                          {j.deadline ? format(new Date(j.deadline), 'd.M.yyyy') : '—'}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                  {overdue.length === 0 && (
+                    <p className="text-center text-xs text-slate-400 italic py-8">Žiadne projekty po deadline.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {!isCreative && (
           <Card className="lg:col-span-12 shadow-xl border-none ring-1 ring-slate-200 order-3">

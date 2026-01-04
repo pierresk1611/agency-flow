@@ -15,6 +15,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Názov, termín a kampaň sú povinné' }, { status: 400 })
     }
 
+    const parsedDate = new Date(deadline)
+    if (isNaN(parsedDate.getTime())) {
+      console.error("Invalid date format:", deadline)
+      return NextResponse.json({ error: 'Neplatný formát dátumu' }, { status: 400 })
+    }
+
     // 1. Nájdi Traffic Managera alebo Admina pre automatické priradenie
     let trafficUser = await prisma.user.findFirst({
       where: { agencyId: session.agencyId, role: 'TRAFFIC', active: true }

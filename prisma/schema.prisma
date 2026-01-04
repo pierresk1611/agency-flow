@@ -65,7 +65,7 @@ model Agency {
   trialReminderSent Boolean  @default(false)
   isSuspended       Boolean  @default(false)
   
-  // Nastavenia schvaľovania
+  // Nastavenia schvaľovania (vzťah na Usera)
   internalAccountId String?
   internalAccount   User?   @relation("InternalAccount", fields: [internalAccountId], references: [id])
 }
@@ -116,6 +116,7 @@ model User {
 
   // Agency Management
   managedAgency    Agency[]              @relation("InternalAccount")
+  createdCampaigns Campaign[]            @relation("CreatedCampaigns")
 }
 
 model Client {
@@ -165,6 +166,9 @@ model Campaign {
   description String?
   jobs        Job[]
   archivedAt  DateTime?
+
+  createdById String?
+  createdBy   User?   @relation("CreatedCampaigns", fields: [createdById], references: [id])
 }
 
 model Job {

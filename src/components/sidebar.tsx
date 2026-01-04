@@ -1,68 +1,120 @@
-'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Briefcase, Clock, Users, LogOut, TrendingUp, Trophy, Building2, CalendarDays, CheckSquare } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+"use client";
 
-export function Sidebar({ slug, role }: { slug: string; role: string }) {
-  const pathname = usePathname()
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  CalendarDays,
+  Settings,
+  PieChart,
+  LogOut,
+  UserCircle
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 
-  const routes = [
-    { label: 'Dashboard', icon: LayoutDashboard, href: `/${slug}`, color: 'text-sky-500' },
-    { label: 'Plánovač', icon: CalendarDays, href: `/${slug}/planner`, color: 'text-emerald-500' },
-    { label: 'Klienti', icon: Building2, href: `/${slug}/clients`, color: 'text-blue-500' },
-    { label: 'Projekty & Tasky', icon: CheckSquare, href: `/${slug}/jobs`, color: 'text-violet-500' },
-    { label: 'Traffic / Kapacita', icon: TrendingUp, href: `/${slug}/traffic`, color: 'text-orange-500' },
-    { label: 'Timesheety', icon: Clock, href: `/${slug}/timesheets`, color: 'text-pink-700' },
-  ]
+// Use simple Cookie delete for signOut if custom
+function deleteCookie(name: string) {
+  document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
 
-  // ADMIN VIEW: ADMIN, ACCOUNT, TRAFFIC a SUPERADMIN vidia viac možností
-  if (role !== 'CREATIVE') {
-    routes.push({ label: 'Tendre & Pitching', icon: Trophy, href: `/${slug}/tenders`, color: 'text-yellow-400' })
-    routes.push({ label: 'Administrácia', icon: Users, href: `/${slug}/agency`, color: 'text-slate-400' })
-  }
+interface SidebarProps {
+  slug: string;
+  role: string;
+}
+
+export function Sidebar({ slug, role }: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    deleteCookie("token");
+    router.refresh();
+    router.push("/login");
+  };
+
+  const links = [
+    {
+      href: `/${slug}`,
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      roles: ["SUPERADMIN", "ADMIN", "ACCOUNT", "CREATIVE", "TRAFFIC"],
+    },
+    {
+      href: `/${slug}/projects`,
+      label: "Projekty",
+      icon: Briefcase,
+      roles: ["SUPERADMIN", "ADMIN", "ACCOUNT", "CREATIVE", "TRAFFIC"],
+    },
+    {
+      href: `/${slug}/planner`,
+      label: "Plánovač",
+      icon: CalendarDays,
+      roles: ["SUPERADMIN", "ADMIN", "ACCOUNT", "TRAFFIC"],
+    },
+    {
+      href: `/${slug}/financials`,
+      label: "Financie",
+      icon: PieChart,
+      roles: ["SUPERADMIN", "ADMIN", "ACCOUNT"],
+    },
+    {
+      href: `/${slug}/settings`,
+      label: "Nastavenia",
+      icon: Settings,
+      roles: ["SUPERADMIN", "ADMIN"],
+    },
+  ];
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-slate-900 text-white border-r border-white/10 shadow-xl">
-      <div className="px-3 py-2 flex-1">
-        <Link href={`/${slug}`} className="flex items-center pl-3 mb-10 hover:opacity-80 transition">
-          <h1 className="text-xl font-bold italic">
-            Agency<span className="text-blue-500 text-2xl">.</span>Flow
-          </h1>
-        </Link>
-        <div className="space-y-1">
-          {routes.map((route) => {
-            const isActive = pathname === route.href || pathname.startsWith(route.href + '/');
-
-            return (
-              <Link
-                key={route.href}
-                href={route.href}
-                className={cn(
-                  'text-sm group flex p-3 w-full justify-start font-bold cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition-all',
-                  isActive ? 'text-white bg-white/20 shadow-sm' : 'text-zinc-400'
-                )}
-              >
-                <div className="flex items-center flex-1">
-                  <route.icon className={cn('h-5 w-5 mr-3', route.color)} />
-                  {route.label}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+    <div className="flex flex-col h-full border-r bg-background w-64">
+      <div className="p-6">
+        <h1 className="text-2xl font-bold text-primary">AgencyFlow</h1>
+        <p className="text-xs text-muted-foreground mt-1">Full Version</p>
       </div>
-      <div className="px-3 py-4 border-t border-white/10">
-        <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 group"
-          onClick={() => {
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-            window.location.href = "/login"
-          }}>
-          <LogOut className="h-5 w-5 mr-3 group-hover:text-red-400 transition-colors" /> Odhlásiť sa
-        </Button>
+
+      <nav className="flex-1 px-4 space-y-2">
+        {links.map((link) => {
+          if (role && !link.roles.includes(role)) return null;
+
+          const isActive = pathname === link.href;
+
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <link.icon className="h-4 w-4" />
+              {link.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 mt-auto border-t space-y-2">
+        <div className="flex items-center gap-3 px-3 py-2 text-xs text-muted-foreground">
+          <UserCircle className="h-4 w-4" />
+          <div className="flex flex-col">
+            <span className="font-medium text-foreground">{role}</span>
+          </div>
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-red-500 hover:bg-red-50 w-full transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Odhlásiť sa
+        </button>
       </div>
     </div>
-  )
+  );
 }
