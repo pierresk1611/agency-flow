@@ -70,7 +70,7 @@ export function Sidebar({ slug, role }: SidebarProps) {
   ];
 
   return (
-    <div className="flex flex-col h-full border-r bg-background w-64">
+    <div className="flex flex-col h-full border-r bg-background w-full">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-primary">AgencyFlow</h1>
         <p className="text-xs text-muted-foreground mt-1">Full Version</p>
