@@ -25,16 +25,19 @@ export async function PATCH(
             return NextResponse.json({ error: 'Client not found' }, { status: 404 })
         }
 
+        const updateData: any = {}
+        if (name !== undefined) updateData.name = name
+        if (priority !== undefined) updateData.priority = parseInt(priority)
+        if (scope !== undefined) updateData.scope = Array.isArray(scope) ? scope.join(', ') : scope
+        if (defaultAssigneeIds !== undefined) {
+            updateData.defaultAssignees = {
+                set: defaultAssigneeIds.map((id: string) => ({ id }))
+            }
+        }
+
         const updatedClient = await prisma.client.update({
             where: { id: clientId },
-            data: {
-                name,
-                priority: parseInt(priority),
-                scope: Array.isArray(scope) ? scope.join(', ') : scope,
-                defaultAssignees: {
-                    set: defaultAssigneeIds ? defaultAssigneeIds.map((id: string) => ({ id })) : undefined
-                }
-            }
+            data: updateData
         })
 
         return NextResponse.json(updatedClient)
