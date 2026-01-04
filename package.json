@@ -33,6 +33,7 @@
     "lucide-react": "^0.350.0",
     "next": "^14.2.23",
     "next-auth": "^4.24.13",
+    "railway": "^2.0.17",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^3.6.0",
@@ -41,6 +42,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@railway/cli": "^4.16.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.0",

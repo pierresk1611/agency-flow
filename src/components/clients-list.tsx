@@ -239,15 +239,17 @@ export function ClientsList() {
 
             <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-slate-50"><TableRow><TableHead>Klient</TableHead><TableHead>Priorita</TableHead><TableHead>Rozsah</TableHead><TableHead className="text-right">Akcia</TableHead></TableRow></TableHeader>
+                    <TableHeader className="bg-slate-50"><TableRow><TableHead>Klient</TableHead><TableHead>Priorita</TableHead><TableHead>Rozsah</TableHead>                    <TableHead>Tím</TableHead>
+                        <TableHead className="text-right">Akcia</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {loading ? <TableRow><TableCell colSpan={4} className="text-center h-24">Načítavam...</TableCell></TableRow> :
-                            clients.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center h-24 text-muted-foreground">{showArchived ? "Archív je prázdny." : "Žiadni klienti."}</TableCell></TableRow> :
+                        {loading ? <TableRow><TableCell colSpan={6} className="text-center h-24">Načítavam...</TableCell></TableRow> :
+                            clients.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground">{showArchived ? "Archív je prázdny." : "Žiadni klienti."}</TableCell></TableRow> :
                                 clients.map(client => (
                                     <TableRow key={client.id} className={showArchived ? "bg-slate-50 opacity-75" : "hover:bg-slate-50/50"}>
                                         <TableCell className="font-semibold text-slate-700 flex gap-2"><Building className="h-4 w-4 text-slate-400" />{client.name}</TableCell>
                                         <TableCell>{getPriorityBadge(client.priority)}</TableCell>
                                         <TableCell><div className="flex flex-wrap gap-1">{client.scope?.split(',').map(s => <span key={s} className="text-[10px] bg-slate-100 px-1 rounded">{s.trim()}</span>)}</div></TableCell>
+                                        <TableCell>{client.defaultAssignees?.map(u => u.name || u.email).join(', ') || '—'}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end items-center gap-2">
                                                 {showArchived ? (
