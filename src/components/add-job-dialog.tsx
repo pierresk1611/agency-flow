@@ -25,9 +25,13 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
   useEffect(() => {
     if (open && agencyId) {
       // Fetch all users of the agency (not only creatives)
-      fetch(`/api/settings/users`)
+      fetch(`/api/agency/users`)
         .then(res => res.json())
-        .then(data => setCreatives(data))
+        .then(data => {
+          if (Array.isArray(data)) {
+            setCreatives(data)
+          }
+        })
         .catch(err => console.error(err));
 
       // Reset to default when opening, if empty (or always?)

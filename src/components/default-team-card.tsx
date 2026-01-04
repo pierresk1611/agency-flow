@@ -5,16 +5,25 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Loader2 } from 'lucide-react'
 
 export default function DefaultTeamCard({ clientId, initialAssigneeIds }: { clientId: string; initialAssigneeIds: string[] }) {
     const [usersList, setUsersList] = useState<Array<{ id: string; name: string | null; email: string; role?: string; position?: string }>>([])
     const [selectedUserIds, setSelectedUserIds] = useState<string[]>(initialAssigneeIds)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch('/api/settings/users')
+        fetch('/api/agency/users')
             .then(res => res.json())
-            .then(data => setUsersList(data))
+            .then(data => {
+                if (Array.isArray(data)) {
+                    setUsersList(data)
+                } else {
+                    console.error('Expected array of users, got:', data)
+                }
+            })
             .catch(err => console.error(err))
+            .finally(() => setLoading(false))
     }, [])
 
     const toggleUser = (userId: string) => {
@@ -48,29 +57,37 @@ export default function DefaultTeamCard({ clientId, initialAssigneeIds }: { clie
             </CardHeader>
             <CardContent className="pt-4">
                 <div className="grid gap-2">
-                    {(() => {
-                        const grouped: Record<string, Array<(typeof usersList)[0]>> = {}
-                        usersList.forEach(u => {
-                            const key = u.role || u.position || 'Ostatné'
-                            if (!grouped[key]) grouped[key] = []
-                            grouped[key].push(u)
-                        })
-                        return Object.entries(grouped).map(([group, users]) => (
-                            <div key={group} className="mb-4">
-                                <div className="font-bold text-[10px] uppercase text-slate-400 mb-2 tracking-wider">{group}</div>
-                                <div className="grid grid-cols-1 gap-1">
-                                    {users.map(u => (
-                                        <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-slate-50 rounded transition-colors">
-                                            <Checkbox id={u.id} checked={selectedUserIds.includes(u.id)} onCheckedChange={() => toggleUser(u.id)} />
-                                            <Label htmlFor={u.id} className="text-xs cursor-pointer font-medium text-slate-700">
-                                                {u.name || u.email}{u.position ? ` (${u.position})` : ''}
-                                            </Label>
-                                        </div>
-                                    ))}
+                    {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
+                        </div>
+                    ) : usersList.length === 0 ? (
+                        <p className="text-xs text-center py-6 text-slate-400 italic">Nenašli sa žiadni používatelia.</p>
+                    ) : (
+                        (() => {
+                            const grouped: Record<string, Array<(typeof usersList)[0]>> = {}
+                            usersList.forEach(u => {
+                                const key = u.role || u.position || 'Ostatné'
+                                if (!grouped[key]) grouped[key] = []
+                                grouped[key].push(u)
+                            })
+                            return Object.entries(grouped).map(([group, users]) => (
+                                <div key={group} className="mb-4">
+                                    <div className="font-bold text-[10px] uppercase text-slate-400 mb-2 tracking-wider">{group}</div>
+                                    <div className="grid grid-cols-1 gap-1">
+                                        {users.map(u => (
+                                            <div key={u.id} className="flex items-center space-x-2 p-1 hover:bg-slate-50 rounded transition-colors">
+                                                <Checkbox id={u.id} checked={selectedUserIds.includes(u.id)} onCheckedChange={() => toggleUser(u.id)} />
+                                                <Label htmlFor={u.id} className="text-xs cursor-pointer font-medium text-slate-700">
+                                                    {u.name || u.email}{u.position ? ` (${u.position})` : ''}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))
-                    })()}
+                            ))
+                        })()
+                    )}
                 </div>
                 <Button onClick={saveDefaultTeam} className="mt-4 bg-slate-900 text-white" disabled={selectedUserIds.length === 0 && initialAssigneeIds.length === 0}>Uložiť tím</Button>
             </CardContent>
