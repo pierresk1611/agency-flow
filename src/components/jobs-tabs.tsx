@@ -142,7 +142,8 @@ export function JobsTabs({
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
-                                        ))
+                                        );
+                                    })
                                 )}
                             </TableBody>
                         </Table>
