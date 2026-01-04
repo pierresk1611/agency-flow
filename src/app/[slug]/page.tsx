@@ -41,7 +41,19 @@ export default async function DashboardPage({ params }: { params: { slug: string
 
   // 2️⃣ ANALYTIKA: ACTIVE, OVERDUE, WARNING
   const activeCount = jobs.filter(j => j.status !== 'DONE').length
-  const overdue = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline < now)
+  const overdue = jobs
+    .filter(j => j.status !== 'DONE' && j.deadline && j.deadline < now)
+    .sort((a, b) => {
+      // 1. By Deadline (ASC) - oldest first
+      const dateA = new Date(a.deadline).getTime()
+      const dateB = new Date(b.deadline).getTime()
+      if (dateA !== dateB) return dateA - dateB
+
+      // 2. By Client Priority (ASC) - assuming 1 is Highest
+      const priorityA = a.campaign?.client?.priority || 99
+      const priorityB = b.campaign?.client?.priority || 99
+      return priorityA - priorityB
+    })
   const warning = jobs.filter(j => j.status !== 'DONE' && j.deadline && j.deadline >= now && j.deadline <= criticalThreshold)
 
   // 3️⃣ BUDGET DATA - Top 5 Jobs by Budget desc
