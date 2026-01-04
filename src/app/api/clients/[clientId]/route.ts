@@ -14,7 +14,7 @@ export async function PATCH(
 
         const { clientId } = params
         const body = await request.json()
-        const { name, priority, scope, defaultAssigneeIds } = body
+        const { name, priority, scope, defaultAssigneeIds, companyId, vatId, billingAddress, importantNote } = body
 
         // Validate ownership
         const existing = await prisma.client.findUnique({
@@ -29,6 +29,11 @@ export async function PATCH(
         if (name !== undefined) updateData.name = name
         if (priority !== undefined) updateData.priority = parseInt(priority)
         if (scope !== undefined) updateData.scope = Array.isArray(scope) ? scope.join(', ') : scope
+        if (companyId !== undefined) updateData.companyId = companyId
+        if (vatId !== undefined) updateData.vatId = vatId
+        if (billingAddress !== undefined) updateData.billingAddress = billingAddress
+        if (importantNote !== undefined) updateData.importantNote = importantNote
+
         if (defaultAssigneeIds !== undefined) {
             updateData.defaultAssignees = {
                 set: defaultAssigneeIds.map((id: string) => ({ id }))

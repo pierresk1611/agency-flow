@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, priority, scope, defaultAssigneeIds } = body
+    const { name, priority, scope, defaultAssigneeIds, companyId, vatId, billingAddress, importantNote } = body
 
     if (!name) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
@@ -89,8 +89,11 @@ export async function POST(request: Request) {
         agencyId: session.agencyId,
         name,
         priority: parseInt(priority) || 3,
-        priority: parseInt(priority) || 3,
         scope: Array.isArray(scope) ? scope.join(', ') : scope,
+        companyId,
+        vatId,
+        billingAddress,
+        importantNote,
         defaultAssignees: {
           connect: defaultAssigneeIds?.map((id: string) => ({ id })) || []
         }

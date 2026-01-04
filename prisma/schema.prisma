@@ -128,6 +128,14 @@ model Client {
   priority   Int 
   scope      String?  
   
+  // --- NOVÉ POLIA (Fakturácia & Info) ---
+  companyId      String?   // IČO
+  vatId          String?   // DIČ / IČ DPH
+  billingAddress String?  // Fakturačná adresa
+  
+  importantNote  String?   // "Pokec" / Upozornenie pre tím
+  // -------------------------------------
+
   contacts   ContactPerson[]
   files      File[]
   campaigns  Campaign[]

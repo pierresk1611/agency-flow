@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { notFound, redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ArrowLeft, Briefcase, FileText, Download } from 'lucide-react'
+import { ArrowLeft, Briefcase, FileText, Download, AlertTriangle, Building } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { getSession } from '@/lib/session'
@@ -45,8 +45,23 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
 
   if (!client) return notFound()
 
+  const canSeeBilling = ['ADMIN', 'ACCOUNT', 'TRAFFIC'].includes(session.role)
+
   return (
     <div className="space-y-6 pb-10">
+      {/* ALERT: IMPORTANT NOTE */}
+      {client.importantNote && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 p-4 shadow-sm rounded-r-lg flex items-start gap-3">
+          <div className="bg-amber-200 p-1.5 rounded-full">
+            <AlertTriangle className="h-5 w-5 text-amber-700" />
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase text-amber-800 tracking-widest mb-1">Dôležité upozornenie pre tím</p>
+            <p className="text-sm font-medium text-amber-900 leading-relaxed whitespace-pre-wrap">{client.importantNote}</p>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -148,6 +163,37 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
             </CardContent>
           </Card>
 
+          {/* FAKTURAČNÉ ÚDAJE */}
+          {canSeeBilling && (client.companyId || client.vatId || client.billingAddress) && (
+            <Card className="shadow-sm border-slate-200">
+              <CardHeader className="border-b py-3 bg-slate-50/50">
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                  <Building className="h-4 w-4" /> Fakturačné údaje
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-3">
+                {client.companyId && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">IČO</span>
+                    <span className="text-sm font-semibold text-slate-800">{client.companyId}</span>
+                  </div>
+                )}
+                {client.vatId && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">DIČ / IČ DPH</span>
+                    <span className="text-sm font-semibold text-slate-800">{client.vatId}</span>
+                  </div>
+                )}
+                {client.billingAddress && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Fakturačná adresa</span>
+                    <span className="text-sm font-semibold text-slate-800 leading-snug">{client.billingAddress}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="shadow-sm border-blue-100">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-blue-50/30 py-3">
               <CardTitle className="text-lg text-blue-900">Tendre & Dokumenty</CardTitle>
@@ -171,6 +217,6 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
           {!isCreative && <DefaultTeamCard clientId={client.id} initialAssigneeIds={client.defaultAssignees.map(u => u.id)} />}
         </div>
       </div>
-    </div>
+    </div >
   )
 }

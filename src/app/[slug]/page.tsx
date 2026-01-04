@@ -197,19 +197,23 @@ export default async function DashboardPage({ params }: { params: { slug: string
           </Card>
         </Link>
 
-        <Card className="bg-red-600 text-white shadow-lg border-none">
-          <CardContent className="pt-4">
-            <p className="text-[10px] font-bold uppercase opacity-80">Mešká</p>
-            <div className="text-2xl font-black">{overdue.length}</div>
-          </CardContent>
-        </Card>
+        <Link href={`/${params.slug}/jobs?filter=OVERDUE`} className="block transform transition hover:scale-105">
+          <Card className="bg-red-600 text-white shadow-lg border-none h-full">
+            <CardContent className="pt-4">
+              <p className="text-[10px] font-bold uppercase opacity-80">Mešká</p>
+              <div className="text-2xl font-black">{overdue.length}</div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-amber-500 text-white shadow-lg border-none">
-          <CardContent className="pt-4">
-            <p className="text-[10px] font-bold uppercase opacity-80">Kritické</p>
-            <div className="text-2xl font-black">{warning.length}</div>
-          </CardContent>
-        </Card>
+        <Link href={`/${params.slug}/jobs?filter=CRITICAL`} className="block transform transition hover:scale-105">
+          <Card className="bg-amber-500 text-white shadow-lg border-none h-full">
+            <CardContent className="pt-4">
+              <p className="text-[10px] font-bold uppercase opacity-80">Kritické</p>
+              <div className="text-2xl font-black">{warning.length}</div>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Link href={isCreative ? `/${params.slug}/timesheets` : `/${params.slug}/agency`} className="block transform transition hover:scale-105">
           <Card className="bg-blue-600 text-white h-full shadow-lg border-none">

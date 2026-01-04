@@ -7,7 +7,13 @@ import { GlobalNewJobButton } from '@/components/global-new-job-button'
 
 export const dynamic = 'force-dynamic'
 
-export default async function JobsPage({ params }: { params: { slug: string } }) {
+export default async function JobsPage({
+  params,
+  searchParams
+}: {
+  params: { slug: string },
+  searchParams: { filter?: string }
+}) {
   // ✅ Správny await
   const session = await getSession()
   if (!session) redirect('/login')
@@ -79,7 +85,7 @@ export default async function JobsPage({ params }: { params: { slug: string } })
     : []
 
   // 4️⃣ MERGE + SORT podľa priority a deadline
-  const activeItems = [
+  let activeItems = [
     ...jobs.map(j => ({
       id: j.id,
       title: j.title,
@@ -115,6 +121,25 @@ export default async function JobsPage({ params }: { params: { slug: string } })
     // 2. PRIORITY (Ak majú rovnaký deadline, tak podľa priority)
     return b.priority - a.priority
   })
+
+  // 4.5 FILTERING
+  const now = new Date()
+  const filter = searchParams.filter
+
+  if (filter === 'OVERDUE') {
+    activeItems = activeItems.filter(item =>
+      item.status !== 'DONE' && item.deadline && new Date(item.deadline) < now
+    )
+  } else if (filter === 'CRITICAL') {
+    const criticalThreshold = new Date()
+    criticalThreshold.setDate(now.getDate() + 5)
+    activeItems = activeItems.filter(item =>
+      item.status !== 'DONE' &&
+      item.deadline &&
+      new Date(item.deadline) >= now &&
+      new Date(item.deadline) <= criticalThreshold
+    )
+  }
 
   return (
     <div className="space-y-6">

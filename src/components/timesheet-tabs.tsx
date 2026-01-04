@@ -60,12 +60,15 @@ function ArchivedTimesheetsView({ timesheets, isCreative }: { timesheets: any[],
             {Object.entries(grouped).map(([clientName, clientTimesheets]) => (
                 <div key={clientName} className="space-y-3">
                     <h3 className="text-lg font-black text-slate-800 uppercase italic tracking-tighter mb-2 pl-6 ml-px">{clientName}</h3>
-                    <TimesheetTable timesheets={clientTimesheets} isCreative={isCreative} isArchive />
+                    <TimesheetTable timesheets={clientTimesheets as any[]} isCreative={isCreative} isArchive />
                 </div>
             ))}
         </div>
     )
 }
+
+import { RunningTimer } from '@/components/running-timer'
+
 
 function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any[], isCreative: boolean, isArchive?: boolean }) {
     if (timesheets.length === 0) {
@@ -83,8 +86,8 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                     <TableHeader className="bg-slate-50 text-[10px] font-black uppercase">
                         <TableRow>
                             <TableHead className="pl-6 w-[200px]">Kedy / Kto</TableHead>
-                            <TableHead className="w-auto">Projekt</TableHead>
-                            <TableHead className="w-[100px]">Trvanie</TableHead>
+                            <TableHead className="w-auto">Projekt / Task</TableHead>
+                            <TableHead className="w-[120px]">Trvanie</TableHead>
                             {!isCreative && (
                                 <>
                                     <TableHead className="text-right w-[120px] text-[10px]">Náklad</TableHead>
@@ -112,25 +115,37 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                                             <span className="text-[10px] font-bold text-slate-400 uppercase">
                                                 {ts.jobAssignment.user?.name || ts.jobAssignment.user?.email?.split('@')[0] || 'N/A'}
                                             </span>
-                                            {ts.description && <p className="text-[10px] text-slate-400 italic">"{ts.description}"</p>}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-sm text-slate-800">{ts.jobAssignment.job?.title || 'N/A'}</span>
+                                            </div>
+                                            <div className="flex flex-col text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                                <span className="text-blue-600">{ts.jobAssignment.job?.campaign?.name || 'N/A'}</span>
+                                                <span className="opacity-60">{ts.jobAssignment.job?.campaign?.client?.name || 'N/A'}</span>
+                                            </div>
+                                            {ts.description && (
+                                                <p className="text-[10px] text-slate-400 italic mt-1 border-l-2 pl-2 border-slate-100 line-clamp-2">
+                                                    {ts.description}
+                                                </p>
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-sm text-slate-800">{ts.jobAssignment.job?.title || 'N/A'}</span>
-                                            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">
-                                                {ts.jobAssignment.job?.campaign?.client?.name || 'N/A'}
-                                            </span>
+                                            {isRunning ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <Badge variant="outline" className="animate-pulse border-blue-200 text-blue-700 font-bold bg-blue-50 w-fit">BEŽÍ...</Badge>
+                                                    <RunningTimer startTime={ts.startTime} totalPausedMinutes={ts.totalPausedMinutes} />
+                                                </div>
+                                            ) : (
+                                                <span className="font-mono text-xs font-black text-slate-600 tracking-tighter">
+                                                    {Math.floor((ts.durationMinutes || 0) / 60)}h {(ts.durationMinutes || 0) % 60}m
+                                                </span>
+                                            )}
                                         </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        {isRunning ? (
-                                            <Badge variant="outline" className="animate-pulse border-blue-200 text-blue-700 font-bold">BEŽÍ...</Badge>
-                                        ) : (
-                                            <span className="font-mono text-xs font-black text-slate-600 tracking-tighter">
-                                                {Math.floor((ts.durationMinutes || 0) / 60)}h {(ts.durationMinutes || 0) % 60}m
-                                            </span>
-                                        )}
                                     </TableCell>
                                     {!isCreative && (
                                         <>

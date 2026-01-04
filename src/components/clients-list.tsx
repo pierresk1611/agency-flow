@@ -9,13 +9,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import { Building, Plus, Loader2, ArrowRight, Trash2, RotateCcw, Pencil } from 'lucide-react'
-import { useRouter, usePathname } from 'next/navigation' // <--- IMPORT usePathname
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 
 interface Client {
-    id: string; name: string; priority: number; scope: string | null; _count: { campaigns: number }; defaultAssignees?: { id: string, name: string | null, email: string }[]
+    id: string;
+    name: string;
+    priority: number;
+    scope: string | null;
+    companyId?: string | null;
+    vatId?: string | null;
+    billingAddress?: string | null;
+    importantNote?: string | null;
+    _count: { campaigns: number };
+    defaultAssignees?: { id: string, name: string | null, email: string }[]
 }
 interface ScopeOption { id: string; name: string }
 interface UserOption { id: string; name: string | null; email: string; role?: string; position?: string }
@@ -38,6 +48,10 @@ export function ClientsList() {
     const [selectedScope, setSelectedScope] = useState<string[]>([])
     const [isOtherSelected, setIsOtherSelected] = useState(false)
     const [customScope, setCustomScope] = useState('')
+    const [companyId, setCompanyId] = useState('')
+    const [vatId, setVatId] = useState('')
+    const [billingAddress, setBillingAddress] = useState('')
+    const [importantNote, setImportantNote] = useState('')
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState('')
 
@@ -65,7 +79,9 @@ export function ClientsList() {
     useEffect(() => { refreshData() }, [showArchived])
 
     const openNewDialog = () => {
-        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope(''); setError(''); setOpen(true)
+        setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope('');
+        setCompanyId(''); setVatId(''); setBillingAddress(''); setImportantNote('');
+        setError(''); setOpen(true)
     }
 
     const openEditDialog = (client: Client) => {
@@ -79,6 +95,12 @@ export function ClientsList() {
         setSelectedScope(standard)
         if (custom.length > 0) { setIsOtherSelected(true); setCustomScope(custom.join(', ')) }
         else { setIsOtherSelected(false); setCustomScope('') }
+
+        setCompanyId(client.companyId || '')
+        setVatId(client.vatId || '')
+        setBillingAddress(client.billingAddress || '')
+        setImportantNote(client.importantNote || '')
+
         setOpen(true)
     }
 
@@ -103,7 +125,15 @@ export function ClientsList() {
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, priority: newPriority, scope: finalScopeList })
+                body: JSON.stringify({
+                    name: newName,
+                    priority: newPriority,
+                    scope: finalScopeList,
+                    companyId,
+                    vatId,
+                    billingAddress,
+                    importantNote
+                })
             })
 
             if (res.ok) {
@@ -162,8 +192,16 @@ export function ClientsList() {
                         <DialogDescription>Zadajte údaje o klientovi.</DialogDescription>
                         {error && <div className="text-red-500 text-sm font-medium mt-2 p-2 bg-red-50 rounded-md">{error}</div>}
                     </DialogHeader>
-                    <div className="grid gap-5 py-4">
+                    <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
                         <div className="grid gap-2"><Label>Názov</Label><Input value={newName} onChange={e => setNewName(e.target.value)} /></div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2"><Label>IČO</Label><Input value={companyId} onChange={e => setCompanyId(e.target.value)} placeholder="Napapr. 12345678" /></div>
+                            <div className="grid gap-2"><Label>DIČ / IČ DPH</Label><Input value={vatId} onChange={e => setVatId(e.target.value)} placeholder="SK202..." /></div>
+                        </div>
+
+                        <div className="grid gap-2"><Label>Fakturačná adresa</Label><Input value={billingAddress} onChange={e => setBillingAddress(e.target.value)} /></div>
+
                         <div className="grid gap-2"><Label>Priorita</Label>
                             <Select value={newPriority} onValueChange={setNewPriority}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -176,6 +214,17 @@ export function ClientsList() {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        <div className="grid gap-2">
+                            <Label>Interná poznámka (Dôležité upozornenie pre tím)</Label>
+                            <Textarea
+                                value={importantNote}
+                                onChange={e => setImportantNote(e.target.value)}
+                                placeholder="Napr. Pozor na platby, Vyžadujú modrú farbu..."
+                                className="bg-amber-50 border-amber-200 focus-visible:ring-amber-500"
+                            />
+                        </div>
+
                         <div className="grid gap-2"><Label>Rozsah</Label>
                             <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg bg-slate-50/50 max-h-[180px] overflow-y-auto">
                                 {scopesList.map(s => (<div key={s.id} className="flex items-center space-x-2"><Checkbox checked={selectedScope.includes(s.name)} onCheckedChange={() => toggleScope(s.name)} /><label className="text-xs">{s.name}</label></div>))}
