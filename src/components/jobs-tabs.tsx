@@ -67,9 +67,20 @@ export function JobsTabs({
                                     </TableRow>
                                 ) : (
                                     activeJobs.map((proj: any) => {
-                                        const isOverdue = proj.deadline && new Date(proj.deadline) < new Date() && proj.type === 'JOB'
+                                        const deadline = proj.deadline ? new Date(proj.deadline) : null
+                                        const now = new Date()
+                                        const isOverdue = deadline && deadline < now && proj.type === 'JOB'
+
+                                        // Warning: Not overdue, but within 5 days
+                                        let isWarning = false
+                                        if (deadline && !isOverdue && proj.type === 'JOB') {
+                                            const diffTime = deadline.getTime() - now.getTime()
+                                            const diffDays = diffTime / (1000 * 3600 * 24)
+                                            if (diffDays <= 5) isWarning = true
+                                        }
+
                                         return (
-                                            <TableRow key={proj.id} className={`hover:bg-slate-50/50 transition-colors ${proj.type === 'TENDER' ? 'bg-purple-50/20' : ''} ${isOverdue ? 'bg-red-50 hover:bg-red-100 border-2 border-red-500' : ''}`}>
+                                            <TableRow key={proj.id} className={`hover:bg-slate-50/50 transition-colors ${proj.type === 'TENDER' ? 'bg-purple-50/20' : ''} ${isOverdue ? 'bg-red-50 hover:bg-red-100 border-2 border-red-500' : ''} ${isWarning ? 'bg-orange-50 hover:bg-orange-100 border-2 border-orange-500' : ''}`}>
                                                 <TableCell className="text-center font-bold">
                                                     {proj.type === 'TENDER'
                                                         ? <Badge className="bg-purple-600 text-[9px]">PITCH</Badge>
