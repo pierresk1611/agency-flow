@@ -23,11 +23,6 @@ export default async function AgenciesPage() {
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/superadmin">
-                    <Button variant="outline" size="icon">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
                 <h1 className="text-3xl font-bold tracking-tight">Správa Agentúr</h1>
             </div>
 

@@ -84,38 +84,6 @@ export default function SuperAdminPage() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            className="h-11 font-bold border-slate-300"
-            onClick={() => router.push('/superadmin/emails')}
-          >
-            <Inbox className="h-4 w-4 mr-2" />
-            Šablóny Emailov
-          </Button>
-
-          <Button
-            variant="outline"
-            className="h-11 font-bold border-slate-300"
-            onClick={() => router.push('/superadmin/agencies')}
-          >
-            <Building className="h-4 w-4 mr-2" />
-            Správa Agentúr
-          </Button>
-
-          <Button
-            variant="outline"
-            className="h-11 font-bold border-slate-300 relative"
-            onClick={() => router.push('/superadmin/requests')}
-          >
-            <Users className="h-4 w-4 mr-2" />
-            Žiadosti
-            {pendingCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
-                {pendingCount}
-              </span>
-            )}
-          </Button>
-
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold h-11 px-6 shadow-lg transition-all active:scale-95">
@@ -182,8 +150,8 @@ export default function SuperAdminPage() {
                           <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-widest border-slate-300">Trial</Badge>
                           {a.trialEndsAt && (
                             <span className={`text-[10px] font-bold ${new Date(a.trialEndsAt).getTime() - new Date().getTime() < 3 * 24 * 60 * 60 * 1000
-                                ? 'text-red-500 animate-pulse'
-                                : 'text-slate-400'
+                              ? 'text-red-500 animate-pulse'
+                              : 'text-slate-400'
                               }`}>
                               {new Date(a.trialEndsAt).toLocaleDateString('sk-SK')}
                             </span>
