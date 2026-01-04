@@ -16,17 +16,24 @@ export async function POST(request: Request) {
         if (!user || !user.agency || !user.agencyId) return NextResponse.json({ error: 'User/Agency not found' }, { status: 404 })
 
         // LOGIKA SCHVAĽOVANIA INTERNÝCH PRÁC (nastavená v AgencySettings)
-        // 1. Ak je nastavený "internalAccount", notifikujeme JEHO.
-        // 2. Ak NIE JE nastavený, notifikujeme TRAFFIC manažérov.
+        // 1. Ak je nastavený zoznam "internalApprovers", notifikujeme VŠETKÝCH.
+        //    Ak niekto z nich schváli, ostatným to zmizne (rieši sa v GET logike).
 
-        const internalAccountId = user.agency.internalAccountId
         let title = 'Plán na schválenie'
         let message = `${user.name || 'Užívateľ'} odoslal svoj týždenný plán na kontrolu.`
         let targetUserIds: string[] = []
 
-        if (internalAccountId) {
-            // A. Cielené schvaľovanie (Account)
-            targetUserIds = [internalAccountId]
+        // Agency fetch must include internalApprovers
+        const agencyWithApprovers = await prisma.agency.findUnique({
+            where: { id: user.agency?.id },
+            include: { internalApprovers: true }
+        })
+
+        const approvers = agencyWithApprovers?.internalApprovers || []
+
+        if (approvers.length > 0) {
+            // A. Cielené schvaľovanie (Internal Approvers)
+            targetUserIds = approvers.map(u => u.id)
             message += " (Interné schválenie)"
         } else {
             // B. Default Fallback (Traffic)

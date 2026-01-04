@@ -23,7 +23,7 @@ export function AgencySettings({ readOnly = false }: { readOnly?: boolean }) { /
     vatId: '',
     address: '',
     email: '',
-    internalAccountId: ''
+
   })
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function AgencySettings({ readOnly = false }: { readOnly?: boolean }) { /
           vatId: agencyData.vatId || '',
           address: agencyData.address || '',
           email: agencyData.email || '',
-          internalAccountId: agencyData.internalAccountId || 'TRAFFIC_ONLY' // Default value logic
+
         })
       }
       if (Array.isArray(accountsData)) {
@@ -58,7 +58,7 @@ export function AgencySettings({ readOnly = false }: { readOnly?: boolean }) { /
     // Convert 'TRAFFIC_ONLY' back to null for DB
     const payload = {
       ...form,
-      internalAccountId: form.internalAccountId === 'TRAFFIC_ONLY' ? null : form.internalAccountId
+      ...form,
     }
 
     try {
@@ -83,34 +83,7 @@ export function AgencySettings({ readOnly = false }: { readOnly?: boolean }) { /
 
   return (
     <div className="grid gap-6">
-      {/* --- Internal Approvals Section --- */}
-      <Card className="shadow-sm border-slate-200">
-        <CardHeader className="bg-slate-50/50 border-b">
-          <div className="flex items-center gap-2">
-            <Building className="h-5 w-5 text-purple-600" />
-            <CardTitle className="text-lg">Schvaľovanie Interných Prác</CardTitle>
-          </div>
-          <CardDescription>Kto schvaľuje interné joby a výkazy? Ak nie je vybraný nikto, notifikácie chodia Traffic manažérom.</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid gap-2 max-w-md">
-            <Label>Zodpovedný Account Manager</Label>
-            <Select
-              value={form.internalAccountId}
-              onValueChange={(val) => setForm({ ...form, internalAccountId: val })}
-              disabled={readOnly}
-            >
-              <SelectTrigger><SelectValue placeholder="Vyberte manažéra..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TRAFFIC_ONLY" className="font-bold text-slate-500">🚫 Nikto (Len Traffic)</SelectItem>
-                {accounts.map(u => (
-                  <SelectItem key={u.id} value={u.id}>{u.name || u.email}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+
 
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="bg-slate-50/50 border-b">

@@ -16,7 +16,6 @@ export default async function SettingsPage({ params }: { params: { slug: string 
     const agency = await prisma.agency.findUnique({
         where: { slug: params.slug },
         include: {
-            internalAccount: true,
             internalApprovers: true
         }
     });
