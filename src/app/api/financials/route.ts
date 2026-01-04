@@ -27,49 +27,65 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const budgetItems = await prisma.budgetItem.findMany({
+        // Fetch JOBS instead of budgetItems directly
+        const jobs = await prisma.job.findMany({
             where: {
-                job: {
-                    campaign: {
-                        client: {
-                            agencyId: agencyId
-                        }
+                campaign: {
+                    client: {
+                        agencyId: agencyId
                     }
-                }
+                },
+                archivedAt: null // Only active jobs usually
             },
             include: {
-                job: {
-                    select: {
-                        title: true,
-                        status: true,
-                        campaign: {
-                            select: {
-                                name: true,
-                                client: {
-                                    select: {
-                                        name: true
-                                    }
-                                }
-                            }
+                campaign: {
+                    include: {
+                        client: {
+                            select: { name: true }
                         }
                     }
-                }
+                },
+                budgets: true // All budget items (costs)
             },
-            orderBy: { createdAt: 'desc' },
-            take: 100 // Limit for performance
+            orderBy: { createdAt: 'desc' }
         });
 
-        const data = budgetItems.map(item => ({
-            id: item.id,
-            clientName: item.job.campaign.client.name,
-            campaignName: item.job.campaign.name,
-            jobTitle: item.job.title,
-            jobStatus: item.job.status,
-            hours: item.hours,
-            rate: item.rate,
-            amount: item.amount,
-            createdAt: item.createdAt
-        }));
+        const data = jobs.map(job => {
+            const totalCost = job.budgets.reduce((sum, item) => sum + item.amount, 0);
+            const totalHours = job.budgets.reduce((sum, item) => sum + item.hours, 0);
+            const budget = job.budget || 0;
+            const difference = budget - totalCost;
+
+            // Profitability: if budget is 0 (T&M or unset), maybe 0% or 100%?
+            // If budget > 0, (budget - cost) / budget * 100
+            let profitability = 0;
+            if (budget > 0) {
+                profitability = ((budget - totalCost) / budget) * 100;
+            } else if (totalCost > 0) {
+                // No budget but costs? Technically profit margin depends on internal cost vs billable,
+                // but here we only have 'amount' which is usually billable amount.
+                // Let's assume 'profitability' in the screenshot implies remaining budget %.
+                profitability = -100; // Over budget if budget is 0?
+            } else {
+                profitability = 0;
+            }
+
+
+            return {
+                id: job.id,
+                clientName: job.campaign.client.name,
+                campaignName: job.campaign.name,
+                jobTitle: job.title,
+                jobStatus: job.status,
+                deadline: job.deadline,
+                budget: budget,
+                actualCost: totalCost,
+                totalHours: totalHours,
+                difference: difference,
+                profitability: profitability,
+                createdAt: job.createdAt
+            };
+        });
 
         return NextResponse.json(data);
     } catch (error) {

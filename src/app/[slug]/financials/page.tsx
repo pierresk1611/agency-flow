@@ -26,9 +26,11 @@ export default async function FinancialsPage({ params }: { params: { slug: strin
     return (
         <div className="container mx-auto py-10 space-y-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Finančný prehľad</h1>
-                <p className="text-muted-foreground">
-                    Prehľad nákladov a budgetov z jobs a timesheetov.
+                <div className="flex items-center gap-2 mb-2">
+                    <h1 className="text-3xl font-black italic tracking-tight uppercase">Finančný Prehľad</h1>
+                </div>
+                <p className="text-slate-500 font-medium">
+                    Rozpočty a ziskovosť projektov
                 </p>
             </div>
 
