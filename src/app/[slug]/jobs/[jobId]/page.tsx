@@ -35,10 +35,17 @@ export default async function JobDetailPage({ params }: { params: { slug: string
             campaign: { include: { client: true } },
             files: { orderBy: { createdAt: 'desc' } },
             comments: { include: { user: true }, orderBy: { createdAt: 'asc' } },
+            plannerEntries: {
+                where: { date: { gte: new Date() } },
+                include: { user: true },
+                orderBy: { date: 'asc' }
+            },
             assignments: {
                 include: {
                     user: true,
-                    timesheets: { orderBy: { startTime: 'desc' } }
+                    timesheets: {
+                        orderBy: { startTime: 'desc' }
+                    }
                 }
             }
         },
@@ -72,8 +79,34 @@ export default async function JobDetailPage({ params }: { params: { slug: string
         }))
     ).sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
 
+    // Extract all currently running timers on this job
+    const anyRunningOnJob = job.assignments.flatMap(a =>
+        a.timesheets.filter(t => t.endTime === null).map(t => ({
+            ...t, userName: a.user.name
+        }))
+    )
+
     return (
         <div className="space-y-6 pb-10">
+            {/* ALERT: WORK IN PROGRESS */}
+            {anyRunningOnJob.length > 0 && (
+                <div className="bg-blue-600 text-white p-4 shadow-lg rounded-xl flex items-center justify-between animate-pulse">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-500 p-2 rounded-full shadow-inner">
+                            <Clock className="h-5 w-5 animate-spin-slow" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase opacity-80 tracking-widest">Práca práve prebieha</p>
+                            <p className="text-sm font-bold">
+                                {anyRunningOnJob.length === 1
+                                    ? `${anyRunningOnJob[0].userName} práve pracuje na tomto jobe`
+                                    : `${anyRunningOnJob.length} kolegovia práve pracujú na tomto jobe`
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <Link href={`/${params.slug}/jobs`}>
@@ -132,6 +165,47 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                 </div>
 
                 <div className="space-y-6">
+                    {/* PLÁNOVANÁ PRÁCA */}
+                    <Card className="shadow-sm border-blue-200 bg-blue-50/10">
+                        <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-blue-50/50">
+                            <CardTitle className="text-sm font-black uppercase tracking-widest text-blue-900 flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-blue-600" /> Plánovaná práca
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            {job.plannerEntries.length === 0 ? (
+                                <p className="text-[10px] text-center py-4 text-slate-400 italic font-medium tracking-tight">Na tento job zatiaľ nie je nič naplánované.</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {job.plannerEntries.map((pe: any) => (
+                                        <div key={pe.id} className="flex items-center gap-4 p-3 rounded-lg border border-white bg-white/50 shadow-sm">
+                                            <div className="flex flex-col items-center justify-center min-w-[50px] py-1 px-2 rounded bg-blue-100 text-blue-700">
+                                                <span className="text-[10px] font-black uppercase leading-none">{format(new Date(pe.date), 'EEE')}</span>
+                                                <span className="text-sm font-bold">{format(new Date(pe.date), 'dd')}</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-sm font-semibold text-slate-800 line-clamp-1">{pe.title || "Práca na úlohe"}</p>
+                                                    <Badge variant="outline" className="text-[9px] bg-white border-blue-200 text-blue-600 px-1 py-0 h-4">
+                                                        {pe.minutes >= 60 ? `${(pe.minutes / 60).toFixed(1)} h` : `${pe.minutes} m`}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <Avatar className="h-4 w-4 border">
+                                                        <AvatarFallback className="text-[7px] bg-slate-100 text-slate-600 font-bold">
+                                                            {pe.user?.name?.split(' ').map((n: any) => n[0]).join('')}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-[9px] font-medium text-slate-500">{pe.user?.name}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
                             <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tím na projekte</CardTitle>

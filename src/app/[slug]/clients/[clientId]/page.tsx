@@ -36,20 +36,82 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
               archivedAt: null,
               ...(isCreative ? { assignments: { some: { userId: session.userId } } } : {})
             },
-            orderBy: { deadline: 'asc' }
+            orderBy: { deadline: 'asc' },
+            include: {
+              plannerEntries: {
+                where: { date: { gte: new Date() } },
+                include: { user: true },
+                orderBy: { date: 'asc' }
+              },
+              assignments: {
+                include: {
+                  user: true,
+                  timesheets: {
+                    where: { endTime: null }
+                  }
+                }
+              }
+            }
           },
           _count: { select: { jobs: true } }
         }
       },
       defaultAssignees: { select: { id: true } }
     }
-  }) as any // Cast to any to resolve property access errors on relations in this view
+  }) as any
 
   if (!client) return notFound()
   const canSeeBilling = ['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) || session.godMode
 
+  // Extract all running timers across all jobs of this client
+  const allRunningTimers = client.campaigns.flatMap((c: any) =>
+    c.jobs.flatMap((j: any) =>
+      j.assignments.flatMap((a: any) =>
+        a.timesheets.map((t: any) => ({
+          ...t,
+          userName: a.user.name,
+          jobTitle: j.title
+        }))
+      )
+    )
+  )
+
+  // Extract all upcoming planned work
+  const allPlannedWork = client.campaigns.flatMap((c: any) =>
+    c.jobs.flatMap((j: any) =>
+      j.plannerEntries.map((pe: any) => ({
+        ...pe,
+        jobTitle: j.title,
+        campaignName: c.name
+      }))
+    )
+  ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
   return (
     <div className="space-y-6 pb-10">
+      {/* ALERT: WORK IN PROGRESS */}
+      {allRunningTimers.length > 0 && (
+        <div className="bg-blue-600 text-white p-4 shadow-lg rounded-xl flex items-center justify-between animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-500 p-2 rounded-full shadow-inner">
+              <Clock className="h-5 w-5 animate-spin-slow" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase opacity-80 tracking-widest">Práca práve prebieha</p>
+              <p className="text-sm font-bold">
+                {allRunningTimers.length === 1
+                  ? `${allRunningTimers[0].userName} pracuje na: ${allRunningTimers[0].jobTitle}`
+                  : `${allRunningTimers.length} kolegovia práve pracujú na projektoch tohto klienta`
+                }
+              </p>
+            </div>
+          </div>
+          <Link href={`/${params.slug}/timesheets`}>
+            <Button variant="secondary" size="sm" className="font-bold text-blue-700">Sledovať</Button>
+          </Link>
+        </div>
+      )}
+
       {/* ALERT: IMPORTANT NOTE */}
       {client.importantNote && (
         <div className="bg-amber-100 border-l-4 border-amber-500 p-4 shadow-sm rounded-r-lg flex items-start gap-3">
@@ -107,6 +169,50 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
           <div className="min-h-[400px]">
             <ClientNewsfeed clientId={client.id} initialNotes={client.notes} isReadOnly={isCreative} />
           </div>
+
+          {/* PLÁNOVANÁ PRÁCA */}
+          <Card className="shadow-sm border-blue-200 bg-blue-50/10">
+            <CardHeader className="flex flex-row items-center justify-between border-b py-3 bg-blue-50/50">
+              <CardTitle className="text-lg flex items-center gap-2 text-blue-900">
+                <Clock className="h-5 w-5 text-blue-600" />
+                Plánovaná práca
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {allPlannedWork.length === 0 ? (
+                <p className="text-sm text-center py-6 text-slate-400 italic">Žiadna naplánovaná práca na najbližšie dni.</p>
+              ) : (
+                <div className="space-y-4">
+                  {allPlannedWork.map((entry: any) => (
+                    <div key={entry.id} className="flex items-start gap-4 p-4 rounded-xl border border-white bg-white/50 shadow-sm">
+                      <div className="flex flex-col items-center justify-center min-w-[60px] p-2 rounded-lg bg-blue-100 text-blue-700">
+                        <span className="text-[10px] font-black uppercase">{format(new Date(entry.date), 'EEE')}</span>
+                        <span className="text-lg font-bold">{format(new Date(entry.date), 'dd')}</span>
+                        <span className="text-[10px] font-medium">{format(new Date(entry.date), 'MMM')}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{entry.campaignName} / {entry.jobTitle}</p>
+                          <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none">
+                            {entry.minutes >= 60 ? `${(entry.minutes / 60).toFixed(1)} h` : `${entry.minutes} min`}
+                          </Badge>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-800">{entry.title || "Bez popisu"}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Avatar className="h-5 w-5 border">
+                            <AvatarFallback className="text-[8px] bg-slate-100 text-slate-600">
+                              {entry.user?.name?.split(' ').map((n: any) => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-[10px] font-medium text-slate-500">{entry.user?.name}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* KAMPANE */}
           <Card className="shadow-sm border-slate-200">
