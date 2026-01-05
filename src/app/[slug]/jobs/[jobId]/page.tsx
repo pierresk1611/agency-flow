@@ -206,6 +206,24 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         </CardContent>
                     </Card>
 
+                    <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden mt-6">
+                        <CardHeader className="pb-2 border-b border-white/10">
+                            <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Čas strávený na jobe</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-3">
+                            {history.slice(0, 5).map(t => (
+                                <div key={t.id} className="flex justify-between items-center text-[11px] border-b border-white/5 pb-2 last:border-0">
+                                    <div>
+                                        <div className="font-bold">{t.userName || t.userEmail.split('@')[0]}</div>
+                                        <div className="opacity-50">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
+                                    </div>
+                                    <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none">{t.durationMinutes} m</Badge>
+                                </div>
+                            ))}
+                            {history.length === 0 && <p className="text-[10px] text-center py-2 opacity-50 italic">Zatiaľ žiadne záznamy.</p>}
+                        </CardContent>
+                    </Card>
+
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
                             <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tím na projekte</CardTitle>
@@ -274,20 +292,6 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden">
-                        <CardHeader className="pb-2 border-b border-white/10"><CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Časová os</CardTitle></CardHeader>
-                        <CardContent className="pt-4 space-y-3">
-                            {history.slice(0, 5).map(t => (
-                                <div key={t.id} className="flex justify-between items-center text-[11px] border-b border-white/5 pb-2 last:border-0">
-                                    <div>
-                                        <div className="font-bold">{t.userName || t.userEmail.split('@')[0]}</div>
-                                        <div className="opacity-50">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
-                                    </div>
-                                    <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none">{t.durationMinutes} m</Badge>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
         </div>
