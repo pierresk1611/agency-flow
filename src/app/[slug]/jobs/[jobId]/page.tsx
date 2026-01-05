@@ -14,6 +14,7 @@ import { EditCampaignDescription } from '@/components/edit-campaign-description'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getSession } from '@/lib/session'
 import { JobActions } from '@/components/job-actions'
+import { JobTimesheetsDialog } from '@/components/job-timesheets-dialog'
 
 function getFileIcon(type: string) {
     if (type === 'PDF') return <FileText className="h-4 w-4 text-red-500" />
@@ -206,23 +207,37 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         </CardContent>
                     </Card>
 
-                    <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden mt-6">
-                        <CardHeader className="pb-2 border-b border-white/10">
-                            <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Čas strávený na jobe</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-4 space-y-3">
-                            {history.slice(0, 5).map(t => (
-                                <div key={t.id} className="flex justify-between items-center text-[11px] border-b border-white/5 pb-2 last:border-0">
-                                    <div>
-                                        <div className="font-bold">{t.userName || t.userEmail.split('@')[0]}</div>
-                                        <div className="opacity-50">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
+                    <JobTimesheetsDialog
+                        timesheets={history}
+                        jobTitle={job.title}
+                        trigger={
+                            <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden mt-6 cursor-pointer hover:bg-slate-800 transition">
+                                <CardHeader className="pb-2 border-b border-white/10">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Čas strávený na jobe</CardTitle>
+                                        <ExternalLink className="h-3 w-3 opacity-30" />
                                     </div>
-                                    <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none">{t.durationMinutes} m</Badge>
-                                </div>
-                            ))}
-                            {history.length === 0 && <p className="text-[10px] text-center py-2 opacity-50 italic">Zatiaľ žiadne záznamy.</p>}
-                        </CardContent>
-                    </Card>
+                                </CardHeader>
+                                <CardContent className="pt-4 space-y-3">
+                                    {history.slice(0, 5).map(t => (
+                                        <div key={t.id} className="flex justify-between items-center text-[11px] border-b border-white/5 pb-2 last:border-0">
+                                            <div>
+                                                <div className="font-bold">{t.userName || t.userEmail.split('@')[0]}</div>
+                                                <div className="opacity-50">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
+                                            </div>
+                                            <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none">{t.durationMinutes} m</Badge>
+                                        </div>
+                                    ))}
+                                    {history.length === 0 && <p className="text-[10px] text-center py-2 opacity-50 italic">Zatiaľ žiadne záznamy.</p>}
+                                    {history.length > 5 && (
+                                        <div className="text-[9px] text-center opacity-40 font-bold uppercase tracking-widest pt-2">
+                                            Zobraziť ďalších {history.length - 5} záznamov
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        }
+                    />
 
                     <Card className="shadow-sm border-slate-200">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-slate-50/30">
