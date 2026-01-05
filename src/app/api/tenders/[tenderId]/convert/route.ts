@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { tenderId: string } }
 ) {
   const session = await getSession()
-  
+
   // Povolené role: ADMIN, TRAFFIC, SUPERADMIN, ACCOUNT
   const allowedRoles = ['ADMIN', 'TRAFFIC', 'SUPERADMIN', 'ACCOUNT']
   if (!session || !allowedRoles.includes(session.role)) {
@@ -21,7 +21,9 @@ export async function POST(
       include: { assignments: true, files: true }
     })
 
-    if (!tender) return NextResponse.json({ error: 'Tender nenájdený' }, { status: 404 })
+    if (!tender || (tender.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+      return NextResponse.json({ error: 'Tender nenájdený alebo prístup zamietnutý' }, { status: 404 })
+    }
 
     // 2. Transakcia: vytvorenie klienta, kampane, jobu a presun dát
     const result = await prisma.$transaction(async (tx) => {

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/session'
 
 export async function DELETE(
-  request: Request, 
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -23,7 +23,7 @@ export async function DELETE(
 
 // NOVÉ: PATCH (pre úpravu)
 export async function PATCH(
-  request: Request, 
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -38,6 +38,16 @@ export async function PATCH(
     }
 
     const finalJobId = jobId && jobId !== 'INTERNAL' ? jobId : null;
+
+    if (finalJobId) {
+      const job = await prisma.job.findUnique({
+        where: { id: finalJobId },
+        include: { campaign: { include: { client: true } } }
+      })
+      if (!job || job.campaign.client.agencyId !== session.agencyId) {
+        return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
+      }
+    }
 
     const updated = await prisma.plannerEntry.updateMany({
       where: { id: params.id, userId: session.userId },

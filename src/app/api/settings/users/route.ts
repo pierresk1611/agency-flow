@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
                 name,
                 role: (role === "SUPERADMIN" && session.role !== "SUPERADMIN") ? "ADMIN" : (role || "CREATIVE"),
                 position,
-                agencyId,
+                agencyId: session.role === "SUPERADMIN" ? (agencyId || session.agencyId) : session.agencyId,
                 hourlyRate: parseFloat(hourlyRate || "0"),
                 costRate: parseFloat(costRate || "0"),
                 active: true,
@@ -85,6 +85,12 @@ export async function PATCH(req: NextRequest) {
 
         if (!id) {
             return NextResponse.json({ error: "User ID required" }, { status: 400 });
+        }
+
+        // Verify user belongs to same agency
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== "SUPERADMIN")) {
+            return NextResponse.json({ error: "User not found or access denied" }, { status: 404 });
         }
 
         const updates: any = {
@@ -127,6 +133,12 @@ export async function DELETE(req: NextRequest) {
         const id = searchParams.get("id");
 
         if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+        // Verify user belongs to same agency
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== "SUPERADMIN")) {
+            return NextResponse.json({ error: "User not found or access denied" }, { status: 404 });
+        }
 
         await prisma.user.delete({
             where: { id }

@@ -14,6 +14,11 @@ export async function POST(
     }
 
     try {
+        const tender = await prisma.tender.findUnique({ where: { id: params.tenderId } })
+        if (!tender || (tender.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+            return NextResponse.json({ error: 'Tender not found or access denied' }, { status: 404 })
+        }
+
         // Restore to IN_PROGRESS and remove converted flag if present
         const updated = await prisma.tender.update({
             where: { id: params.tenderId },

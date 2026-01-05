@@ -12,9 +12,15 @@ export async function POST(
     try {
         const { userId, role } = await request.json()
 
-        // Check if user exists in agency (simplified, ideally check relation)
-        const user = await prisma.user.findUnique({ where: { id: userId } })
-        if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+        // 1. Verify Tender belongs to agency
+        const tender = await prisma.tender.findUnique({ where: { id: params.tenderId } })
+        if (!tender || tender.agencyId !== session.agencyId) {
+            return NextResponse.json({ error: 'Tender not found or access denied' }, { status: 404 })
+        }
+
+        // 2. Verify User exists and belongs to same agency
+        const user = await prisma.user.findUnique({ where: { id: userId, agencyId: session.agencyId } })
+        if (!user) return NextResponse.json({ error: 'User not found in your agency' }, { status: 404 })
 
         const assignment = await prisma.tenderAssignment.create({
             data: {
@@ -44,6 +50,15 @@ export async function DELETE(
     if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 })
 
     try {
+        const assignment = await prisma.tenderAssignment.findUnique({
+            where: { id },
+            include: { tender: true }
+        })
+
+        if (!assignment || assignment.tender.agencyId !== session.agencyId) {
+            return NextResponse.json({ error: 'Assignment not found or access denied' }, { status: 404 })
+        }
+
         await prisma.tenderAssignment.delete({
             where: { id }
         })

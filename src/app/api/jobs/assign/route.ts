@@ -15,6 +15,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
     }
 
+    // SECURITY CHECK: Verify Job belongs to agency
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: { campaign: { include: { client: true } } }
+    })
+
+    if (!job || job.campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
+    }
+
+    // SECURITY CHECK: Verify target User belongs to same agency
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId, agencyId: session.agencyId }
+    })
+
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found in your agency' }, { status: 404 })
+    }
+
     // Overenie, či užívateľ ešte nie je priradený
     const existing = await prisma.jobAssignment.findFirst({
       where: { jobId, userId }

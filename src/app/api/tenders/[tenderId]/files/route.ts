@@ -17,12 +17,13 @@ export async function POST(
       return NextResponse.json({ error: 'Chýba odkaz na súbor' }, { status: 400 })
     }
 
-    // Overíme, či tender existuje
-    const tenderExists = await prisma.tender.findUnique({
+    // Overíme, či tender existuje a patrí do agentúry
+    const tender = await prisma.tender.findUnique({
       where: { id: params.tenderId }
     })
-    if (!tenderExists) {
-      return NextResponse.json({ error: 'Tender nenájdený' }, { status: 404 })
+
+    if (!tender || (tender.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+      return NextResponse.json({ error: 'Tender nenájdený alebo prístup zamietnutý' }, { status: 404 })
     }
 
     // Vytvorenie záznamu súboru priradeného k tendru

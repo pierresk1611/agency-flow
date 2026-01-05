@@ -35,6 +35,19 @@ export async function PATCH(
         if (importantNote !== undefined) updateData.importantNote = importantNote
 
         if (defaultAssigneeIds !== undefined) {
+            // Verify all IDs belong to agency
+            const validUsers = await prisma.user.findMany({
+                where: {
+                    id: { in: defaultAssigneeIds },
+                    agencyId: session.agencyId
+                },
+                select: { id: true }
+            })
+
+            if (validUsers.length !== defaultAssigneeIds.length) {
+                return NextResponse.json({ error: 'One or more users not found in your agency' }, { status: 400 })
+            }
+
             updateData.defaultAssignees = {
                 set: defaultAssigneeIds.map((id: string) => ({ id }))
             }
