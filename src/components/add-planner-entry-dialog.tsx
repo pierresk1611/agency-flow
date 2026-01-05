@@ -10,13 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 
-export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
+export function AddPlannerEntryDialog({ allJobs, initialDate, trigger }: { allJobs: any[], initialDate?: string, trigger?: React.ReactNode }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  
+
   const [jobId, setJobId] = useState('')
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [date, setDate] = useState(initialDate || format(new Date(), 'yyyy-MM-dd'))
   const [minutes, setMinutes] = useState('60')
   const [title, setTitle] = useState('')
 
@@ -29,9 +29,9 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
       const res = await fetch(`/api/planner`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          jobId: finalJobId, 
-          date, 
+        body: JSON.stringify({
+          jobId: finalJobId,
+          date,
           minutes: minutes,
           title
         })
@@ -42,11 +42,11 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
         setDate(format(new Date(), 'yyyy-MM-dd'))
         setMinutes('60')
         setTitle('')
-        
+
         // ZMENA: Použijeme tvrdý reload, aby to bolo 100% spoľahlivé ako pri Delete/Edit
-        window.location.reload() 
+        window.location.reload()
       } else {
-          alert("Chyba: Nepodarilo sa uložiť plán.")
+        alert("Chyba: Nepodarilo sa uložiť plán.")
       }
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
@@ -54,13 +54,15 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+        {trigger || (
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
             <Plus className="h-4 w-4 mr-2" /> Naplánovať prácu
-        </Button>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="dialog-content-fixed-mobile">
         <DialogHeader>
-            <DialogTitle>Nový záznam v Plánovači</DialogTitle>
+          <DialogTitle>Nový záznam v Plánovači</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -68,11 +70,11 @@ export function AddPlannerEntryDialog({ allJobs }: { allJobs: any[] }) {
             <Select onValueChange={setJobId} value={jobId}>
               <SelectTrigger><SelectValue placeholder="Vyberte job, na ktorom budete pracovať" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="INTERNAL">INTERNÁ PRÁCA / BEZ KLIENTA</SelectItem> 
+                <SelectItem value="INTERNAL">INTERNÁ PRÁCA / BEZ KLIENTA</SelectItem>
                 {allJobs.map(job => (
-                    <SelectItem key={job.id} value={job.id}>
-                        {job.title} ({job.campaign.client.name})
-                    </SelectItem>
+                  <SelectItem key={job.id} value={job.id}>
+                    {job.title} ({job.campaign.client.name})
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

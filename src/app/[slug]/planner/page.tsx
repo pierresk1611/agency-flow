@@ -134,7 +134,10 @@ export default async function PlannerPage({ params }: { params: { slug: string }
         <h2 className="text-3xl font-black tracking-tight text-slate-900 uppercase italic">
           Plánovanie Tímu
         </h2>
-        {/* Admin môže tiež pridávať sebe? Zatiaľ nie je v zadaní, skryjem */}
+        <div className="flex items-center gap-2">
+          {!isCreative && <SubmitPlannerButton />}
+          <AddPlannerEntryDialog allJobs={jobs} />
+        </div>
       </div>
 
       <TeamPlannerDisplay

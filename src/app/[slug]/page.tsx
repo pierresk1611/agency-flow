@@ -137,7 +137,15 @@ export default async function DashboardPage({ params }: { params: { slug: string
 
   // 9️⃣ NEW WIDGETS DATA
   const notifications = session.userId ? await prisma.notification.findMany({
-    where: { userId: session.userId, isRead: false },
+    where: {
+      userId: session.userId,
+      isRead: false,
+      OR: [
+        { link: { startsWith: `/${params.slug}` } },
+        { link: '/planner' },
+        { link: null }
+      ]
+    },
     orderBy: { createdAt: 'desc' },
     take: 5
   }) : []

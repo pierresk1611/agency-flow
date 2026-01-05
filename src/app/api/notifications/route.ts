@@ -4,7 +4,7 @@ import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // 1. Validate Session
     const session = await getSession()
@@ -12,10 +12,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const slug = searchParams.get('slug')
+
     // 2. Strict Isolation: Fetch ONLY notifications belonging to this specific user ID
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: session.userId
+        userId: session.userId,
+        ...(slug ? {
+          OR: [
+            { link: { startsWith: `/${slug}` } },
+            { link: '/planner' },
+            { link: null }
+          ]
+        } : {})
       },
       orderBy: { createdAt: 'desc' },
       take: 50 // Limit to last 50 to prevent overflow

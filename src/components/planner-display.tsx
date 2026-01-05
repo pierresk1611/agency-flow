@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { format, startOfWeek, addDays, isValid } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AddPlannerEntryDialog } from './add-planner-entry-dialog'
+import { Plus, Trash2, Clock, Pencil, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Trash2, Clock, Pencil, Loader2 } from 'lucide-react'
 import { ResponsiveContainer, BarChart, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -164,9 +165,22 @@ export function PlannerDisplay({ initialEntries, allJobs, readOnly = false }: { 
         return (
             <Card key={day.toString()} className={`min-h-[200px] shadow-sm ${isToday ? 'ring-2 ring-blue-500' : ''}`}>
                 <CardHeader className="p-2 border-b bg-slate-50/50">
-                    <div className="flex justify-between items-baseline">
-                        <p className="text-[10px] font-black uppercase text-slate-400">{format(day, 'EEEE')}</p>
-                        <p className="text-xs font-bold text-slate-700">{format(day, 'd.M.')}</p>
+                    <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <p className="text-[10px] font-black uppercase text-slate-400 leading-none">{format(day, 'EEEE')}</p>
+                            <p className="text-xs font-bold text-slate-700 mt-1">{format(day, 'd.M.')}</p>
+                        </div>
+                        {!readOnly && (
+                            <AddPlannerEntryDialog
+                                allJobs={allJobs}
+                                initialDate={format(day, 'yyyy-MM-dd')}
+                                trigger={
+                                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                }
+                            />
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="p-1 space-y-1">

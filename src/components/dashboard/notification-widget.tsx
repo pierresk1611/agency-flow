@@ -16,7 +16,10 @@ export function NotificationWidget({ notifications: initialData }: { notificatio
         // Optimistic update
         setNotifications(prev => prev.filter(n => n.id !== id))
         try {
-            await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' })
+            await fetch('/api/notifications', {
+                method: 'PATCH',
+                body: JSON.stringify({ id })
+            })
             router.refresh()
         } catch (e) {
             console.error(e)

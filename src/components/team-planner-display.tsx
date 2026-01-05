@@ -54,7 +54,7 @@ export function TeamPlannerDisplay({ groupedPlanners, allJobs, currentUserId }: 
                             <PlannerDisplay
                                 initialEntries={myPlanner.entries}
                                 allJobs={allJobs}
-                                readOnly={false} // CAN EDIT
+                                readOnly={false}
                             />
                         </CardContent>
                     </Card>
