@@ -203,25 +203,42 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* --- PRICING CTA --- */}
-      <section className="py-20 border-t border-slate-100 bg-slate-50">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-black mb-6">Začnite robiť poriadok ešte dnes</h2>
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-            <p className="text-slate-600 mb-8 font-medium">
-              Vyskúšajte si plnú verziu AgencyFlow na 14 dní zadarmo. <br />
-              Bez záväzkov.
+      {/* --- PRICING SPECIAL OFFER --- */}
+      <section className="py-24 border-t border-slate-100 bg-slate-50" id="pricing">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <div className="inline-block mb-4 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold uppercase tracking-widest rounded-full">
+            Early Access Benefit
+          </div>
+          <h2 className="text-3xl md:text-4xl font-black mb-6 text-slate-900">
+            Cenník je zatiaľ otvorený
+          </h2>
+
+          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-slate-200">
+            <p className="text-lg text-slate-600 mb-6 leading-relaxed">
+              Finálna cena služby je momentálne predmetom diskusií a ešte nie je pevne stanovená.
+              Preto máme pre vás férovú ponuku:
             </p>
+
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8">
+              <p className="font-bold text-slate-900 mb-2">
+                📢 Pre všetkých, ktorí sa zapoja v tejto testovacej fáze:
+              </p>
+              <p className="text-slate-600">
+                Ponúkame <strong className="text-blue-600">neobmedzené predĺženie bezplatného členstva (Trial)</strong> až do momentu oficiálneho oznámenia cenníka.
+              </p>
+            </div>
+
             <div className="flex justify-center">
               <Link href="/register">
-                <Button className="w-64 h-14 text-lg bg-slate-900 text-white font-bold shadow-xl hover:scale-105 transition-transform">
-                  Vytvoriť účet zadarmo
+                <Button className="w-full sm:w-auto h-14 px-8 text-lg bg-slate-900 text-white font-bold shadow-xl hover:scale-105 transition-transform">
+                  Využiť Early Access ponuku
                 </Button>
               </Link>
             </div>
+
             <p className="text-xs text-slate-400 mt-6">
-              Schválenie registrácie môže trvať <strong className="text-slate-600">48 hodín</strong>.
-              V prípade otázok píšte na <a href="mailto:agencyflowapp@gmail.com" className="text-blue-600 hover:underline">agencyflowapp@gmail.com</a>.
+              Schválenie registrácie môže trvať <strong className="text-slate-600">48 hodín</strong> (manuálna kontrola).
+              <br />Otázky? Píšte na <a href="mailto:agencyflowapp@gmail.com" className="text-blue-600 hover:underline">agencyflowapp@gmail.com</a>.
             </p>
           </div>
         </div>
