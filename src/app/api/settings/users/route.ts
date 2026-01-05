@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
                 email,
                 passwordHash: hashedPassword,
                 name,
-                role: role || "CREATIVE",
+                role: (role === "SUPERADMIN" && session.role !== "SUPERADMIN") ? "ADMIN" : (role || "CREATIVE"),
                 position,
                 agencyId,
                 hourlyRate: parseFloat(hourlyRate || "0"),
@@ -89,7 +89,7 @@ export async function PATCH(req: NextRequest) {
 
         const updates: any = {
             name,
-            role,
+            role: (role === "SUPERADMIN" && session.role !== "SUPERADMIN") ? undefined : role, // Don't allow non-superadmins to promote to superadmin
             position,
             hourlyRate: parseFloat(hourlyRate),
             costRate: parseFloat(costRate),

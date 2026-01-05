@@ -13,9 +13,10 @@ interface UserDialogProps {
     onOpenChange: (open: boolean) => void
     editingUser?: any
     onSuccess: () => void
+    currentUserRole?: string
 }
 
-export function UserDialog({ open, onOpenChange, editingUser, onSuccess }: UserDialogProps) {
+export function UserDialog({ open, onOpenChange, editingUser, onSuccess, currentUserRole }: UserDialogProps) {
     const [submitting, setSubmitting] = useState(false)
     const [email, setEmail] = useState('')
     const [name, setName] = useState('')
@@ -110,6 +111,9 @@ export function UserDialog({ open, onOpenChange, editingUser, onSuccess }: UserD
                                 <SelectItem value="TRAFFIC">TRAFFIC (Riadenie)</SelectItem>
                                 <SelectItem value="ACCOUNT">ACCOUNT (Schvaľovanie)</SelectItem>
                                 <SelectItem value="CREATIVE">CREATIVE (Stopky)</SelectItem>
+                                {currentUserRole === 'SUPERADMIN' && (
+                                    <SelectItem value="SUPERADMIN">SUPERADMIN (Global)</SelectItem>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>

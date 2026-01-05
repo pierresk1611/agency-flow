@@ -22,8 +22,12 @@ export default async function AgencyLayout({
   })
   if (!agency) return notFound()
 
-  // ✅ Ochrana rolí: Creative a Traffic môže vidieť len svoj priestor
-  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id) {
+  // ✅ Ochrana rolí: Každý užívateľ vidí len svoju agentúru (okrem Superadmina)
+  const isSuperAdmin = session.role === 'SUPERADMIN'
+  const isMyAgency = session.agencyId === agency.id
+
+  if (!isSuperAdmin && !isMyAgency) {
+    console.log(`[AUTH] Blocked access for ${session.userId} (${session.role}) to agency ${agency.slug}`)
     const myAgency = await prisma.agency.findUnique({ where: { id: session.agencyId } })
     if (myAgency) redirect(`/${myAgency.slug}`)
     else redirect('/login')

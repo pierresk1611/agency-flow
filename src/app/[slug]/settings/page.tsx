@@ -49,7 +49,7 @@ export default async function SettingsPage({ params }: { params: { slug: string 
             <Tabs defaultValue="agency" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="agency">Detail Agentúry</TabsTrigger>
-                    <TabsTrigger value="users">Užívatelia</TabsTrigger>
+                    <TabsTrigger value="users">Tím</TabsTrigger>
                 </TabsList>
                 <TabsContent value="agency" className="space-y-4">
                     <div className="rounded-lg border p-4 bg-card text-card-foreground shadow-sm">
@@ -58,7 +58,12 @@ export default async function SettingsPage({ params }: { params: { slug: string 
                 </TabsContent>
                 <TabsContent value="users" className="space-y-4">
                     <div className="rounded-lg border p-4 bg-card text-card-foreground shadow-sm">
-                        <UsersSettings users={users} positions={positions} agencyId={agency.id} />
+                        <UsersSettings
+                            users={users}
+                            positions={positions}
+                            agencyId={agency.id}
+                            currentUserRole={session.role}
+                        />
                     </div>
                 </TabsContent>
             </Tabs>

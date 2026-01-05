@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function AgencyPage() {
   const session = await getSession()
-  
+
   if (!session) {
-      redirect('/login')
+    redirect('/login')
   }
 
   const isReadOnly = session.role === 'CREATIVE'
@@ -26,22 +26,22 @@ export default async function AgencyPage() {
 
       <Tabs defaultValue="team" className="space-y-6">
         <div className="border-b">
-            <TabsList className="bg-transparent h-auto p-0 gap-6">
-                <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
-                    Tím / Užívatelia
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
-                    Nastavenia Agentúry
-                </TabsTrigger>
-            </TabsList>
+          <TabsList className="bg-transparent h-auto p-0 gap-6">
+            <TabsTrigger value="team" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
+              Tím / Užívatelia
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-slate-900 rounded-none pb-2 text-xs font-bold uppercase tracking-widest transition-all">
+              Nastavenia Agentúry
+            </TabsTrigger>
+          </TabsList>
         </div>
 
         <TabsContent value="team" className="space-y-4 outline-none">
-           <TeamList readOnly={isReadOnly} />
+          <TeamList readOnly={isReadOnly} currentUserRole={session.role} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4 outline-none">
-            <AgencySettings readOnly={isReadOnly} />
+          <AgencySettings readOnly={isReadOnly} />
         </TabsContent>
       </Tabs>
     </div>

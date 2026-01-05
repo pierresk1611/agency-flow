@@ -20,9 +20,10 @@ interface UsersSettingsProps {
     users: User[];
     positions: AgencyPosition[];
     agencyId: string;
+    currentUserRole: string;
 }
 
-export function UsersSettings({ users, positions, agencyId }: UsersSettingsProps) {
+export function UsersSettings({ users, positions, agencyId, currentUserRole }: UsersSettingsProps) {
     const router = useRouter();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -177,7 +178,9 @@ export function UsersSettings({ users, positions, agencyId }: UsersSettingsProps
                                     <option value="ACCOUNT">Account</option>
                                     <option value="TRAFFIC">Traffic</option>
                                     <option value="ADMIN">Admin</option>
-                                    <option value="SUPERADMIN">Superadmin</option>
+                                    {currentUserRole === "SUPERADMIN" && (
+                                        <option value="SUPERADMIN">Superadmin</option>
+                                    )}
                                 </select>
                             </div>
                             <div>

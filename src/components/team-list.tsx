@@ -22,7 +22,7 @@ interface Position {
   category: string | null
 }
 
-export function TeamList() {
+export function TeamList({ readOnly, currentUserRole }: { readOnly?: boolean, currentUserRole?: string }) {
   const router = useRouter()
   const [users, setUsers] = useState<UserMember[]>([])
   const [positions, setPositions] = useState<Position[]>([])
@@ -136,6 +136,9 @@ export function TeamList() {
                     <SelectItem value="TRAFFIC">TRAFFIC (Riadenie)</SelectItem>
                     <SelectItem value="ACCOUNT">ACCOUNT (Schvaľovanie)</SelectItem>
                     <SelectItem value="CREATIVE">CREATIVE (Stopky)</SelectItem>
+                    {currentUserRole === 'SUPERADMIN' && (
+                      <SelectItem value="SUPERADMIN">SUPERADMIN (Global)</SelectItem>
+                    )}
                   </SelectContent></Select>
               </div>
 
