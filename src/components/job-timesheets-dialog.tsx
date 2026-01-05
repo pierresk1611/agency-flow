@@ -46,6 +46,7 @@ export function JobTimesheetsDialog({
                                 <TableRow>
                                     <TableHead>Kto</TableHead>
                                     <TableHead>Dátum</TableHead>
+                                    <TableHead>Poznámka</TableHead>
                                     <TableHead className="text-right">Dĺžka</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -68,6 +69,11 @@ export function JobTimesheetsDialog({
                                                 <div className="font-medium text-slate-700">{format(new Date(t.startTime), 'dd.MM.yyyy')}</div>
                                                 <div className="text-[10px] text-slate-400">{format(new Date(t.startTime), 'HH:mm')} - {t.endTime ? format(new Date(t.endTime), 'HH:mm') : '...'}</div>
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <p className="text-[10px] text-slate-600 italic line-clamp-2 max-w-[200px]">
+                                                {t.description || "—"}
+                                            </p>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Badge variant="secondary" className="font-mono text-[10px]">

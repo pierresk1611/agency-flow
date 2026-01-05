@@ -211,31 +211,38 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                         timesheets={history}
                         jobTitle={job.title}
                         trigger={
-                            <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden mt-6 cursor-pointer hover:bg-slate-800 transition">
-                                <CardHeader className="pb-2 border-b border-white/10">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Čas strávený na jobe</CardTitle>
-                                        <ExternalLink className="h-3 w-3 opacity-30" />
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-4 space-y-3">
-                                    {history.slice(0, 5).map(t => (
-                                        <div key={t.id} className="flex justify-between items-center text-[11px] border-b border-white/5 pb-2 last:border-0">
-                                            <div>
-                                                <div className="font-bold">{t.userName || t.userEmail.split('@')[0]}</div>
-                                                <div className="opacity-50">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
+                            <div className="cursor-pointer group">
+                                <Card className="shadow-sm border-none bg-slate-900 text-white overflow-hidden mt-6 group-hover:bg-slate-800 transition">
+                                    <CardHeader className="pb-2 border-b border-white/10">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-[10px] font-black uppercase tracking-widest opacity-50">Čas strávený na jobe</CardTitle>
+                                            <ExternalLink className="h-3 w-3 opacity-30" />
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="pt-4 space-y-3">
+                                        {history.slice(0, 5).map(t => (
+                                            <div key={t.id} className="flex justify-between items-start text-[11px] border-b border-white/5 pb-2 last:border-0 relative">
+                                                <div className="flex-1 min-w-0 pr-2">
+                                                    <div className="font-bold truncate">{t.userName || t.userEmail.split('@')[0]}</div>
+                                                    <div className="opacity-50 text-[9px]">{format(new Date(t.startTime), 'd.M. HH:mm')}</div>
+                                                    {t.description && (
+                                                        <p className="text-[10px] opacity-70 mt-1 line-clamp-1 italic">
+                                                            "{t.description}"
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none shrink-0">{t.durationMinutes} m</Badge>
                                             </div>
-                                            <Badge variant="secondary" className="font-mono text-[9px] bg-white/10 text-white border-none">{t.durationMinutes} m</Badge>
-                                        </div>
-                                    ))}
-                                    {history.length === 0 && <p className="text-[10px] text-center py-2 opacity-50 italic">Zatiaľ žiadne záznamy.</p>}
-                                    {history.length > 5 && (
-                                        <div className="text-[9px] text-center opacity-40 font-bold uppercase tracking-widest pt-2">
-                                            Zobraziť ďalších {history.length - 5} záznamov
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                        ))}
+                                        {history.length === 0 && <p className="text-[10px] text-center py-2 opacity-50 italic">Zatiaľ žiadne záznamy.</p>}
+                                        {history.length > 5 && (
+                                            <div className="text-[9px] text-center opacity-40 font-bold uppercase tracking-widest pt-2 group-hover:opacity-100 transition">
+                                                Zobraziť ďalších {history.length - 5} záznamov
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
                         }
                     />
 
