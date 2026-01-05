@@ -22,6 +22,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Neplatný formát dátumu' }, { status: 400 })
     }
 
+    // 0. Verify Campaign belongs to session Agency
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { client: true }
+    })
+
+    if (!campaign || campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Campaign not found or access denied' }, { status: 404 })
+    }
+
     // 1. Nájdi Traffic Managera alebo Admina pre automatické priradenie
     let trafficUser = await prisma.user.findFirst({
       where: { agencyId: session.agencyId, role: 'TRAFFIC', active: true }
@@ -47,9 +57,19 @@ export async function POST(request: Request) {
       })
     }
 
-    // 3. Pridaj kreatívcov (ak sú poslaní a ešte nie sú v zozname)
+    // 3. Pridaj kreatívcov (ak sú poslaní, sú v TEJ ISTEJ AGENTÚRE a ešte nie sú v zozname)
     if (Array.isArray(creativeIds)) {
-      creativeIds.forEach(cId => {
+      const validCreatives = await prisma.user.findMany({
+        where: {
+          id: { in: creativeIds },
+          agencyId: session.agencyId
+        },
+        select: { id: true }
+      })
+
+      const validIds = validCreatives.map(u => u.id)
+
+      validIds.forEach(cId => {
         const isAlreadyAdded = assignmentsToCreate.some(a => a.userId === cId)
         if (!isAlreadyAdded) {
           assignmentsToCreate.push({

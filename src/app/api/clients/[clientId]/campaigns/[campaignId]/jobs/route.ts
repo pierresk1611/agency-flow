@@ -7,8 +7,18 @@ export async function POST(
   { params }: { params: { campaignId: string } }
 ) {
   try {
-    const session = getSession()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    // Verify campaign belongs to agency
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: params.campaignId },
+      include: { client: true }
+    })
+
+    if (!campaign || campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Campaign not found or access denied' }, { status: 404 })
+    }
 
     const body = await request.json()
     const { title, deadline, budget } = body

@@ -17,6 +17,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
         }
 
+        // 1. Verify ownership/agency
+        const check = await prisma.reassignmentRequest.findFirst({
+            where: {
+                assignmentId,
+                targetUserId,
+                status: 'PENDING',
+                assignment: {
+                    job: {
+                        campaign: {
+                            client: {
+                                agencyId: session.agencyId
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        if (!check && session.role !== 'SUPERADMIN' && !session.godMode) {
+            return NextResponse.json({ error: 'Žiadosť nenájdená alebo prístup zamietnutý' }, { status: 404 })
+        }
+
         // Update request to REJECTED
         const updated = await prisma.reassignmentRequest.updateMany({
             where: {

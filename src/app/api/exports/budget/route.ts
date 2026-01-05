@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
+import { getSession } from '@/lib/session'
 
 export async function GET() {
   try {
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const items = await prisma.budgetItem.findMany({
+      where: {
+        job: {
+          campaign: {
+            client: {
+              agencyId: session.agencyId
+            }
+          }
+        }
+      },
       include: {
         job: {
-          include: { 
-            campaign: { include: { client: true } } 
+          include: {
+            campaign: { include: { client: true } }
           }
         },
         timesheet: {

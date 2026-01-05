@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const agency = await prisma.agency.findFirst()
-    if (!agency) return NextResponse.json([], { status: 200 })
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const scopes = await prisma.agencyScope.findMany({
-      where: { agencyId: agency.id },
-      orderBy: { name: 'asc' } 
+      where: { agencyId: session.agencyId },
+      orderBy: { name: 'asc' }
     })
 
     return NextResponse.json(scopes)

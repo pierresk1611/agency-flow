@@ -1,22 +1,17 @@
-// src/app/api/positions/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // Načítame prvú agentúru (prípadne podľa nejakého slug alebo session)
-    const agency = await prisma.agency.findFirst()
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    if (!agency) {
-      // Ak agentúra neexistuje, vrátime prázdne pole
-      return NextResponse.json([], { status: 200 })
-    }
-
-    // Načítame pozície pre danú agentúru
+    // Načítame pozície pre dany agencyId zo session
     const positions = await prisma.agencyPosition.findMany({
-      where: { agencyId: agency.id },
+      where: { agencyId: session.agencyId },
       orderBy: { name: 'asc' }
     })
 

@@ -1,30 +1,28 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import * as jwt from 'jsonwebtoken'
-import { cookies } from 'next/headers'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret'
+import { getSession } from '@/lib/session'
 
 export async function POST(request: Request) {
   try {
-    // 1. Načítanie tokenu z cookies
-    const cookieStore = cookies()
-    const token = cookieStore.get('token')?.value
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // 2. Overenie tokenu
-    let userId: string
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any
-      userId = decoded.userId
-    } catch (err) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
+    const userId = session.userId
 
     // 3. Načítanie dát z requestu
     const { jobId, text } = await request.json()
     if (!jobId || !text) {
       return NextResponse.json({ error: 'Chýba text alebo ID jobu' }, { status: 400 })
+    }
+
+    // SECURITY CHECK: Does job belong to agency?
+    const jobCheck = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: { campaign: { include: { client: true } } }
+    })
+
+    if (!jobCheck || jobCheck.campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
     }
 
     console.log(`Ukladám komentár: User=${userId}, Job=${jobId}, Text=${text}`)

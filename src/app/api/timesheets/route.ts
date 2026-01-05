@@ -1,28 +1,29 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import * as jwt from 'jsonwebtoken'
-import { cookies } from 'next/headers'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret'
+import { getSession } from '@/lib/session'
 
 export async function POST(request: Request) {
     try {
-        const cookieStore = cookies()
-        const token = cookieStore.get('token')?.value
-        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        const session = await getSession()
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        let userId: string
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET) as any
-            userId = decoded.userId
-        } catch (err) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-        }
+        const userId = session.userId
+        const agencyId = session.agencyId
 
         const body = await request.json()
         const { jobId, action, description } = body // action: 'TOGGLE_TIMER' | 'TOGGLE_PAUSE'
 
         if (!jobId) return NextResponse.json({ error: 'Job ID required' }, { status: 400 })
+
+        // 1. Verify that the job belongs to the session's agency
+        const job = await prisma.job.findUnique({
+            where: { id: jobId },
+            include: { campaign: { include: { client: true } } }
+        })
+
+        if (!job || job.campaign.client.agencyId !== agencyId) {
+            return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
+        }
 
         let assignment = await prisma.jobAssignment.findFirst({
             where: { jobId, userId },
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
         })
 
         if (!assignment) {
-            // Ak neexistuje, vytvoríme (fallback) - ale musíme fetch Job pre notifikáciu
+            // Ak neexistuje, vytvoríme (fallback)
             const newAssignment = await prisma.jobAssignment.create({
                 data: { jobId, userId, roleOnJob: 'Contributor' }
             })
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
             })
         }
 
-        // Safety check (should not happen if creation worked)
+        // Safety check
         if (!assignment) return NextResponse.json({ error: 'Assignment error' }, { status: 500 })
 
 

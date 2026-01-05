@@ -17,15 +17,22 @@ export async function GET(request: Request) {
 
     // Build filter
     const where: any = {
-        status: { not: 'REJECTED' }, // Exportujeme approved a pending? Alebo vsetky? Requirement nehovori. Defaultneme na vsetky okrem rejected maybe? Alebo vsetky. Dajme vsetky okrem zmazanych (ak by boli).
-        // Ale schema nema deletedAt pre timesheet.
-        // Dajme vsetky.
+        status: { not: 'REJECTED' },
+        jobAssignment: {
+            job: {
+                campaign: {
+                    client: {
+                        agencyId: session.agencyId
+                    }
+                }
+            }
+        }
     }
 
     if (jobId) {
-        where.jobAssignment = { jobId }
+        where.jobAssignment.jobId = jobId
     } else if (clientId) {
-        where.jobAssignment = { job: { campaign: { clientId } } }
+        where.jobAssignment.job.campaign.clientId = clientId
     }
 
     const timesheets = await prisma.timesheet.findMany({

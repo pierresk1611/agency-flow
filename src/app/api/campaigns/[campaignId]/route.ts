@@ -12,6 +12,16 @@ export async function POST(
     const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Verify campaign belongs to agency
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: params.campaignId },
+      include: { client: true }
+    })
+
+    if (!campaign || campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Campaign not found or access denied' }, { status: 404 })
+    }
+
     const { title, deadline, budget } = await request.json()
 
     if (!title || !deadline) {
@@ -30,9 +40,7 @@ export async function POST(
         deadline: parsedDeadline,
         budget: isNaN(parsedBudget) ? 0 : parsedBudget,
         campaignId: params.campaignId,
-        status: 'TODO',
-        createdById: session.userId,
-        agencyId: session.agencyId
+        status: 'TODO'
       }
     })
 

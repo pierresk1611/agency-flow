@@ -42,6 +42,19 @@ export async function PATCH(req: NextRequest) {
     }
 
     try {
+        // Validate internalApproverIds belong to agency
+        let filteredApproverIds = internalApproverIds;
+        if (internalApproverIds && internalApproverIds.length > 0) {
+            const validUsers = await prisma.user.findMany({
+                where: {
+                    id: { in: internalApproverIds },
+                    agencyId: id
+                },
+                select: { id: true }
+            });
+            filteredApproverIds = validUsers.map(u => u.id);
+        }
+
         const updatedAgency = await prisma.agency.update({
             where: { id },
             data: {
@@ -53,7 +66,7 @@ export async function PATCH(req: NextRequest) {
                 email,
                 internalApprovers: {
                     set: [], // Clear existing relations
-                    connect: internalApproverIds?.map((id: string) => ({ id })) || [],
+                    connect: filteredApproverIds?.map((id: string) => ({ id })) || [],
                 },
                 // Only Superadmin can change trial/suspension status usually, but we'll allow it generally for now based on requirements or if passed
                 ...(session.role === "SUPERADMIN" && {

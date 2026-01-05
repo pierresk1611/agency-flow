@@ -13,6 +13,25 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
+        // 1. Verify Assignment belongs to agency
+        const assignment = await prisma.jobAssignment.findUnique({
+            where: { id: assignmentId },
+            include: { job: { include: { campaign: { include: { client: true } } } } }
+        })
+
+        if (!assignment || assignment.job.campaign.client.agencyId !== session.agencyId) {
+            return NextResponse.json({ error: 'Assignment not found or access denied' }, { status: 404 })
+        }
+
+        // 2. Verify Target User belongs to agency
+        const targetUser = await prisma.user.findUnique({
+            where: { id: targetUserId, agencyId: session.agencyId }
+        })
+
+        if (!targetUser) {
+            return NextResponse.json({ error: 'Target user not found or access denied' }, { status: 404 })
+        }
+
         // Vytvorenie žiadosti
         const req = await prisma.reassignmentRequest.create({
             data: {

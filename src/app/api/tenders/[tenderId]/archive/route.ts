@@ -14,6 +14,15 @@ export async function POST(
     }
 
     try {
+        const tender = await prisma.tender.findUnique({
+            where: { id: params.tenderId },
+            select: { agencyId: true }
+        })
+
+        if (!tender || tender.agencyId !== session.agencyId) {
+            return NextResponse.json({ error: 'Tender not found or access denied' }, { status: 404 })
+        }
+
         const updated = await prisma.tender.update({
             where: { id: params.tenderId },
             data: { status: 'DONE' }

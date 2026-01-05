@@ -19,7 +19,7 @@ export async function GET() {
 
     // Načítanie používateľov agentúry
     const rawUsers = await prisma.user.findMany({
-      where: { 
+      where: {
         agencyId: session.agencyId,
         active: true
       },
@@ -31,15 +31,22 @@ export async function GET() {
         position: true,
         role: true,
         assignments: {
-          where: { job: { status: { not: 'DONE' }, archivedAt: null, ...userJobFilter } },
-          include: { 
-            job: { 
+          where: {
+            job: {
+              status: { not: 'DONE' },
+              archivedAt: null,
+              campaign: { client: { agencyId: session.agencyId } },
+              ...userJobFilter
+            }
+          },
+          include: {
+            job: {
               select: {
                 id: true,
                 title: true,
                 deadline: true,
                 campaign: { select: { name: true, client: { select: { name: true } } } }
-              } 
+              }
             }
           }
         }

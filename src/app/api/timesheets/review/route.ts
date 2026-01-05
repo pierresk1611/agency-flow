@@ -1,11 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { cookies } from 'next/headers'
-import * as jwt from 'jsonwebtoken'
 import { createNotification } from '@/lib/notifications'
 import { getSession } from '@/lib/session'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
 export async function POST(request: Request) {
   try {
@@ -22,9 +18,19 @@ export async function POST(request: Request) {
 
     const timesheet = await prisma.timesheet.findUnique({
       where: { id: timesheetId },
-      include: { jobAssignment: { include: { user: true, job: true } } }
+      include: {
+        jobAssignment: {
+          include: {
+            user: true,
+            job: { include: { campaign: { include: { client: true } } } }
+          }
+        }
+      }
     })
-    if (!timesheet) return NextResponse.json({ error: 'Timesheet nenájdený' }, { status: 404 })
+
+    if (!timesheet || timesheet.jobAssignment.job.campaign.client.agencyId !== session.agencyId) {
+      return NextResponse.json({ error: 'Timesheet nenájdený alebo nedostupný' }, { status: 404 })
+    }
 
     if (timesheet.status === status)
       return NextResponse.json({ success: true, message: 'Already set' })

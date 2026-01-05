@@ -5,7 +5,7 @@ import { getSession } from '@/lib/session'
 export const dynamic = 'force-dynamic'
 
 export async function PATCH(
-  request: Request, 
+  request: Request,
   { params }: { params: { userId: string } }
 ) {
   try {
@@ -30,7 +30,13 @@ export async function PATCH(
       }
     }
 
-    // 2. AKTUALIZÁCIA UŽÍVATEĽA
+    // 2. SECURITY CHECK: Does user belong to agency?
+    const targetUser = await prisma.user.findUnique({ where: { id: params.userId } })
+    if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== 'SUPERADMIN' && !session.godMode)) {
+      return NextResponse.json({ error: 'User not found or access denied' }, { status: 404 })
+    }
+
+    // 3. AKTUALIZÁCIA UŽÍVATEĽA
     const updated = await prisma.user.update({
       where: { id: params.userId },
       data: {
@@ -52,12 +58,17 @@ export async function PATCH(
 
 // DELETE ostáva len na deaktiváciu
 export async function DELETE(
-  request: Request, 
+  request: Request,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getSession() // ✅ must await
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const targetUser = await prisma.user.findUnique({ where: { id: params.userId } })
+    if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== 'SUPERADMIN' && !session.godMode)) {
+      return NextResponse.json({ error: 'User not found or access denied' }, { status: 404 })
+    }
 
     await prisma.user.update({ where: { id: params.userId }, data: { active: false } })
     return NextResponse.json({ success: true })

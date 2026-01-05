@@ -4,13 +4,28 @@ import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    const { searchParams } = new URL(request.url)
+    let targetUserId = searchParams.get('userId') || session.userId
+
+    // Access check: If requesting someone else, must be Admin/Traffic/Superadmin and same agency
+    if (targetUserId !== session.userId) {
+      if (!['ADMIN', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) && !session.godMode) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
+      const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } })
+      if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== 'SUPERADMIN' && !session.godMode)) {
+        return NextResponse.json({ error: 'Target user not found or access denied' }, { status: 404 })
+      }
+    }
+
     const entries = await prisma.plannerEntry.findMany({
-      where: { userId: session.userId },
+      where: { userId: targetUserId },
       include: { job: { include: { campaign: { include: { client: true } } } } },
       orderBy: { date: 'asc' }
     })
@@ -35,6 +50,16 @@ export async function POST(request: Request) {
 
     // Iba ak existuje a nie je 'INTERNAL', uloží ID jobu
     const finalJobId = jobId && jobId !== 'INTERNAL' ? jobId : null
+
+    if (finalJobId) {
+      const job = await prisma.job.findUnique({
+        where: { id: finalJobId },
+        include: { campaign: { include: { client: true } } }
+      })
+      if (!job || job.campaign.client.agencyId !== session.agencyId) {
+        return NextResponse.json({ error: 'Job not found or access denied' }, { status: 404 })
+      }
+    }
 
     const entry = await prisma.plannerEntry.create({
       data: {
