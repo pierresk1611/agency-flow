@@ -1,7 +1,15 @@
 import Link from 'next/link'
 import { SuperAdminNav } from './SuperAdminNav'
+import { getSession } from '@/lib/session'
+import { redirect } from 'next/navigation'
+import { Edit2, Clock } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
-export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+export default async function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession()
+  if (!session || session.role !== 'SUPERADMIN') {
+    redirect('/login')
+  }
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md">

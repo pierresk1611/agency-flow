@@ -194,7 +194,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                                                 <div className="flex items-center gap-2 mt-1">
                                                     <Avatar className="h-4 w-4 border">
                                                         <AvatarFallback className="text-[7px] bg-slate-100 text-slate-600 font-bold">
-                                                            {pe.user?.name?.split(' ').map((n: any) => n[0]).join('')}
+                                                            {(pe.user?.name || pe.user?.email || '?').split(' ').map((n: any) => n[0]).join('')}
                                                         </AvatarFallback>
                                                     </Avatar>
                                                     <span className="text-[9px] font-medium text-slate-500">{pe.user?.name}</span>
@@ -208,7 +208,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                     </Card>
 
                     <JobTimesheetsDialog
-                        timesheets={history}
+                        timesheets={JSON.parse(JSON.stringify(history))}
                         jobTitle={job.title}
                         trigger={
                             <div className="cursor-pointer group">

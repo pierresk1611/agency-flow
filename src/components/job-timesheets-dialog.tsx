@@ -64,7 +64,7 @@ export function JobTimesheetsDialog({
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell suppressHydrationWarning>
                                             <div className="text-xs">
                                                 <div className="font-medium text-slate-700">{format(new Date(t.startTime), 'dd.MM.yyyy')}</div>
                                                 <div className="text-[10px] text-slate-400">{format(new Date(t.startTime), 'HH:mm')} - {t.endTime ? format(new Date(t.endTime), 'HH:mm') : '...'}</div>

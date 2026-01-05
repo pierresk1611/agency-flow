@@ -15,10 +15,11 @@ import { format } from 'date-fns'
 import DefaultTeamCard from '@/components/default-team-card'
 import { Prisma } from '@prisma/client'
 import { ClientEditDialog } from '@/components/client-edit-dialog'
-import { Edit2 } from 'lucide-react'
+import { Edit2, Clock } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 export default async function ClientDetailPage({ params }: { params: { slug: string, clientId: string } }) {
-  const session = getSession()
+  const session = await getSession()
   if (!session) redirect('/login')
 
   const isCreative = session.role === 'CREATIVE'
@@ -146,7 +147,17 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
         <div className="flex items-center gap-2">
           {!isCreative && (
             <ClientEditDialog
-              client={client}
+              client={{
+                id: client.id,
+                name: client.name,
+                priority: client.priority,
+                scope: client.scope,
+                companyId: client.companyId,
+                vatId: client.vatId,
+                billingAddress: client.billingAddress,
+                importantNote: client.importantNote,
+                agencyId: client.agencyId
+              }}
               trigger={
                 <Button variant="outline" size="sm" className="gap-2">
                   <Edit2 className="h-4 w-4" /> Upraviť Klienta
@@ -167,7 +178,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
         <div className="lg:col-span-2 space-y-6">
           {/* NEWSFEED */}
           <div className="min-h-[400px]">
-            <ClientNewsfeed clientId={client.id} initialNotes={client.notes} isReadOnly={isCreative} />
+            <ClientNewsfeed
+              clientId={client.id}
+              initialNotes={JSON.parse(JSON.stringify(client.notes))}
+              isReadOnly={isCreative}
+            />
           </div>
 
           {/* PLÁNOVANÁ PRÁCA */}
@@ -201,7 +216,7 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
                         <div className="flex items-center gap-2 mt-2">
                           <Avatar className="h-5 w-5 border">
                             <AvatarFallback className="text-[8px] bg-slate-100 text-slate-600">
-                              {entry.user?.name?.split(' ').map((n: any) => n[0]).join('')}
+                              {(entry.user?.name || entry.user?.email || '?').split(' ').map((n: any) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-[10px] font-medium text-slate-500">{entry.user?.name}</span>
