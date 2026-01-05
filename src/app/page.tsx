@@ -8,13 +8,13 @@ import {
   Clock,
   Users,
   ShieldCheck,
-  CheckCircle2,
   MessageSquare,
   AlertTriangle,
   Eye,
   Trophy,
   Layout,
-  Zap
+  CheckCircle2,
+  Mail
 } from 'lucide-react'
 
 export default async function LandingPage() {
@@ -87,7 +87,7 @@ export default async function LandingPage() {
           </Link>
         </div>
         <p className="mt-6 text-xs text-slate-400 font-medium uppercase tracking-wider">
-          Bez kreditnej karty • Okamžitý prístup • 14 dní free
+          Bez kreditnej karty • Okamžitý prístup
         </p>
       </section>
 
@@ -133,7 +133,7 @@ export default async function LandingPage() {
             color="text-blue-600"
             bg="bg-blue-50"
             title="Kontextová Komunikácia"
-            desc="Koniec strateným mailom. Komentujte priamo pri zákazke. Všetky podklady, linky a diskusia sú tam, kde majú byť."
+            desc="Koniec strateným mailom. Komentujte priamo pri zákazke. Všetky podklady, linky and diskusia sú tam, kde majú byť."
           />
 
           <FeatureCard
@@ -203,7 +203,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* --- PRICING SPECIAL OFFER --- */}
+      {/* --- CENNÍK / EARLY ACCESS (NOVÁ SEKCE) --- */}
       <section className="py-24 border-t border-slate-100 bg-slate-50" id="pricing">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <div className="inline-block mb-4 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold uppercase tracking-widest rounded-full">
@@ -236,10 +236,16 @@ export default async function LandingPage() {
               </Link>
             </div>
 
-            <p className="text-xs text-slate-400 mt-6">
-              Schválenie registrácie môže trvať <strong className="text-slate-600">48 hodín</strong> (manuálna kontrola).
-              <br />Otázky? Píšte na <a href="mailto:agencyflowapp@gmail.com" className="text-blue-600 hover:underline">agencyflowapp@gmail.com</a>.
-            </p>
+            <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-500 space-y-2">
+              <p>
+                Schválenie registrácie môže trvať <strong className="text-slate-700">48 hodín</strong> (manuálna kontrola).
+              </p>
+              <div className="pt-1">
+                <a href="mailto:agencyflowapp@gmail.com" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium">
+                  <Mail className="h-3 w-3" /> agencyflowapp@gmail.com
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
