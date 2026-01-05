@@ -7,6 +7,7 @@ export interface Session {
   userId: string
   agencyId: string
   role: string
+  godMode?: boolean
 }
 
 export function getSession(): Session | null {
@@ -20,7 +21,8 @@ export function getSession(): Session | null {
     return {
       userId: decoded.userId,
       agencyId: decoded.agencyId,
-      role: decoded.role
+      role: decoded.role,
+      godMode: decoded.godMode
     }
   } catch (error) {
     return null

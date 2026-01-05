@@ -3,17 +3,18 @@ import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
 import * as jwt from 'jsonwebtoken'
 import { createNotification } from '@/lib/notifications'
+import { getSession } from '@/lib/session'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret'
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies()
-    const token = cookieStore.get('token')?.value
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await getSession()
+    if (!session || (!['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) && !session.godMode)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
-    const currentUserId = decoded.userId
+    const currentUserId = session.userId
 
     const { timesheetId, status } = await request.json()
     if (!timesheetId || !['APPROVED', 'REJECTED'].includes(status))

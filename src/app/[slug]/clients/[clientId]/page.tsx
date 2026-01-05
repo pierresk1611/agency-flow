@@ -14,6 +14,8 @@ import { ClientNewsfeed } from '@/components/client-newsfeed'
 import { format } from 'date-fns'
 import DefaultTeamCard from '@/components/default-team-card'
 import { Prisma } from '@prisma/client'
+import { ClientEditDialog } from '@/components/client-edit-dialog'
+import { Edit2 } from 'lucide-react'
 
 export default async function ClientDetailPage({ params }: { params: { slug: string, clientId: string } }) {
   const session = getSession()
@@ -44,8 +46,7 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
   }) as any // Cast to any to resolve property access errors on relations in this view
 
   if (!client) return notFound()
-
-  const canSeeBilling = ['ADMIN', 'ACCOUNT', 'TRAFFIC'].includes(session.role)
+  const canSeeBilling = ['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) || session.godMode
 
   return (
     <div className="space-y-6 pb-10">
@@ -80,11 +81,23 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
             </div>
           </div>
         </div>
-        <a href={`/api/exports/timesheets?clientId=${client.id}`} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Download className="h-4 w-4" /> Export Klienta
-          </Button>
-        </a>
+        <div className="flex items-center gap-2">
+          {!isCreative && (
+            <ClientEditDialog
+              client={client}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Edit2 className="h-4 w-4" /> Upraviť Klienta
+                </Button>
+              }
+            />
+          )}
+          <a href={`/api/exports/timesheets?clientId=${client.id}`} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" /> Export Klienta
+            </Button>
+          </a>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">

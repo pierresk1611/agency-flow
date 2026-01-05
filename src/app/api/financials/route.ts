@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.role !== "ADMIN" && session.role !== "ACCOUNT" && session.role !== "SUPERADMIN") {
+    if (session.role !== "ADMIN" && session.role !== "ACCOUNT" && session.role !== "SUPERADMIN" && !session.godMode) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Verify access to agency
-    if (session.role !== "SUPERADMIN" && session.agencyId !== agencyId) {
+    if (session.role !== "SUPERADMIN" && session.agencyId !== agencyId && !session.godMode) {
         return NextResponse.json({ error: "Forbidden Agency Access" }, { status: 403 });
     }
 

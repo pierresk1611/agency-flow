@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getSession()
-    if (!session) {
+    if (!session || (!['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) && !session.godMode)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

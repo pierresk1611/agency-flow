@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Building, Plus, Loader2, ArrowRight, Trash2, RotateCcw, Pencil } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { ClientEditDialog } from './client-edit-dialog'
 
 
 interface Client {
@@ -82,26 +83,6 @@ export function ClientsList() {
         setEditingClient(null); setNewName(''); setNewPriority('3'); setSelectedScope([]); setIsOtherSelected(false); setCustomScope('');
         setCompanyId(''); setVatId(''); setBillingAddress(''); setImportantNote('');
         setError(''); setOpen(true)
-    }
-
-    const openEditDialog = (client: Client) => {
-        setEditingClient(client)
-        setNewName(client.name)
-        setNewPriority(client.priority.toString())
-        const currentScopes = client.scope ? client.scope.split(',').map(s => s.trim()) : []
-        const standardScopeNames = scopesList.map(s => s.name)
-        const standard = currentScopes.filter(s => standardScopeNames.includes(s))
-        const custom = currentScopes.filter(s => !standardScopeNames.includes(s))
-        setSelectedScope(standard)
-        if (custom.length > 0) { setIsOtherSelected(true); setCustomScope(custom.join(', ')) }
-        else { setIsOtherSelected(false); setCustomScope('') }
-
-        setCompanyId(client.companyId || '')
-        setVatId(client.vatId || '')
-        setBillingAddress(client.billingAddress || '')
-        setImportantNote(client.importantNote || '')
-
-        setOpen(true)
     }
 
     const toggleScope = (scopeName: string) => {
@@ -253,11 +234,21 @@ export function ClientsList() {
                                                 {showArchived ? (
                                                     <Button variant="ghost" size="sm" className="text-green-600 hover:bg-green-50" onClick={() => handleArchive(client.id, true)}><RotateCcw className="h-4 w-4 mr-1" /> Obnoviť</Button>
                                                 ) : (
-                                                    <>
-                                                        <Link href={`/${slug}/clients/${client.id}`}><Button variant="ghost" size="sm" className="text-blue-600 font-bold text-xs h-7">DETAIL</Button></Link>
-                                                        <Button variant="ghost" size="sm" onClick={() => openEditDialog(client)} className="h-7 w-7 p-0"><Pencil className="h-3.5 w-3.5 text-slate-400" /></Button>
-                                                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-600 h-7 w-7 p-0" onClick={() => handleArchive(client.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                                    </>
+                                                    <div className="flex justify-end gap-2">
+                                                        <ClientEditDialog
+                                                            client={client as any}
+                                                            onSuccess={refreshData}
+                                                            trigger={
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border hover:bg-white shadow-sm">
+                                                                    <Pencil className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            }
+                                                        />
+                                                        <Link href={`/${slug}/clients/${client.id}`}>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border hover:bg-white shadow-sm"><ArrowRight className="h-3.5 w-3.5" /></Button>
+                                                        </Link>
+                                                        <Button variant="ghost" size="sm" onClick={() => handleArchive(client.id)} className="h-8 w-8 p-0 border hover:bg-white shadow-sm text-red-500 hover:text-red-700"><Trash2 className="h-3.5 w-3.5" /></Button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </TableCell>

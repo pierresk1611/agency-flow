@@ -19,7 +19,7 @@ export default async function FinancialsPage({ params }: { params: { slug: strin
 
     // Authorization: ADMIN, ACCOUNT, SUPERADMIN
     const allowedRoles = ["ADMIN", "ACCOUNT", "SUPERADMIN"];
-    if (!allowedRoles.includes(session.role)) {
+    if (!allowedRoles.includes(session.role) && !session.godMode) {
         return <div className="p-8">Nemáte oprávnenie na prehľad financií.</div>;
     }
 

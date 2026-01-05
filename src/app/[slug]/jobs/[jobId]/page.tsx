@@ -95,7 +95,7 @@ export default async function JobDetailPage({ params }: { params: { slug: string
                             <Download className="h-4 w-4" /> Stiahnúť timesheety
                         </Button>
                     </a>
-                    {(session.role === 'ADMIN' || session.role === 'ACCOUNT' || session.role === 'TRAFFIC') && !job.archivedAt && (
+                    {(session.role === 'ADMIN' || session.role === 'ACCOUNT' || session.role === 'TRAFFIC' || session.role === 'SUPERADMIN' || session.godMode) && !job.archivedAt && (
                         <JobActions jobId={job.id} isArchived={false} />
                     )}
                     <TimerButton

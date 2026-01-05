@@ -24,7 +24,7 @@ function deleteCookie(name: string) {
   document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 
-export function Sidebar({ slug, role }: { slug: string; role: string }) {
+export function Sidebar({ slug, role, godMode }: { slug: string; role: string; godMode?: boolean }) {
   const pathname = usePathname();
 
   const routes = [
@@ -66,8 +66,8 @@ export function Sidebar({ slug, role }: { slug: string; role: string }) {
         <div className="space-y-1">
           {routes.map((route) => {
             // Basic role check for Financials/Settings if needed locally, though layout handles it too.
-            if (route.label === "Financie" && !["ADMIN", "ACCOUNT", "SUPERADMIN"].includes(role)) return null;
-            if (route.label === "Nastavenia" && !["ADMIN", "SUPERADMIN"].includes(role)) return null;
+            if (route.label === "Financie" && !["ADMIN", "ACCOUNT", "SUPERADMIN"].includes(role) && !godMode) return null;
+            if (route.label === "Nastavenia" && !["ADMIN", "SUPERADMIN"].includes(role) && !godMode) return null;
 
             const isActive = pathname === route.href || pathname.startsWith(route.href + "/");
 
