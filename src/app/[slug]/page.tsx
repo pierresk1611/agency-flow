@@ -136,11 +136,11 @@ export default async function DashboardPage({ params }: { params: { slug: string
   }
 
   // 9️⃣ NEW WIDGETS DATA
-  const notifications = await prisma.notification.findMany({
+  const notifications = session.userId ? await prisma.notification.findMany({
     where: { userId: session.userId, isRead: false },
     orderBy: { createdAt: 'desc' },
     take: 5
-  })
+  }) : []
 
   // Waiting on Approval (Admin/Traffic only)
   let pendingReassigns: any[] = []
