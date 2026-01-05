@@ -13,6 +13,11 @@ export default async function TrafficPage({ params }: { params: { slug: string }
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+    redirect('/login')
+  }
+
   // Načítame užívateľov s ich priradeniami k jobom
   const usersRaw = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },

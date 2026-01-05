@@ -42,6 +42,11 @@ export default async function TenderDetailPage({ params }: { params: { slug: str
 
   if (!tender || tender.agency.slug !== params.slug) return notFound()
 
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== tender.agencyId && !session.godMode) {
+    redirect('/login')
+  }
+
   const canEdit = session.role !== 'CREATIVE'
 
   return (

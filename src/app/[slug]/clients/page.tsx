@@ -14,6 +14,11 @@ export default async function AgencyClientsPage({ params }: { params: { slug: st
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+    redirect('/login')
+  }
+
   // 3️⃣ Zistenie, či je používateľ len na čítanie
   const isReadOnly = session.role === 'CREATIVE'
 
@@ -26,12 +31,12 @@ export default async function AgencyClientsPage({ params }: { params: { slug: st
           Prehľad firiem a klientsky newsfeed {isReadOnly ? '(len na čítanie)' : ''}
         </p>
       </div>
-      
-      <ClientsList 
-        role={session.role} 
-        userId={session.userId} 
-        agencyId={agency.id} 
-        readOnly={isReadOnly} 
+
+      <ClientsList
+        role={session.role}
+        userId={session.userId}
+        agencyId={agency.id}
+        readOnly={isReadOnly}
       />
     </div>
   )

@@ -42,6 +42,11 @@ export default async function TendersPage({ params }: PageProps) {
     notFound()
   }
 
+  /* 2.1 SECURITY CHECK - Agency Isolation */
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+    redirect('/login')
+  }
+
   /* 3️⃣ ROLE LOGIC */
   const isCreative = session.role === 'CREATIVE'
 

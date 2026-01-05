@@ -54,6 +54,11 @@ export default async function JobDetailPage({ params }: { params: { slug: string
 
     if (!job) return notFound()
 
+    // ✅ SECURITY CHECK: Agency Isolation
+    if (session.role !== 'SUPERADMIN' && session.agencyId !== job.campaign.client.agencyId && !session.godMode) {
+        redirect('/login')
+    }
+
     const isCreative = session.role === 'CREATIVE'
     const isAssigned = job.assignments.some(a => a.userId === session.userId)
     if (isCreative && !isAssigned) return notFound()

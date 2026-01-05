@@ -16,6 +16,11 @@ export default async function NewJobPage({ params }: { params: { slug: string } 
     const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
     if (!agency) redirect('/login')
 
+    // ✅ SECURITY CHECK: Agency Isolation
+    if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+        redirect('/login')
+    }
+
     // Fetch campaigns for dropdown
     const campaigns = await prisma.campaign.findMany({
         where: { client: { agencyId: agency.id }, archivedAt: null },
@@ -24,12 +29,25 @@ export default async function NewJobPage({ params }: { params: { slug: string } 
 
     async function createJob(formData: FormData) {
         'use server'
+        const session = await getSession()
+        if (!session) redirect('/login')
+
         const title = formData.get('title') as string
         const campaignId = formData.get('campaignId') as string
         const deadline = formData.get('deadline') as string
         const budget = formData.get('budget') as string
 
         if (!title || !campaignId || !deadline) return
+
+        // Verify campaign belongs to agency
+        const campaign = await prisma.campaign.findUnique({
+            where: { id: campaignId },
+            include: { client: true }
+        })
+
+        if (!campaign || (campaign.client.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+            throw new Error("Unauthorized campaign access")
+        }
 
         await prisma.job.create({
             data: {

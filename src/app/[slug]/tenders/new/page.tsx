@@ -17,8 +17,16 @@ export default async function NewTenderPage({ params }: { params: { slug: string
     const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
     if (!agency) redirect('/login')
 
+    // ✅ SECURITY CHECK: Agency Isolation
+    if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+        redirect('/login')
+    }
+
     async function createTender(formData: FormData) {
         'use server'
+        const session = await getSession()
+        if (!session) redirect('/login')
+
         const title = formData.get('title') as string
         const description = formData.get('description') as string
         const deadline = formData.get('deadline') as string
@@ -28,7 +36,7 @@ export default async function NewTenderPage({ params }: { params: { slug: string
 
         await prisma.tender.create({
             data: {
-                agencyId: agency!.id,
+                agencyId: session.agencyId,
                 title,
                 description,
                 deadline: new Date(deadline),

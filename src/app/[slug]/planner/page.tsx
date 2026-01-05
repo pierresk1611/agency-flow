@@ -17,6 +17,11 @@ export default async function PlannerPage({ params }: { params: { slug: string }
   })
   if (!agency) return notFound()
 
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+    redirect('/login')
+  }
+
   const isCreative = session.role === 'CREATIVE'
   const canViewTeam = ['ADMIN', 'TRAFFIC', 'ACCOUNT', 'SUPERADMIN'].includes(session.role)
 

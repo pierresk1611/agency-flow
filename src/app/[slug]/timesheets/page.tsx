@@ -21,6 +21,11 @@ export default async function TimesheetsPage({ params }: { params: { slug: strin
   const agency = await prisma.agency.findUnique({ where: { slug: params.slug } })
   if (!agency) return notFound()
 
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== agency.id && !session.godMode) {
+    redirect('/login')
+  }
+
   const isCreative = session.role === 'CREATIVE'
 
   // Načítame všetky relevantné timesheety (okrem tých s endTime: null, ak to chceme - ale tu necháme všetko)

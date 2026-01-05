@@ -16,12 +16,19 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
     }
 
-    // Overenie, či priradenie existuje
+    // Overenie, že priradenie existuje a patrí do rovnakej agentúry
     const existingAssignment = await prisma.jobAssignment.findUnique({
-      where: { id: assignmentId }
+      where: { id: assignmentId },
+      include: { job: { include: { campaign: { include: { client: true } } } } }
     })
-    if (!existingAssignment) {
-      return NextResponse.json({ error: 'Priradenie neexistuje' }, { status: 404 })
+    if (!existingAssignment || (existingAssignment.job.campaign.client.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+      return NextResponse.json({ error: 'Priradenie neexistuje alebo prístup zamietnutý' }, { status: 404 })
+    }
+
+    // Overenie, že nový užívateľ patrí do rovnakej agentúry
+    const targetUser = await prisma.user.findUnique({ where: { id: newUserId } })
+    if (!targetUser || (targetUser.agencyId !== session.agencyId && session.role !== 'SUPERADMIN')) {
+      return NextResponse.json({ error: 'Cieľový užívateľ nepatrí do vašej agentúry' }, { status: 403 })
     }
 
     // Aktualizácia priradenia

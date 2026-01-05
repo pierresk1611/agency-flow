@@ -62,6 +62,11 @@ export default async function ClientDetailPage({ params }: { params: { slug: str
   }) as any
 
   if (!client) return notFound()
+
+  // ✅ SECURITY CHECK: Agency Isolation
+  if (session.role !== 'SUPERADMIN' && session.agencyId !== client.agencyId && !session.godMode) {
+    redirect('/login')
+  }
   const canSeeBilling = ['ADMIN', 'ACCOUNT', 'TRAFFIC', 'SUPERADMIN'].includes(session.role) || session.godMode
 
   // Extract all running timers across all jobs of this client

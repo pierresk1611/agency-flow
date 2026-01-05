@@ -1,6 +1,6 @@
 
 import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { FinancialsTable } from "@/components/financials-table";
 
@@ -15,7 +15,12 @@ export default async function FinancialsPage({ params }: { params: { slug: strin
         where: { slug: params.slug },
     });
 
-    if (!agency) return <div>Agency not found</div>;
+    if (!agency) return notFound();
+
+    // ✅ SECURITY CHECK: Agency Isolation
+    if (session.role !== "SUPERADMIN" && session.agencyId !== agency.id && !session.godMode) {
+        redirect("/login");
+    }
 
     // Authorization: ADMIN, ACCOUNT, SUPERADMIN
     const allowedRoles = ["ADMIN", "ACCOUNT", "SUPERADMIN"];

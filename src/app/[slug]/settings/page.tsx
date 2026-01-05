@@ -1,6 +1,6 @@
 
 import { getSession } from "@/lib/session";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgencyForm } from "./agency-form";
@@ -20,7 +20,12 @@ export default async function SettingsPage({ params }: { params: { slug: string 
         }
     });
 
-    if (!agency) return <div>Agency not found</div>;
+    if (!agency) return notFound();
+
+    // ✅ SECURITY CHECK: Agency Isolation
+    if (session.role !== "SUPERADMIN" && session.agencyId !== agency.id && !session.godMode) {
+        redirect("/login");
+    }
 
     // Authorization: Only Admin/Superadmin
     if (session.role !== "ADMIN" && session.role !== "SUPERADMIN") {
