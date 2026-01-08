@@ -37,6 +37,7 @@ export function UsersSettings({ users, positions, agencyId, currentUserRole }: U
         position: "",
         hourlyRate: "0",
         costRate: "0",
+        defaultTaskRate: "0",
         active: true,
     });
 
@@ -49,6 +50,7 @@ export function UsersSettings({ users, positions, agencyId, currentUserRole }: U
             position: "",
             hourlyRate: "0",
             costRate: "0",
+            defaultTaskRate: "0",
             active: true,
         });
         setEditingUser(null);
@@ -64,6 +66,7 @@ export function UsersSettings({ users, positions, agencyId, currentUserRole }: U
             position: user.position || "",
             hourlyRate: user.hourlyRate?.toString() || "0",
             costRate: user.costRate?.toString() || "0",
+            defaultTaskRate: (user as any).defaultTaskRate?.toString() || "0",
             active: user.active
         });
         setIsDialogOpen(true);
@@ -220,6 +223,20 @@ export function UsersSettings({ users, positions, agencyId, currentUserRole }: U
                                     step="0.01"
                                     value={formData.costRate}
                                     onChange={(e) => setFormData({ ...formData, costRate: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="defaultTaskRate">Defaultná úkolová sadzba (€)</Label>
+                                <Input
+                                    id="defaultTaskRate"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={formData.defaultTaskRate}
+                                    onChange={(e) => setFormData({ ...formData, defaultTaskRate: e.target.value })}
                                 />
                             </div>
                         </div>

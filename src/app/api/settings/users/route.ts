@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { email, password, name, role, position, agencyId, hourlyRate, costRate } = body;
+        const { email, password, name, role, position, agencyId, hourlyRate, costRate, defaultTaskRate } = body;
 
         if (!email || !password || !agencyId) {
             return NextResponse.json(
@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
                 agencyId: session.role === "SUPERADMIN" ? (agencyId || session.agencyId) : session.agencyId,
                 hourlyRate: parseFloat(hourlyRate || "0"),
                 costRate: parseFloat(costRate || "0"),
+                defaultTaskRate: parseFloat(defaultTaskRate || "0"),
                 active: true,
-            },
+            } as any,
         });
 
         // Remove sensitive data
@@ -81,7 +82,7 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { id, name, role, position, hourlyRate, costRate, password, active } = body;
+        const { id, name, role, position, hourlyRate, costRate, defaultTaskRate, password, active } = body;
 
         if (!id) {
             return NextResponse.json({ error: "User ID required" }, { status: 400 });
@@ -99,6 +100,7 @@ export async function PATCH(req: NextRequest) {
             position,
             hourlyRate: parseFloat(hourlyRate),
             costRate: parseFloat(costRate),
+            defaultTaskRate: parseFloat(defaultTaskRate),
             active
         };
 
@@ -108,7 +110,7 @@ export async function PATCH(req: NextRequest) {
 
         const updatedUser = await prisma.user.update({
             where: { id },
-            data: updates,
+            data: updates as any,
         });
 
         const { passwordHash, ...userWithoutPassword } = updatedUser;

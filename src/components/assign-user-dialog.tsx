@@ -27,6 +27,8 @@ interface User {
   email: string
   name: string | null
   role: string
+  hourlyRate?: number
+  defaultTaskRate?: number
 }
 
 export function AssignUserDialog({ jobId }: { jobId: string }) {
@@ -37,6 +39,8 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
 
   const [selectedUser, setSelectedUser] = useState('')
   const [roleOnJob, setRoleOnJob] = useState('')
+  const [costType, setCostType] = useState<'hourly' | 'task'>('hourly')
+  const [costValue, setCostValue] = useState('')
 
   // Načítanie užívateľov pri otvorení okna
   useEffect(() => {
@@ -59,6 +63,24 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
     }
   }, [open])
 
+  // Auto-fill rates when user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      const user = users.find(u => u.id === selectedUser)
+      if (user) {
+        // Default logic: if user has hourly rate > 0, prefer hourly. 
+        // If they have task rate but no hourly, prefer task.
+        if (user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0)) {
+          setCostType('task')
+          setCostValue(user.defaultTaskRate.toString())
+        } else {
+          setCostType('hourly')
+          setCostValue(user.hourlyRate?.toString() || '0')
+        }
+      }
+    }
+  }, [selectedUser, users])
+
   const handleAssign = async () => {
     if (!selectedUser) return
     setLoading(true)
@@ -70,7 +92,9 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
         body: JSON.stringify({
           jobId,
           userId: selectedUser,
-          roleOnJob: roleOnJob || 'Člen tímu'
+          roleOnJob: roleOnJob || 'Člen tímu',
+          assignedCostType: costType,
+          assignedCostValue: parseFloat(costValue || '0')
         })
       })
 
@@ -147,6 +171,31 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
               value={roleOnJob}
               onChange={(e) => setRoleOnJob(e.target.value)}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>Typ odmeny</Label>
+              <Select onValueChange={(v) => setCostType(v as 'hourly' | 'task')} value={costType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hourly">Hodinová</SelectItem>
+                  <SelectItem value="task">Úkolová (Fix)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Sadzba (€)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={costValue}
+                onChange={(e) => setCostValue(e.target.value)}
+              />
+            </div>
           </div>
 
         </div>

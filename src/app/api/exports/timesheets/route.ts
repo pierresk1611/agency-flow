@@ -50,8 +50,8 @@ export async function GET(request: Request) {
         orderBy: { startTime: 'desc' }
     })
 
-    // Header: Dátum;Pracovník;Projekt;Task;Popis;Hodiny
-    const header = ['Dátum', 'Pracovník', 'Projekt', 'Task', 'Popis', 'Hodiny'].join(';')
+    // Header: Dátum;Pracovník;Projekt;Task;Popis;Hodiny;Cost Type;Cost Rate;Total Cost
+    const header = ['Dátum', 'Pracovník', 'Projekt', 'Task', 'Popis', 'Hodiny', 'Cost Type', 'Cost Rate', 'Total Cost'].join(';')
 
     const rows = timesheets.map(t => {
         const date = format(new Date(t.startTime), 'dd.MM.yyyy')
@@ -71,7 +71,21 @@ export async function GET(request: Request) {
 
         const hoursStr = hours.toFixed(2).replace('.', ',')
 
-        return [date, worker, project, task, description, hoursStr].join(';')
+        // Cost Calculation for Export
+        const costType = (t.jobAssignment as any).assignedCostType || 'hourly'
+        const costValue = (t.jobAssignment as any).assignedCostValue ?? (t.jobAssignment.user.hourlyRate || 0)
+        let totalCost = 0
+        if (costType === 'task') {
+            totalCost = costValue
+        } else {
+            totalCost = hours * costValue
+        }
+
+        const costTypeDisplay = costType === 'task' ? 'Task' : 'Hourly'
+        const costRateStr = costValue.toFixed(2).replace('.', ',')
+        const totalCostStr = totalCost.toFixed(2).replace('.', ',')
+
+        return [date, worker, project, task, description, hoursStr, costTypeDisplay, costRateStr, totalCostStr].join(';')
     })
 
     const csvContent = '\uFEFF' + [header, ...rows].join('\n')

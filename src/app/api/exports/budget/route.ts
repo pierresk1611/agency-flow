@@ -34,7 +34,7 @@ export async function GET() {
     })
 
     // Hlavička CSV
-    let csv = "Datum;Klient;Kampan;Job;Kreativec;Hodiny;Sadzba;Suma (EUR)\n"
+    let csv = "Datum;Klient;Kampan;Job;Kreativec;Hodiny;Sadzba;Suma (EUR);Typ odmeny\n"
 
     items.forEach(item => {
       const date = item.createdAt ? format(new Date(item.createdAt), 'dd.MM.yyyy') : ''
@@ -46,7 +46,9 @@ export async function GET() {
       const rate = item.rate != null ? item.rate.toFixed(2) : '0.00'
       const amount = item.amount != null ? item.amount.toFixed(2) : '0.00'
 
-      csv += `${date};${client};${campaign};${job};${user};${hours};${rate};${amount}\n`
+      const costType = (item.timesheet?.jobAssignment as any)?.assignedCostType === 'task' ? 'Task' : 'Hourly'
+
+      csv += `${date};${client};${campaign};${job};${user};${hours};${rate};${amount};${costType}\n`
     })
 
     return new NextResponse(csv, {

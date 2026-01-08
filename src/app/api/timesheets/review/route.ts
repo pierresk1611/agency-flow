@@ -37,8 +37,22 @@ export async function POST(request: Request) {
 
     if (status === 'APPROVED') {
       const hours = (timesheet.durationMinutes || 0) / 60
-      const rate = timesheet.jobAssignment.user.hourlyRate ?? 0
-      const amount = hours * rate
+
+      // HYBRID LOGIKA: Check assignedCostType from assignment
+      const costType = (timesheet.jobAssignment as any).assignedCostType || 'hourly'
+      const assignedValue = (timesheet.jobAssignment as any).assignedCostValue
+
+      let rate = 0
+      let amount = 0
+
+      if (costType === 'task') {
+        rate = assignedValue ?? ((timesheet.jobAssignment.user as any).defaultTaskRate || 0)
+        amount = rate // Fixed sum for task
+      } else {
+        // Hourly logic (fallback to user's hourly rate if assigned value is null)
+        rate = assignedValue ?? (timesheet.jobAssignment.user.hourlyRate || 0)
+        amount = hours * rate
+      }
 
       await prisma.$transaction(async (tx) => {
         await tx.timesheet.update({

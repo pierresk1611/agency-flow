@@ -98,9 +98,10 @@ model User {
   passwordHash String
   
   // Sadzby
-  hourlyRate   Float?   @default(0) 
-  costRate     Float?   @default(0) 
-  active       Boolean  @default(true)
+  hourlyRate      Float?   @default(0) 
+  costRate        Float?   @default(0) 
+  defaultTaskRate Float?   @default(0)
+  active          Boolean  @default(true)
   
   // Vzťahy
   assignments      JobAssignment[]
@@ -210,6 +211,9 @@ model JobAssignment {
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   roleOnJob   String   
+  
+  assignedCostType  String? // 'hourly' | 'task'
+  assignedCostValue Float?
   
   timesheets  Timesheet[]
   comments    Comment[] 

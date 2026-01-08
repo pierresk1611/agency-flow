@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { jobId, userId, roleOnJob } = body
+    const { jobId, userId, roleOnJob, assignedCostType, assignedCostValue } = body
 
     if (!jobId || !userId) {
       return NextResponse.json({ error: 'Chýbajúce údaje' }, { status: 400 })
@@ -48,7 +48,9 @@ export async function POST(request: Request) {
         jobId,
         userId,
         roleOnJob: roleOnJob?.trim() || 'Contributor',
-      },
+        assignedCostType: assignedCostType || 'hourly',
+        assignedCostValue: assignedCostValue != null ? parseFloat(assignedCostValue) : (targetUser.hourlyRate || 0)
+      } as any,
       include: { job: { include: { campaign: { include: { client: { include: { agency: true } } } } } } } // Fetch deeply for notification
     })
 
