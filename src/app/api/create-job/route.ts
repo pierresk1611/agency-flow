@@ -88,7 +88,7 @@ export async function POST(request: Request) {
             userId: cId,
             roleOnJob: 'CREATIVE',
             assignedCostType: override?.costType || ((user as any)?.defaultTaskRate && (user as any).defaultTaskRate > 0 && (!user?.hourlyRate || user?.hourlyRate === 0) ? 'task' : 'hourly'),
-            assignedCostValue: override?.costValue ?? (override?.costType === 'task' ? (user as any)?.defaultTaskRate : user?.hourlyRate) ?? 0
+            assignedCostValue: override?.costValue != null ? parseFloat(override.costValue) : (override?.costType === 'task' ? (user as any)?.defaultTaskRate : user?.hourlyRate) ?? 0
           })
         }
       })
