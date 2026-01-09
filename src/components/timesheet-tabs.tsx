@@ -88,10 +88,12 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                             <TableHead className="pl-6 w-[200px]">Kedy / Kto</TableHead>
                             <TableHead className="w-auto">Projekt / Task</TableHead>
                             <TableHead className="w-[120px]">Trvanie</TableHead>
-                            {!isCreative && (
+                            {isCreative ? (
+                                <TableHead className="text-right w-[120px] text-[10px]">Moja mzda</TableHead>
+                            ) : (
                                 <>
-                                    <TableHead className="text-right w-[120px] text-[10px]">Náklad</TableHead>
-                                    <TableHead className="text-right w-[120px] text-[10px]">Fakturácia</TableHead>
+                                    <TableHead className="text-right w-[120px] text-[10px]">Náklad (Internal)</TableHead>
+                                    <TableHead className="text-right w-[120px] text-[10px]">Fakturácia (Bill)</TableHead>
                                 </>
                             )}
                             <TableHead className="w-[150px] text-center">Status</TableHead>
@@ -147,20 +149,44 @@ function TimesheetTable({ timesheets, isCreative, isArchive }: { timesheets: any
                                             )}
                                         </div>
                                     </TableCell>
-                                    {!isCreative && (
+                                    {isCreative ? (
+                                        <TableCell className="text-right font-mono text-xs font-bold text-blue-700">
+                                            {(() => {
+                                                if (ts.status === 'APPROVED' && ts.budgetItem) {
+                                                    return ts.budgetItem.internalAmount ? `${ts.budgetItem.internalAmount.toFixed(2)} €` : '-'
+                                                }
+                                                // Prebiehajúce alebo Čakajúce
+                                                const hours = (ts.durationMinutes || 0) / 60
+                                                const costType = ts.jobAssignment.assignedCostType || 'hourly'
+                                                const costRate = ts.jobAssignment.assignedCostValue ?? (ts.jobAssignment.assignedCostType === 'task' ? ts.jobAssignment.user?.defaultTaskRate : ts.jobAssignment.user?.costRate || ts.jobAssignment.user?.hourlyRate) ?? 0
+                                                const amount = costType === 'task' ? costRate : hours * costRate
+                                                return amount > 0 ? `${amount.toFixed(2)} €` : '-'
+                                            })()}
+                                        </TableCell>
+                                    ) : (
                                         <>
                                             <TableCell className="text-right font-mono text-xs text-slate-500">
                                                 {(() => {
+                                                    if (ts.status === 'APPROVED' && ts.budgetItem) {
+                                                        return ts.budgetItem.internalAmount ? `${ts.budgetItem.internalAmount.toFixed(2)} €` : '-'
+                                                    }
                                                     const hours = (ts.durationMinutes || 0) / 60
-                                                    const cost = hours * (ts.jobAssignment.user?.costRate || 0)
-                                                    return cost > 0 ? `${cost.toFixed(2)} €` : '-'
+                                                    const costType = ts.jobAssignment.assignedCostType || 'hourly'
+                                                    const costRate = ts.jobAssignment.assignedCostValue ?? (ts.jobAssignment.assignedCostType === 'task' ? ts.jobAssignment.user?.defaultTaskRate : ts.jobAssignment.user?.costRate || ts.jobAssignment.user?.hourlyRate) ?? 0
+                                                    const amount = costType === 'task' ? costRate : hours * costRate
+                                                    return amount > 0 ? `${amount.toFixed(2)} €` : '-'
                                                 })()}
                                             </TableCell>
                                             <TableCell className="text-right font-mono text-xs font-bold text-slate-700">
                                                 {(() => {
+                                                    if (ts.status === 'APPROVED' && ts.budgetItem) {
+                                                        return ts.budgetItem.amount ? `${ts.budgetItem.amount.toFixed(2)} €` : '-'
+                                                    }
                                                     const hours = (ts.durationMinutes || 0) / 60
-                                                    const billable = hours * (ts.jobAssignment.user?.hourlyRate || 0)
-                                                    return billable > 0 ? `${billable.toFixed(2)} €` : '-'
+                                                    const costType = ts.jobAssignment.assignedCostType || 'hourly'
+                                                    const billRate = ts.jobAssignment.assignedBillingValue ?? ts.jobAssignment.user?.hourlyRate ?? 0
+                                                    const amount = costType === 'task' ? billRate : hours * billRate
+                                                    return amount > 0 ? `${amount.toFixed(2)} €` : '-'
                                                 })()}
                                             </TableCell>
                                         </>

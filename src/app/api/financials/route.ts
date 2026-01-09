@@ -51,25 +51,18 @@ export async function GET(req: NextRequest) {
         });
 
         const data = jobs.map(job => {
-            const totalCost = job.budgets.reduce((sum, item) => sum + item.amount, 0);
+            const totalBilling = job.budgets.reduce((sum, item) => sum + (item.amount || 0), 0);
+            const totalInternalCost = job.budgets.reduce((sum, item) => sum + ((item as any).internalAmount || 0), 0);
             const totalHours = job.budgets.reduce((sum, item) => sum + item.hours, 0);
-            const budget = job.budget || 0;
-            const difference = budget - totalCost;
 
-            // Profitability: if budget is 0 (T&M or unset), maybe 0% or 100%?
-            // If budget > 0, (budget - cost) / budget * 100
-            let profitability = 0;
-            if (budget > 0) {
-                profitability = ((budget - totalCost) / budget) * 100;
-            } else if (totalCost > 0) {
-                // No budget but costs? Technically profit margin depends on internal cost vs billable,
-                // but here we only have 'amount' which is usually billable amount.
-                // Let's assume 'profitability' in the screenshot implies remaining budget %.
-                profitability = -100; // Over budget if budget is 0?
-            } else {
-                profitability = 0;
+            const estimatedBudget = job.budget || 0;
+            const profit = totalBilling - totalInternalCost;
+
+            // Profitability margin (Profit / Billing)
+            let margin = 0;
+            if (totalBilling > 0) {
+                margin = (profit / totalBilling) * 100;
             }
-
 
             return {
                 id: job.id,
@@ -78,11 +71,12 @@ export async function GET(req: NextRequest) {
                 jobTitle: job.title,
                 jobStatus: job.status,
                 deadline: job.deadline,
-                budget: budget,
-                actualCost: totalCost,
+                budget: estimatedBudget, // Keeping estimated budget separate
+                actualBilling: totalBilling,
+                actualCost: totalInternalCost,
                 totalHours: totalHours,
-                difference: difference,
-                profitability: profitability,
+                difference: profit, // Repurposing as profit for now
+                profitability: margin,
                 createdAt: job.createdAt
             };
         });

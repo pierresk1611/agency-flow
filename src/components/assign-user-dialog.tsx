@@ -28,6 +28,7 @@ interface User {
   name: string | null
   role: string
   hourlyRate?: number
+  costRate?: number
   defaultTaskRate?: number
 }
 
@@ -41,6 +42,7 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
   const [roleOnJob, setRoleOnJob] = useState('')
   const [costType, setCostType] = useState<'hourly' | 'task'>('hourly')
   const [costValue, setCostValue] = useState('')
+  const [billingValue, setBillingValue] = useState('')
 
   // Načítanie užívateľov pri otvorení okna
   useEffect(() => {
@@ -75,8 +77,9 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
           setCostValue(user.defaultTaskRate.toString())
         } else {
           setCostType('hourly')
-          setCostValue(user.hourlyRate?.toString() || '0')
+          setCostValue((user.costRate || user.hourlyRate || 0).toString())
         }
+        setBillingValue((user.hourlyRate || 0).toString())
       }
     }
   }, [selectedUser, users])
@@ -94,7 +97,8 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
           userId: selectedUser,
           roleOnJob: roleOnJob || 'Člen tímu',
           assignedCostType: costType,
-          assignedCostValue: parseFloat(costValue || '0')
+          assignedCostValue: parseFloat(costValue || '0'),
+          assignedBillingValue: parseFloat(billingValue || '0')
         })
       })
 
@@ -186,15 +190,34 @@ export function AssignUserDialog({ jobId }: { jobId: string }) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Sadzba (€)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={costValue}
-                onChange={(e) => setCostValue(e.target.value)}
-              />
+              <Label className="text-[10px] uppercase text-slate-400 font-bold">Fakturačná (€ / Bill)</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={billingValue}
+                  onChange={(e) => setBillingValue(e.target.value)}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">€</span>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase text-slate-400 font-bold">Nákladová (€ / Cost)</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={costValue}
+                  onChange={(e) => setCostValue(e.target.value)}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">€</span>
+              </div>
             </div>
           </div>
 

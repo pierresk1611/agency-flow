@@ -40,18 +40,31 @@ export async function POST(request: Request) {
 
       // HYBRID LOGIKA: Check assignedCostType from assignment
       const costType = (timesheet.jobAssignment as any).assignedCostType || 'hourly'
-      const assignedValue = (timesheet.jobAssignment as any).assignedCostValue
+      const assignedCostValue = (timesheet.jobAssignment as any).assignedCostValue
+      const assignedBillingValue = (timesheet.jobAssignment as any).assignedBillingValue
 
-      let rate = 0
-      let amount = 0
+      let rate = 0 // Billing
+      let amount = 0 // Billing
+      let internalRate = 0 // Cost
+      let internalAmount = 0 // Cost
 
       if (costType === 'task') {
-        rate = assignedValue ?? ((timesheet.jobAssignment.user as any).defaultTaskRate || 0)
-        amount = rate // Fixed sum for task
+        // Billing calculation (Client side)
+        rate = assignedBillingValue ?? (timesheet.jobAssignment.user.hourlyRate || 0)
+        amount = rate
+
+        // Internal calculation (Creative side)
+        internalRate = assignedCostValue ?? ((timesheet.jobAssignment.user as any).defaultTaskRate || 0)
+        internalAmount = internalRate
       } else {
-        // Hourly logic (fallback to user's hourly rate if assigned value is null)
-        rate = assignedValue ?? (timesheet.jobAssignment.user.hourlyRate || 0)
+        // Hourly calculation
+        // Billing
+        rate = assignedBillingValue ?? (timesheet.jobAssignment.user.hourlyRate || 0)
         amount = hours * rate
+
+        // Internal
+        internalRate = assignedCostValue ?? ((timesheet.jobAssignment.user as any).costRate || timesheet.jobAssignment.user.hourlyRate || 0)
+        internalAmount = hours * internalRate
       }
 
       await prisma.$transaction(async (tx) => {
@@ -61,9 +74,9 @@ export async function POST(request: Request) {
         })
         await tx.budgetItem.upsert({
           where: { timesheetId },
-          update: { hours, rate, amount },
-          create: { jobId: timesheet.jobAssignment.jobId, timesheetId, hours, rate, amount }
-        })
+          update: { hours, rate, amount, internalRate, internalAmount },
+          create: { jobId: timesheet.jobAssignment.jobId, timesheetId, hours, rate, amount, internalRate, internalAmount }
+        } as any)
       })
 
       // NOTIFIKÁCIA: Timesheet Approved

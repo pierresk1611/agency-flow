@@ -49,7 +49,8 @@ export async function POST(request: Request) {
         userId,
         roleOnJob: roleOnJob?.trim() || 'Contributor',
         assignedCostType: assignedCostType || 'hourly',
-        assignedCostValue: assignedCostValue != null ? parseFloat(assignedCostValue) : (targetUser.hourlyRate || 0)
+        assignedCostValue: assignedCostValue != null ? parseFloat(assignedCostValue) : (targetUser.costRate || targetUser.hourlyRate || 0),
+        assignedBillingValue: body.assignedBillingValue != null ? parseFloat(body.assignedBillingValue) : (targetUser.hourlyRate || 0)
       } as any,
       include: { job: { include: { campaign: { include: { client: { include: { agency: true } } } } } } } // Fetch deeply for notification
     })

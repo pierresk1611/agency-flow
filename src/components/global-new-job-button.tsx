@@ -49,7 +49,7 @@ export function GlobalNewJobButton({
     const [deadline, setDeadline] = useState('')
     const [budget, setBudget] = useState('0')
     const [externalLink, setExternalLink] = useState('')
-    const [selectedCreatives, setSelectedCreatives] = useState<{ userId: string, costType: 'hourly' | 'task', costValue: string }[]>([])
+    const [selectedCreatives, setSelectedCreatives] = useState<{ userId: string, costType: 'hourly' | 'task', costValue: string, billingValue: string }[]>([])
 
     const selectedClient = localClients.find(c => c.id === selectedClientId)
     const currentClientCampaigns = selectedClient?.campaigns || []
@@ -73,10 +73,11 @@ export function GlobalNewJobButton({
 
         const initial = (client?.defaultAssignees || []).map(da => {
             const user = colleagues.find(u => u.id === da.id)
-            if (!user) return { userId: da.id, costType: 'hourly', costValue: '0' }
+            if (!user) return { userId: da.id, costType: 'hourly', costValue: '0', billingValue: '0' }
             const costType = user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0) ? 'task' : 'hourly'
-            const costValue = (costType === 'task' ? user.defaultTaskRate : user.hourlyRate)?.toString() || '0'
-            return { userId: da.id, costType, costValue }
+            const costValue = (costType === 'task' ? user.defaultTaskRate : user.costRate || user.hourlyRate)?.toString() || '0'
+            const billingValue = (user.hourlyRate || 0).toString()
+            return { userId: da.id, costType, costValue, billingValue }
         })
         setSelectedCreatives(initial as any)
         setStep(2)
@@ -155,13 +156,14 @@ export function GlobalNewJobButton({
                 return prev.filter(p => p.userId !== user.id)
             } else {
                 const costType = user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0) ? 'task' : 'hourly'
-                const costValue = (costType === 'task' ? user.defaultTaskRate : user.hourlyRate)?.toString() || '0'
-                return [...prev, { userId: user.id, costType, costValue } as any]
+                const costValue = (costType === 'task' ? user.defaultTaskRate : user.costRate || user.hourlyRate)?.toString() || '0'
+                const billingValue = (user.hourlyRate || 0).toString()
+                return [...prev, { userId: user.id, costType, costValue, billingValue } as any]
             }
         })
     }
 
-    const updateAssignment = (userId: string, field: 'costType' | 'costValue', value: string) => {
+    const updateAssignment = (userId: string, field: 'costType' | 'costValue' | 'billingValue', value: string) => {
         setSelectedCreatives(prev => prev.map(p => p.userId === userId ? { ...p, [field]: value } : p))
     }
 
@@ -303,24 +305,48 @@ export function GlobalNewJobButton({
                                                 </div>
 
                                                 {isSelected && (
-                                                    <div className="flex items-center gap-2 pl-6 animate-in fade-in slide-in-from-left-2 duration-200">
-                                                        <select
-                                                            className="text-[10px] h-7 rounded border bg-white px-1 font-medium"
-                                                            value={assignment.costType}
-                                                            onChange={(e) => updateAssignment(user.id, 'costType', e.target.value)}
-                                                        >
-                                                            <option value="hourly">Hodinová</option>
-                                                            <option value="task">Úkolová (Fix)</option>
-                                                        </select>
-                                                        <div className="relative flex-1 max-w-[100px]">
-                                                            <Input
-                                                                type="number"
-                                                                step="0.01"
-                                                                className="h-7 text-[10px] pr-4 font-mono"
-                                                                value={assignment.costValue}
-                                                                onChange={(e) => updateAssignment(user.id, 'costValue', e.target.value)}
-                                                            />
-                                                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">€</span>
+                                                    <div className="flex flex-col gap-2 pl-6 animate-in fade-in slide-in-from-left-2 duration-200">
+                                                        <div className="flex items-center gap-2">
+                                                            <select
+                                                                className="text-[10px] h-7 rounded border bg-white px-1 font-medium min-w-[100px]"
+                                                                value={assignment.costType}
+                                                                onChange={(e) => updateAssignment(user.id, 'costType', e.target.value)}
+                                                            >
+                                                                <option value="hourly">Hodinová</option>
+                                                                <option value="task">Úkolová (Fix)</option>
+                                                            </select>
+
+                                                            <div className="flex-1 flex items-center gap-2">
+                                                                <div className="relative flex-1">
+                                                                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold uppercase">Bill</span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        className="h-7 text-[10px] pl-8 pr-4 font-mono"
+                                                                        value={assignment.billingValue}
+                                                                        onChange={(e) => updateAssignment(user.id, 'billingValue', e.target.value)}
+                                                                        placeholder="Billing"
+                                                                    />
+                                                                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">€</span>
+                                                                </div>
+
+                                                                <div className="relative flex-1">
+                                                                    <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[8px] text-slate-400 font-bold uppercase">Cost</span>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        className="h-7 text-[10px] pl-8 pr-4 font-mono"
+                                                                        value={assignment.costValue}
+                                                                        onChange={(e) => updateAssignment(user.id, 'costValue', e.target.value)}
+                                                                        placeholder="Cost"
+                                                                    />
+                                                                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">€</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex justify-between px-1">
+                                                            <span className="text-[8px] text-slate-400 uppercase font-medium">Fakturačná (Klient)</span>
+                                                            <span className="text-[8px] text-slate-400 uppercase font-medium">Nákladová (Kreatívec)</span>
                                                         </div>
                                                     </div>
                                                 )}

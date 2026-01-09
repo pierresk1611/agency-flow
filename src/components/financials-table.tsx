@@ -26,11 +26,12 @@ interface JobFinancials {
     jobTitle: string;
     jobStatus: string;
     deadline: string;
-    budget: number;
+    budget: number; // Estimated
+    actualBilling: number;
     actualCost: number;
     totalHours: number;
-    difference: number;
-    profitability: number;
+    difference: number; // Profit
+    profitability: number; // Margin %
     createdAt: string;
 }
 
@@ -67,9 +68,10 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
         return matchesSearch;
     });
 
-    const totalBudget = filteredData.reduce((sum, item) => sum + item.budget, 0);
-    const totalActual = filteredData.reduce((sum, item) => sum + item.actualCost, 0);
-    const totalDiff = totalBudget - totalActual;
+    const totalEstimated = filteredData.reduce((sum, item) => sum + item.budget, 0);
+    const totalBilling = filteredData.reduce((sum, item) => sum + item.actualBilling, 0);
+    const totalActualCost = filteredData.reduce((sum, item) => sum + item.actualCost, 0);
+    const totalProfit = totalBilling - totalActualCost;
     const totalHours = filteredData.reduce((sum, item) => sum + item.totalHours, 0);
 
     const handleRowClick = (jobId: string) => {
@@ -84,22 +86,22 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-slate-900 text-white border-0 shadow-lg">
                     <CardContent className="p-6">
-                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Celkový Plán</p>
-                        <h3 className="text-2xl font-bold mt-2">{totalBudget.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
+                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Spolu Fakturované (Bill)</p>
+                        <h3 className="text-2xl font-bold mt-2">{totalBilling.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
                     </CardContent>
                 </Card>
                 <Card className="bg-blue-600 text-white border-0 shadow-lg">
                     <CardContent className="p-6">
-                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Skutočnosť</p>
-                        <h3 className="text-2xl font-bold mt-2">{totalActual.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
+                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Spolu Náklady (Cost)</p>
+                        <h3 className="text-2xl font-bold mt-2">{totalActualCost.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €</h3>
                     </CardContent>
                 </Card>
-                <Card className={`${totalDiff >= 0 ? "bg-emerald-500" : "bg-red-500"} text-white border-0 shadow-lg`}>
+                <Card className={`${totalProfit >= 0 ? "bg-emerald-500" : "bg-red-500"} text-white border-0 shadow-lg`}>
                     <CardContent className="p-6">
-                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Rozdiel</p>
+                        <p className="text-xs font-medium uppercase tracking-wider opacity-70">Celkový Zisk</p>
                         <h3 className="text-2xl font-bold mt-2 flex items-center gap-2">
-                            {totalDiff >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
-                            {totalDiff.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €
+                            {totalProfit >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
+                            {totalProfit.toLocaleString('sk-SK', { maximumFractionDigits: 0 })} €
                         </h3>
                     </CardContent>
                 </Card>
@@ -162,11 +164,10 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
                         <TableRow>
                             <TableHead className="uppercase text-[10px] font-bold tracking-wider">Klient</TableHead>
                             <TableHead className="uppercase text-[10px] font-bold tracking-wider">Job</TableHead>
-                            <TableHead className="uppercase text-[10px] font-bold tracking-wider">Deadline</TableHead>
-                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Plán</TableHead>
-                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Realita</TableHead>
-                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Rozdiel</TableHead>
-                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Ziskovosť</TableHead>
+                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Fakturované</TableHead>
+                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Náklady</TableHead>
+                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Zisk</TableHead>
+                            <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Marža</TableHead>
                             <TableHead className="uppercase text-[10px] font-bold tracking-wider text-right">Status</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -188,7 +189,8 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
                                     {format(new Date(item.deadline), "dd.MM.yyyy")}
                                 </TableCell>
                                 <TableCell className="text-right font-bold text-slate-700">
-                                    {item.budget.toFixed(0)} €
+                                    {item.actualBilling.toFixed(0)} €
+                                    <div className="text-[10px] text-slate-400">Est. {item.budget.toFixed(0)} €</div>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <span className="font-bold text-blue-600">{item.actualCost.toFixed(0)} €</span>
@@ -201,8 +203,8 @@ export function FinancialsTable({ agencyId }: { agencyId: string }) {
                                     {item.profitability.toFixed(1)} %
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Badge className={item.actualCost <= item.budget ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}>
-                                        {item.actualCost <= item.budget ? "Pod" : "Nad"}
+                                    <Badge className={item.difference >= 0 ? "bg-emerald-500 hover:bg-emerald-600" : "bg-red-500 hover:bg-red-600"}>
+                                        {item.difference >= 0 ? "Profit" : "Strata"}
                                     </Badge>
                                 </TableCell>
                             </TableRow>

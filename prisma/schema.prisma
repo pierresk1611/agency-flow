@@ -214,6 +214,7 @@ model JobAssignment {
   
   assignedCostType  String? // 'hourly' | 'task'
   assignedCostValue Float?
+  assignedBillingValue Float? // Hodnota pre fakturáciu klientovi
   
   timesheets  Timesheet[]
   comments    Comment[] 
@@ -290,8 +291,10 @@ model BudgetItem {
   timesheetId String   @unique 
   timesheet   Timesheet @relation(fields: [timesheetId], references: [id])
   hours       Float
-  rate        Float
-  amount      Float    
+  rate        Float // Billing rate
+  amount      Float // Billing amount
+  internalRate Float? // Cost rate (nákladová)
+  internalAmount Float? // Cost amount (nákladová suma)
   createdAt   DateTime @default(now())
 }
 

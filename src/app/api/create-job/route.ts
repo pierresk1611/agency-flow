@@ -51,7 +51,8 @@ export async function POST(request: Request) {
         userId: session.userId,
         roleOnJob: 'ACCOUNT',
         assignedCostType: 'hourly',
-        assignedCostValue: currentUser?.hourlyRate || 0
+        assignedBillingValue: currentUser?.hourlyRate || 0,
+        assignedCostValue: currentUser?.costRate || currentUser?.hourlyRate || 0
       }
     ]
 
@@ -61,7 +62,8 @@ export async function POST(request: Request) {
         userId: trafficUser.id,
         roleOnJob: 'TRAFFIC',
         assignedCostType: 'hourly',
-        assignedCostValue: trafficUser.hourlyRate || 0
+        assignedBillingValue: trafficUser.hourlyRate || 0,
+        assignedCostValue: trafficUser.costRate || trafficUser.hourlyRate || 0
       })
     }
 
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
           id: { in: creativeIds },
           agencyId: session.agencyId
         },
-        select: { id: true, hourlyRate: true, defaultTaskRate: true }
+        select: { id: true, hourlyRate: true, defaultTaskRate: true, costRate: true } as any
       })
 
       const validIds = validCreatives.map(u => u.id)
@@ -88,7 +90,8 @@ export async function POST(request: Request) {
             userId: cId,
             roleOnJob: 'CREATIVE',
             assignedCostType: override?.costType || ((user as any)?.defaultTaskRate && (user as any).defaultTaskRate > 0 && (!user?.hourlyRate || user?.hourlyRate === 0) ? 'task' : 'hourly'),
-            assignedCostValue: override?.costValue != null ? parseFloat(override.costValue) : (override?.costType === 'task' ? (user as any)?.defaultTaskRate : user?.hourlyRate) ?? 0
+            assignedCostValue: override?.costValue != null ? parseFloat(override.costValue) : (override?.costType === 'task' ? (user as any)?.defaultTaskRate : user?.costRate || user?.hourlyRate) ?? 0,
+            assignedBillingValue: override?.billingValue != null ? parseFloat(override.billingValue) : user?.hourlyRate ?? 0
           })
         }
       })

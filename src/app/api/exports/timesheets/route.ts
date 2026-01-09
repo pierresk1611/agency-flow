@@ -50,8 +50,8 @@ export async function GET(request: Request) {
         orderBy: { startTime: 'desc' }
     })
 
-    // Header: Dátum;Pracovník;Projekt;Task;Popis;Hodiny;Cost Type;Cost Rate;Total Cost
-    const header = ['Dátum', 'Pracovník', 'Projekt', 'Task', 'Popis', 'Hodiny', 'Cost Type', 'Cost Rate', 'Total Cost'].join(';')
+    // Header: Dátum;Pracovník;Projekt;Task;Popis;Hodiny;Typ odmeny;Bill Sadzba;Bill Celkom;Cost Sadzba;Cost Celkom;Profit
+    const header = ['Dátum', 'Pracovník', 'Projekt', 'Task', 'Popis', 'Hodiny', 'Typ odmeny', 'Bill Sadzba', 'Bill Celkom', 'Cost Sadzba', 'Cost Celkom', 'Profit'].join(';')
 
     const rows = timesheets.map(t => {
         const date = format(new Date(t.startTime), 'dd.MM.yyyy')
@@ -70,22 +70,26 @@ export async function GET(request: Request) {
         }
 
         const hoursStr = hours.toFixed(2).replace('.', ',')
-
-        // Cost Calculation for Export
         const costType = (t.jobAssignment as any).assignedCostType || 'hourly'
-        const costValue = (t.jobAssignment as any).assignedCostValue ?? (t.jobAssignment.user.hourlyRate || 0)
-        let totalCost = 0
-        if (costType === 'task') {
-            totalCost = costValue
-        } else {
-            totalCost = hours * costValue
-        }
+
+        // Billing calculation
+        const billValue = (t.jobAssignment as any).assignedBillingValue ?? (t.jobAssignment.user.hourlyRate || 0)
+        let totalBill = (costType === 'task') ? billValue : hours * billValue
+
+        // Cost calculation
+        const costValue = (t.jobAssignment as any).assignedCostValue ?? ((t.jobAssignment.user as any).costRate || t.jobAssignment.user.hourlyRate || 0)
+        let totalCost = (costType === 'task') ? costValue : hours * costValue
+
+        const profit = totalBill - totalCost
 
         const costTypeDisplay = costType === 'task' ? 'Task' : 'Hourly'
+        const billRateStr = billValue.toFixed(2).replace('.', ',')
+        const totalBillStr = totalBill.toFixed(2).replace('.', ',')
         const costRateStr = costValue.toFixed(2).replace('.', ',')
         const totalCostStr = totalCost.toFixed(2).replace('.', ',')
+        const profitStr = profit.toFixed(2).replace('.', ',')
 
-        return [date, worker, project, task, description, hoursStr, costTypeDisplay, costRateStr, totalCostStr].join(';')
+        return [date, worker, project, task, description, hoursStr, costTypeDisplay, billRateStr, totalBillStr, costRateStr, totalCostStr, profitStr].join(';')
     })
 
     const csvContent = '\uFEFF' + [header, ...rows].join('\n')

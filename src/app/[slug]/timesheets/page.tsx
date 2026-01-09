@@ -41,6 +41,7 @@ export default async function TimesheetsPage({ params }: { params: { slug: strin
       { startTime: 'desc' }
     ],
     include: {
+      budgetItem: true,
       jobAssignment: {
         include: {
           user: true,
