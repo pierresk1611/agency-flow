@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { FileText, MoreHorizontal, Clock, Euro, Lock, Unlock, Loader2, Send } from 'lucide-react'
+import { FileText, MoreHorizontal, Clock, Euro, Lock, Unlock, Loader2, Send, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface AgencyActionsProps {
@@ -74,6 +74,28 @@ export function AgencyActions({ agency }: AgencyActionsProps) {
         }
     }
 
+    const handleDeleteAgency = async () => {
+        const text = `Naozaj chcete VYMAZAŤ agentúru ${agency.name}? Táto akcia je nevratná a vymaže všetkých užívateľov, projekty a dáta.`
+        if (!confirm(text)) return
+
+        setLoading(true)
+        try {
+            const res = await fetch(`/api/superadmin/agencies/${agency.id}`, {
+                method: 'DELETE'
+            })
+            if (res.ok) {
+                router.refresh()
+            } else {
+                const data = await res.json()
+                alert(data.error || 'Chyba beimazaní')
+            }
+        } catch (e) {
+            alert('Chyba spojenia')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <>
             <DropdownMenu>
@@ -88,6 +110,9 @@ export function AgencyActions({ agency }: AgencyActionsProps) {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleSendPayment}>
                         <Euro className="mr-2 h-4 w-4" /> Poslať Platbu
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDeleteAgency} className="text-red-600 focus:text-red-600">
+                        <Trash2 className="mr-2 h-4 w-4" /> Smazať agentúru
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
