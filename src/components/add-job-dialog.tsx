@@ -14,7 +14,7 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [creatives, setCreatives] = useState<any[]>([]) // Načítaní kreatívci
-  const [selectedCreatives, setSelectedCreatives] = useState<string[]>(defaultAssigneeIds) // Vybrané IDčka
+  const [selectedCreatives, setSelectedCreatives] = useState<{ userId: string, costType: 'hourly' | 'task', costValue: string }[]>([])
 
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
@@ -23,10 +23,16 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
 
   // Sync selection with defaults when dialog opens
   useEffect(() => {
-    if (open) {
-      setSelectedCreatives(defaultAssigneeIds)
+    if (open && creatives.length > 0) {
+      const initial = defaultAssigneeIds.map(id => {
+        const u = creatives.find(user => user.id === id)
+        const costType = u?.defaultTaskRate && u.defaultTaskRate > 0 && (!u.hourlyRate || u.hourlyRate === 0) ? 'task' : 'hourly'
+        const costValue = (costType === 'task' ? u?.defaultTaskRate : u?.hourlyRate)?.toString() || '0'
+        return { userId: id, costType, costValue }
+      })
+      setSelectedCreatives(initial as any)
     }
-  }, [open, defaultAssigneeIds])
+  }, [open, defaultAssigneeIds, creatives])
 
   // Načítanie kreatívcov pri otvorení
   useEffect(() => {
@@ -42,10 +48,21 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
     }
   }, [open, agencyId])
 
-  const toggleCreative = (userId: string) => {
-    setSelectedCreatives(prev =>
-      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-    )
+  const toggleCreative = (user: any) => {
+    setSelectedCreatives(prev => {
+      const exists = prev.find(p => p.userId === user.id)
+      if (exists) {
+        return prev.filter(p => p.userId !== user.id)
+      } else {
+        const costType = user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0) ? 'task' : 'hourly'
+        const costValue = (costType === 'task' ? user.defaultTaskRate : user.hourlyRate)?.toString() || '0'
+        return [...prev, { userId: user.id, costType, costValue } as any]
+      }
+    })
+  }
+
+  const updateAssignment = (userId: string, field: 'costType' | 'costValue', value: string) => {
+    setSelectedCreatives(prev => prev.map(p => p.userId === userId ? { ...p, [field]: value } : p))
   }
 
   const handleCreate = async () => {
@@ -62,7 +79,8 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
           budget,
           externalLink,
           campaignId,
-          creativeIds: selectedCreatives // Posielame aj vybraných kreatívcov
+          creativeIds: selectedCreatives.map(c => c.userId),
+          creativeAssignments: selectedCreatives
         })
       })
 
@@ -121,23 +139,53 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
           </div>
 
           <div className="grid gap-3">
-            <Label>Priradiť kreatívcov</Label>
-            <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-40 overflow-y-auto bg-slate-50">
+            <Label>Priradiť kreatívcov & Nastaviť sadzby</Label>
+            <div className="grid gap-2 border rounded-md p-3 max-h-60 overflow-y-auto bg-slate-50">
               {creatives.length === 0 ? (
-                <p className="text-xs text-slate-400 col-span-2 text-center italic">Žiadni používatelia v agentúre.</p>
+                <p className="text-xs text-slate-400 text-center italic">Žiadni používatelia v agentúre.</p>
               ) : (
-                creatives.map(user => (
-                  <div key={user.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
-                    <Checkbox
-                      id={user.id}
-                      checked={selectedCreatives.includes(user.id)}
-                      onCheckedChange={() => toggleCreative(user.id)}
-                    />
-                    <Label htmlFor={user.id} className="text-xs cursor-pointer font-medium text-slate-700">
-                      {user.name || user.email} {user.role ? `(${user.role})` : ''} {user.position ? `- ${user.position}` : ''}
-                    </Label>
-                  </div>
-                ))
+                creatives.map(user => {
+                  const assignment = selectedCreatives.find(p => p.userId === user.id)
+                  const isSelected = !!assignment
+
+                  return (
+                    <div key={user.id} className={`flex flex-col gap-2 p-2 rounded border ${isSelected ? 'bg-white border-blue-200' : 'hover:bg-slate-100 border-transparent'}`}>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={user.id}
+                          checked={isSelected}
+                          onCheckedChange={() => toggleCreative(user)}
+                        />
+                        <Label htmlFor={user.id} className="text-xs cursor-pointer font-bold text-slate-700 flex-1">
+                          {user.name || user.email} {user.role ? `(${user.role})` : ''}
+                        </Label>
+                      </div>
+
+                      {isSelected && (
+                        <div className="flex items-center gap-2 pl-6 animate-in fade-in slide-in-from-left-2 duration-200">
+                          <select
+                            className="text-[10px] h-7 rounded border bg-white px-1 font-medium"
+                            value={assignment.costType}
+                            onChange={(e) => updateAssignment(user.id, 'costType', e.target.value)}
+                          >
+                            <option value="hourly">Hodinová</option>
+                            <option value="task">Úkolová (Fix)</option>
+                          </select>
+                          <div className="relative flex-1 max-w-[100px]">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              className="h-7 text-[10px] pr-4 font-mono"
+                              value={assignment.costValue}
+                              onChange={(e) => updateAssignment(user.id, 'costValue', e.target.value)}
+                            />
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">€</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>

@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { email, name, password, role, position, hourlyRate, costRate } = body
+    const { email, name, password, role, position, hourlyRate, costRate, defaultTaskRate } = body
 
     if (!email || !password || !role)
       return NextResponse.json({ error: 'Chýbajú údaje' }, { status: 400 })
@@ -80,9 +80,10 @@ export async function POST(request: Request) {
         passwordHash,
         hourlyRate: parseFloat(hourlyRate || '0'),
         costRate: parseFloat(costRate || '0'),
+        defaultTaskRate: parseFloat(defaultTaskRate || '0'),
         agencyId: session.agencyId,
         active: true
-      }
+      } as any
     })
 
     return NextResponse.json(newUser)

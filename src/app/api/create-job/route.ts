@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { title, deadline, budget, campaignId, externalLink, creativeIds } = body
+    const { title, deadline, budget, campaignId, externalLink, creativeIds, creativeAssignments } = body
 
     // Overenie povinných polí
     if (!title || !deadline || !campaignId) {
@@ -44,16 +44,24 @@ export async function POST(request: Request) {
     }
 
     // 2. Priprav priradenia
+    const currentUser = await prisma.user.findUnique({ where: { id: session.userId } })
     const assignmentsToCreate: any[] = [
       // Creator je vždy ACCOUNT
-      { userId: session.userId, roleOnJob: 'ACCOUNT' }
+      {
+        userId: session.userId,
+        roleOnJob: 'ACCOUNT',
+        assignedCostType: 'hourly',
+        assignedCostValue: currentUser?.hourlyRate || 0
+      }
     ]
 
     // Ak existuje Traffic/Admin a nie je to ten istý človek ako Creator, pridáme ho
     if (trafficUser && trafficUser.id !== session.userId) {
       assignmentsToCreate.push({
         userId: trafficUser.id,
-        roleOnJob: 'TRAFFIC'
+        roleOnJob: 'TRAFFIC',
+        assignedCostType: 'hourly',
+        assignedCostValue: trafficUser.hourlyRate || 0
       })
     }
 
@@ -64,7 +72,7 @@ export async function POST(request: Request) {
           id: { in: creativeIds },
           agencyId: session.agencyId
         },
-        select: { id: true }
+        select: { id: true, hourlyRate: true, defaultTaskRate: true }
       })
 
       const validIds = validCreatives.map(u => u.id)
@@ -72,9 +80,15 @@ export async function POST(request: Request) {
       validIds.forEach(cId => {
         const isAlreadyAdded = assignmentsToCreate.some(a => a.userId === cId)
         if (!isAlreadyAdded) {
+          // Check if we have detailed assignment info
+          const override = Array.isArray(creativeAssignments) ? creativeAssignments.find((a: any) => a.userId === cId) : null
+          const user = validCreatives.find(u => u.id === cId)
+
           assignmentsToCreate.push({
             userId: cId,
-            roleOnJob: 'CREATIVE'
+            roleOnJob: 'CREATIVE',
+            assignedCostType: override?.costType || ((user as any)?.defaultTaskRate && (user as any).defaultTaskRate > 0 && (!user?.hourlyRate || user?.hourlyRate === 0) ? 'task' : 'hourly'),
+            assignedCostValue: override?.costValue ?? (override?.costType === 'task' ? (user as any)?.defaultTaskRate : user?.hourlyRate) ?? 0
           })
         }
       })

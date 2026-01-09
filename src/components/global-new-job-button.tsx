@@ -20,6 +20,8 @@ type UserFn = {
     id: string
     name: string | null
     email: string
+    hourlyRate?: number
+    defaultTaskRate?: number
 }
 
 export function GlobalNewJobButton({
@@ -47,7 +49,7 @@ export function GlobalNewJobButton({
     const [deadline, setDeadline] = useState('')
     const [budget, setBudget] = useState('0')
     const [externalLink, setExternalLink] = useState('')
-    const [selectedCreatives, setSelectedCreatives] = useState<string[]>([])
+    const [selectedCreatives, setSelectedCreatives] = useState<{ userId: string, costType: 'hourly' | 'task', costValue: string }[]>([])
 
     const selectedClient = localClients.find(c => c.id === selectedClientId)
     const currentClientCampaigns = selectedClient?.campaigns || []
@@ -68,7 +70,15 @@ export function GlobalNewJobButton({
     const handleClientSelect = (clientId: string) => {
         const client = localClients.find(c => c.id === clientId)
         setSelectedClientId(clientId)
-        setSelectedCreatives(client?.defaultAssignees?.map(u => u.id) || [])
+
+        const initial = (client?.defaultAssignees || []).map(da => {
+            const user = colleagues.find(u => u.id === da.id)
+            if (!user) return { userId: da.id, costType: 'hourly', costValue: '0' }
+            const costType = user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0) ? 'task' : 'hourly'
+            const costValue = (costType === 'task' ? user.defaultTaskRate : user.hourlyRate)?.toString() || '0'
+            return { userId: da.id, costType, costValue }
+        })
+        setSelectedCreatives(initial as any)
         setStep(2)
     }
 
@@ -118,7 +128,8 @@ export function GlobalNewJobButton({
                     budget,
                     externalLink,
                     campaignId: selectedCampaignId,
-                    creativeIds: selectedCreatives
+                    creativeIds: selectedCreatives.map(c => c.userId),
+                    creativeAssignments: selectedCreatives
                 })
             })
 
@@ -137,10 +148,21 @@ export function GlobalNewJobButton({
         }
     }
 
-    const toggleCreative = (userId: string) => {
-        setSelectedCreatives(prev =>
-            prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
-        )
+    const toggleCreative = (user: UserFn) => {
+        setSelectedCreatives(prev => {
+            const exists = prev.find(p => p.userId === user.id)
+            if (exists) {
+                return prev.filter(p => p.userId !== user.id)
+            } else {
+                const costType = user.defaultTaskRate && user.defaultTaskRate > 0 && (!user.hourlyRate || user.hourlyRate === 0) ? 'task' : 'hourly'
+                const costValue = (costType === 'task' ? user.defaultTaskRate : user.hourlyRate)?.toString() || '0'
+                return [...prev, { userId: user.id, costType, costValue } as any]
+            }
+        })
+    }
+
+    const updateAssignment = (userId: string, field: 'costType' | 'costValue', value: string) => {
+        setSelectedCreatives(prev => prev.map(p => p.userId === userId ? { ...p, [field]: value } : p))
     }
 
     return (
@@ -260,21 +282,51 @@ export function GlobalNewJobButton({
                             </div>
 
                             <div className="grid gap-3">
-                                <Label>Priradiť ľudí (Notifikácia príde automaticky)</Label>
-                                <div className="grid grid-cols-2 gap-2 border rounded-md p-3 max-h-40 overflow-y-auto bg-slate-50 custom-scrollbar">
-                                    {colleagues.map(user => (
-                                        <div key={user.id} className="flex items-center space-x-2 p-1 hover:bg-white rounded">
-                                            <Checkbox
-                                                id={`g-${user.id}`}
-                                                checked={selectedCreatives.includes(user.id)}
-                                                onCheckedChange={() => toggleCreative(user.id)}
-                                            />
-                                            <Label htmlFor={`g-${user.id}`} className="text-xs cursor-pointer font-medium text-slate-700 flex items-center gap-2">
-                                                <User className="h-3 w-3 text-slate-400" />
-                                                {user.name || user.email}
-                                            </Label>
-                                        </div>
-                                    ))}
+                                <Label>Priradiť ľudí & Nastaviť sadzby</Label>
+                                <div className="grid gap-2 border rounded-md p-3 max-h-60 overflow-y-auto bg-slate-50 custom-scrollbar">
+                                    {colleagues.map(user => {
+                                        const assignment = selectedCreatives.find(p => p.userId === user.id)
+                                        const isSelected = !!assignment
+
+                                        return (
+                                            <div key={user.id} className={`flex flex-col gap-2 p-2 rounded border ${isSelected ? 'bg-white border-purple-200' : 'hover:bg-slate-100 border-transparent'}`}>
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`g-${user.id}`}
+                                                        checked={isSelected}
+                                                        onCheckedChange={() => toggleCreative(user)}
+                                                    />
+                                                    <Label htmlFor={`g-${user.id}`} className="text-xs cursor-pointer font-bold text-slate-700 flex-1 flex items-center gap-2">
+                                                        <User className="h-3 w-3 text-slate-400" />
+                                                        {user.name || user.email}
+                                                    </Label>
+                                                </div>
+
+                                                {isSelected && (
+                                                    <div className="flex items-center gap-2 pl-6 animate-in fade-in slide-in-from-left-2 duration-200">
+                                                        <select
+                                                            className="text-[10px] h-7 rounded border bg-white px-1 font-medium"
+                                                            value={assignment.costType}
+                                                            onChange={(e) => updateAssignment(user.id, 'costType', e.target.value)}
+                                                        >
+                                                            <option value="hourly">Hodinová</option>
+                                                            <option value="task">Úkolová (Fix)</option>
+                                                        </select>
+                                                        <div className="relative flex-1 max-w-[100px]">
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                className="h-7 text-[10px] pr-4 font-mono"
+                                                                value={assignment.costValue}
+                                                                onChange={(e) => updateAssignment(user.id, 'costValue', e.target.value)}
+                                                            />
+                                                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] text-slate-400">€</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         </div>

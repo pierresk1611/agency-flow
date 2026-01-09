@@ -64,7 +64,7 @@ export default async function JobsPage({
   // 2.5 COLLEAGUES for reassignment
   const colleagues = await prisma.user.findMany({
     where: { agencyId: agency.id, active: true },
-    select: { id: true, name: true, email: true }
+    select: { id: true, name: true, email: true, hourlyRate: true, defaultTaskRate: true } as any
   })
 
   // 2.75 FETCH CLIENTS for Global New Job Button
@@ -160,7 +160,7 @@ export default async function JobsPage({
           </h2>
         </div>
         {!isCreative && (
-          <GlobalNewJobButton clients={allClients as any} colleagues={colleagues} agencyId={agency.id} />
+          <GlobalNewJobButton clients={allClients as any} colleagues={colleagues as any} agencyId={agency.id} />
         )}
       </div>
 
