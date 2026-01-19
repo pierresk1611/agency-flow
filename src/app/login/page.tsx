@@ -135,15 +135,19 @@ export default function LoginPage() {
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Prihlásiť sa'}
             </Button>
 
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm text-slate-500">Nemáte účet?</span>
-              <Button variant="ghost" className="text-sm" onClick={() => router.push('/register')}>
+
+
+            <div className="flex items-center justify-between gap-2 mt-4">
+              <Button variant="link" size="sm" className="px-0 h-auto text-xs text-slate-500" onClick={() => router.push('/forgot-password')} type="button">
+                Zabudli ste heslo?
+              </Button>
+              <Button variant="ghost" className="text-sm" onClick={() => router.push('/register')} type="button">
                 Registrovať sa
               </Button>
             </div>
           </CardFooter>
         </form>
       </Card>
-    </div>
+    </div >
   )
 }

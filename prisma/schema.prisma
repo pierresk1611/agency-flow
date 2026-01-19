@@ -97,6 +97,10 @@ model User {
   email        String   @unique
   passwordHash String
   
+  // Password Reset
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  
   // Sadzby
   hourlyRate      Float?   @default(0) 
   costRate        Float?   @default(0) 

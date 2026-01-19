@@ -101,7 +101,7 @@ export async function POST(request: Request) {
                 finalPausedMinutes += Math.round(lastPauseMs / 1000 / 60)
             }
 
-            const durationMinutes = Math.max(0, Math.round(totalElapsedMs / 1000 / 60) - finalPausedMinutes)
+            const durationMinutes = Math.max(0, Math.ceil(totalElapsedMs / 1000 / 60) - finalPausedMinutes)
 
             const updated = await prisma.timesheet.update({
                 where: { id: runningTimer.id },
