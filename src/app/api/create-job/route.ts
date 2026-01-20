@@ -105,6 +105,12 @@ export async function POST(request: Request) {
         campaignId,
         status: 'TODO',
         externalLink: externalLink || null, // Explicitly handle null/undefined for optional fields
+        // @ts-ignore
+        recurrenceInterval: body.recurrenceInterval ? parseInt(body.recurrenceInterval) : 0,
+        // @ts-ignore
+        nextRunAt: body.recurrenceInterval && parseInt(body.recurrenceInterval) > 0
+          ? new Date(new Date(deadline).getTime() + parseInt(body.recurrenceInterval) * 24 * 60 * 60 * 1000)
+          : null,
         assignments: {
           create: assignmentsToCreate
         }
@@ -123,6 +129,7 @@ export async function POST(request: Request) {
         return createNotification(
           a.userId,
           'Nová úloha',
+          // @ts-ignore
           `Bola ti pridelená úloha "${title}" v kampani ${job.campaign.name} (${job.campaign.client.name})`,
           `/jobs/${job.id}`
         )

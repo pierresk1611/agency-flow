@@ -47,7 +47,9 @@ export function GlobalNewJobButton({
     // Step 3 Data (Job)
     const [title, setTitle] = useState('')
     const [deadline, setDeadline] = useState('')
+    const [deadline, setDeadline] = useState('')
     const [budget, setBudget] = useState('0')
+    const [recurrenceInterval, setRecurrenceInterval] = useState('0')
     const [externalLink, setExternalLink] = useState('')
     const [selectedCreatives, setSelectedCreatives] = useState<{ userId: string, costType: 'hourly' | 'task', costValue: string, billingValue: string }[]>([])
 
@@ -62,6 +64,7 @@ export function GlobalNewJobButton({
         setTitle('')
         setDeadline('')
         setBudget('0')
+        setRecurrenceInterval('0')
         setExternalLink('')
         setSelectedCreatives([])
         setOpen(false)
@@ -129,6 +132,7 @@ export function GlobalNewJobButton({
                     budget,
                     externalLink,
                     campaignId: selectedCampaignId,
+                    recurrenceInterval,
                     creativeIds: selectedCreatives.map(c => c.userId),
                     creativeAssignments: selectedCreatives
                 })
@@ -281,6 +285,20 @@ export function GlobalNewJobButton({
                             <div className="grid gap-2">
                                 <Label>Link (Asana/Jira...)</Label>
                                 <Input value={externalLink} onChange={e => setExternalLink(e.target.value)} placeholder="https://..." />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label>Opakovanie</Label>
+                                <select
+                                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                                    value={recurrenceInterval}
+                                    onChange={(e) => setRecurrenceInterval(e.target.value)}
+                                >
+                                    <option value="0">Bez opakovania</option>
+                                    <option value="7">Týždenne (7 dní)</option>
+                                    <option value="14">Dvojtýždenne (14 dní)</option>
+                                    <option value="30">Mesačne (30 dní)</option>
+                                </select>
                             </div>
 
                             <div className="grid gap-3">
