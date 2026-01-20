@@ -19,6 +19,7 @@ export function AddPlannerEntryDialog({ allJobs, initialDate, trigger }: { allJo
   const [date, setDate] = useState(initialDate || format(new Date(), 'yyyy-MM-dd'))
   const [minutes, setMinutes] = useState('60')
   const [title, setTitle] = useState('')
+  const [recurrenceInterval, setRecurrenceInterval] = useState('0')
 
   const handleSave = async () => {
     if (!title || !date) return
@@ -32,16 +33,16 @@ export function AddPlannerEntryDialog({ allJobs, initialDate, trigger }: { allJo
         body: JSON.stringify({
           jobId: finalJobId,
           date,
-          minutes: minutes,
-          title
+          minutes,
+          title,
+          recurrenceInterval
         })
       })
+      // The original code had a syntax error here with an unmatched 'else'.
+      // Assuming the intent was to check 'res.ok' before resetting state and reloading.
       if (res.ok) {
-        setOpen(false)
-        setJobId('')
-        setDate(format(new Date(), 'yyyy-MM-dd'))
-        setMinutes('60')
         setTitle('')
+        setRecurrenceInterval('0')
 
         // ZMENA: Použijeme tvrdý reload, aby to bolo 100% spoľahlivé ako pri Delete/Edit
         window.location.reload()
@@ -83,6 +84,22 @@ export function AddPlannerEntryDialog({ allJobs, initialDate, trigger }: { allJo
             <Label>Popis úlohy</Label>
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Napr. Príprava podkladov k tendru..." />
           </div>
+
+          <div className="grid gap-2">
+            <Label>Opakovanie</Label>
+            <Select onValueChange={setRecurrenceInterval} value={recurrenceInterval}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Bez opakovania</SelectItem>
+                <SelectItem value="1">Denne (prvých 7 dní)</SelectItem>
+                <SelectItem value="7">Týždenne (nasledujúcich 8 týždňov)</SelectItem>
+                <SelectItem value="14">Dvojtýždenne (nasledujúcich 4x)</SelectItem>
+                <SelectItem value="30">Mesačne (nasledujúcich 6 mesiacov)</SelectItem>
+              </SelectContent>
+            </Select>
+            {recurrenceInterval !== '0' && <p className="text-[10px] text-slate-400 italic">Vytvorí viacero záznamov automaticky.</p>}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2"><Label>Dátum</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
             <div className="grid gap-2"><Label>Odhad minút</Label><Input type="number" value={minutes} onChange={e => setMinutes(e.target.value)} /></div>

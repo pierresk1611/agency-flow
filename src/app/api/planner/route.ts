@@ -61,17 +61,36 @@ export async function POST(request: Request) {
       }
     }
 
-    const entry = await prisma.plannerEntry.create({
-      data: {
-        userId: session.userId,
-        jobId: finalJobId,
-        date: new Date(date),
-        minutes: minutes ? parseInt(minutes) : 0,
-        title: title
-      }
-    })
+    const interval = parseInt(body.recurrenceInterval || '0')
+    const baseDate = new Date(date)
+    let iterations = 1
 
-    return NextResponse.json(entry)
+    if (interval > 0) {
+      if (interval === 1) iterations = 7 // 7 days
+      else if (interval === 7) iterations = 8 // 8 weeks
+      else if (interval === 14) iterations = 4 // 4 times (8 weeks)
+      else if (interval === 30) iterations = 6 // 6 months
+    }
+
+    const createdEntries = []
+
+    for (let i = 0; i < iterations; i++) {
+      const entryDate = new Date(baseDate)
+      entryDate.setDate(baseDate.getDate() + (i * interval))
+
+      const entry = await prisma.plannerEntry.create({
+        data: {
+          userId: session.userId,
+          jobId: finalJobId,
+          date: entryDate,
+          minutes: minutes ? parseInt(minutes) : 0,
+          title: title
+        }
+      })
+      createdEntries.push(entry)
+    }
+
+    return NextResponse.json(createdEntries[0])
   } catch (e) {
     console.error("PLANNER POST ERROR:", e)
     return NextResponse.json({ error: 'Chyba servera pri ukladaní plánu.' }, { status: 500 })
