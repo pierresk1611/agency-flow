@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
 import { JobsTabs } from '@/components/jobs-tabs'
 import { GlobalNewJobButton } from '@/components/global-new-job-button'
+import { RecurrenceTrigger } from '@/components/recurrence-trigger'
 
 export const dynamic = 'force-dynamic'
 
@@ -160,7 +161,10 @@ export default async function JobsPage({
           </h2>
         </div>
         {!isCreative && (
-          <GlobalNewJobButton clients={allClients as any} colleagues={colleagues as any} agencyId={agency.id} />
+          <div className="flex items-center gap-2">
+            <RecurrenceTrigger />
+            <GlobalNewJobButton clients={allClients as any} colleagues={colleagues as any} agencyId={agency.id} />
+          </div>
         )}
       </div>
 

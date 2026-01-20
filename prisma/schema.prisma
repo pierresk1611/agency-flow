@@ -204,6 +204,9 @@ model Job {
   budgets     BudgetItem[]
   plannerEntries PlannerEntry[]
   
+  recurrenceInterval Int?     @default(0) // Interval v dňoch (0 = neopakuje sa)
+  nextRunAt       DateTime?  // Dátum kedy sa má vytvoriť ďalší job
+  
   archivedAt  DateTime?
   createdAt   DateTime @default(now())
 }

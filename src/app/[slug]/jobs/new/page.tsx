@@ -36,6 +36,7 @@ export default async function NewJobPage({ params }: { params: { slug: string } 
         const campaignId = formData.get('campaignId') as string
         const deadline = formData.get('deadline') as string
         const budget = formData.get('budget') as string
+        const recurrenceInterval = formData.get('recurrenceInterval') as string || '0'
 
         if (!title || !campaignId || !deadline) return
 
@@ -55,7 +56,13 @@ export default async function NewJobPage({ params }: { params: { slug: string } 
                 campaignId,
                 deadline: new Date(deadline),
                 budget: parseFloat(budget || '0'),
-                status: 'TODO'
+                status: 'TODO',
+                // @ts-ignore
+                recurrenceInterval: parseInt(recurrenceInterval),
+                // @ts-ignore
+                nextRunAt: parseInt(recurrenceInterval) > 0
+                    ? new Date(new Date(deadline).getTime() + parseInt(recurrenceInterval) * 24 * 60 * 60 * 1000)
+                    : null
             }
         })
 
@@ -110,6 +117,23 @@ export default async function NewJobPage({ params }: { params: { slug: string } 
                                 <Label>Budget (€)</Label>
                                 <Input name="budget" type="number" step="0.01" min="0" />
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Opakovanie</Label>
+                            <select
+                                name="recurrenceInterval"
+                                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                                defaultValue="0"
+                            >
+                                <option value="0">Bez opakovania</option>
+                                <option value="7">Týždenne (7 dní)</option>
+                                <option value="14">Dvojtýždenne (14 dní)</option>
+                                <option value="30">Mesačne (30 dní)</option>
+                            </select>
+                            <p className="text-xs text-muted-foreground text-gray-500">
+                                Ak zvolíte opakovanie, nový task sa vytvorí automaticky po uplynutí intervalu od deadlinu.
+                            </p>
                         </div>
 
                         <Button type="submit" className="w-full bg-slate-900 text-white font-bold mt-4">
