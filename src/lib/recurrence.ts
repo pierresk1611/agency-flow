@@ -67,8 +67,28 @@ export async function checkAndSpawnRecurringJobs() {
                             assignedBillingValue: a.assignedBillingValue
                         }))
                     }
+                },
+                include: {
+                    assignments: true // Return assignments so we can map them to planner
                 }
             })
+
+            // 2.5 Create Planner Entries for assigned users
+            // We want to ensure it appears in their planner for the deadline date
+            // @ts-ignore
+            if (newJob.assignments && newJob.assignments.length > 0) {
+                await prisma.plannerEntry.createMany({
+                    // @ts-ignore
+                    data: newJob.assignments.map((assignment: any) => ({
+                        userId: assignment.userId,
+                        jobId: newJob.id,
+                        date: newJobDeadline,
+                        minutes: 60, // Default duration
+                        title: newJob.title,
+                        isDone: false
+                    }))
+                })
+            }
 
             // 3. Update the original job's nextRunAt
             // nextRunAt = nextRunAt + interval
