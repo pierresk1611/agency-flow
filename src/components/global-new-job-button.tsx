@@ -47,7 +47,6 @@ export function GlobalNewJobButton({
     // Step 3 Data (Job)
     const [title, setTitle] = useState('')
     const [deadline, setDeadline] = useState('')
-    const [deadline, setDeadline] = useState('')
     const [budget, setBudget] = useState('0')
     const [recurrenceInterval, setRecurrenceInterval] = useState('0')
     const [externalLink, setExternalLink] = useState('')
