@@ -19,6 +19,7 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
   const [title, setTitle] = useState('')
   const [deadline, setDeadline] = useState('')
   const [budget, setBudget] = useState('0')
+  const [recurrenceInterval, setRecurrenceInterval] = useState('0')
   const [externalLink, setExternalLink] = useState('')
 
   // Sync selection with defaults when dialog opens
@@ -81,6 +82,7 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
           budget,
           externalLink,
           campaignId,
+          recurrenceInterval,
           creativeIds: selectedCreatives.map(c => c.userId),
           creativeAssignments: selectedCreatives
         })
@@ -92,9 +94,8 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
         setDeadline('')
         setBudget('0')
         setExternalLink('')
-        setBudget('0')
-        setExternalLink('')
-        setSelectedCreatives(defaultAssigneeIds) // Reset to default
+        setRecurrenceInterval('0')
+        setSelectedCreatives([]) // Reset selection
         router.refresh()
       } else {
         const err = await res.json()
@@ -138,6 +139,20 @@ export function AddJobDialog({ campaignId, agencyId, defaultAssigneeIds = [] }: 
           <div className="grid gap-2">
             <Label>Link na Asanu / ClickUp / Freelo</Label>
             <Input value={externalLink} onChange={e => setExternalLink(e.target.value)} placeholder="https://app.asana.com/..." />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Opakovanie</Label>
+            <select
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+              value={recurrenceInterval}
+              onChange={(e) => setRecurrenceInterval(e.target.value)}
+            >
+              <option value="0">Bez opakovania</option>
+              <option value="7">Týždenne (7 dní)</option>
+              <option value="14">Dvojtýždenne (14 dní)</option>
+              <option value="30">Mesačne (30 dní)</option>
+            </select>
           </div>
 
           <div className="grid gap-3">
